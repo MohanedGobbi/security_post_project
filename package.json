@@ -9,15 +9,19 @@
   "private": true,
   "scripts": {
     "dev": "electron-vite dev",
+    "dev:ghardaia": "electron-vite dev --mode ghardaia",
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json && tsc -p tsconfig.server.json && tsc --noEmit -p dashboard/tsconfig.json && tsc --noEmit -p demo/tsconfig.json",
     "dist": "electron-vite build && electron-builder --win",
     "server": "node server/index.ts",
     "build:dashboard": "vite build --config dashboard/vite.config.ts",
+    "build:dashboard:ghardaia": "vite build --config dashboard/vite.config.ts --mode ghardaia",
     "dev:dashboard": "vite --config dashboard/vite.config.ts",
     "build:demo": "vite build --config demo/vite.config.ts",
-    "dev:demo": "vite --config demo/vite.config.ts"
+    "build:demo:ghardaia": "vite build --config demo/vite.config.ts --mode ghardaia",
+    "dev:demo": "vite --config demo/vite.config.ts",
+    "dev:demo:ghardaia": "vite --config demo/vite.config.ts --mode ghardaia"
   },
   "build": {
     "appId": "com.securityregister.app",

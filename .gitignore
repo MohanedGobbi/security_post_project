@@ -8,3 +8,4 @@ demo-dist/
 .vercel/
 *.tsbuildinfo
 .env*
+demo-dist-*/

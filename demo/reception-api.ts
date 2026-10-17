@@ -14,6 +14,8 @@ import {
 } from './store'
 import { qrDataUrl, qrSvg, readQr } from './qr'
 import { downloadCsv, openReport } from './report'
+import { F, sampleId } from './flavors'
+import { BRAND } from '@renderer/brand'
 
 // ---------- helpers ----------
 const normId = (s: string): string => s.toUpperCase().replace(/[\s\-.<\/]/g, '')
@@ -90,8 +92,10 @@ function checkCustom(entity: 'visit' | 'vehicle' | 'delivery', values: Record<st
 /** Sample cards returned by "Scan card" in turn: a new visitor, a watchlisted person, a returning visitor */
 const SAMPLE_CARDS: Partial<PersonFields>[] = [
   { fullName: 'Anna Maria Eriksson', idType: 'passport', idNumber: 'L898902C3', nationality: 'SWE', birthDate: '1974-08-12', sex: 'F' },
-  { fullName: 'Karim Ben Youssef', idType: 'national_id', idNumber: '09876543', nationality: 'TUN', birthDate: '1990-03-02', sex: 'M' },
-  { fullName: 'Olfa Ben Amor', idType: 'national_id', idNumber: String(10000000 + 7 * 7919), nationality: 'TUN', birthDate: '1996-06-14', sex: 'F' }
+  // on the watchlist: shows the refusal
+  { fullName: F.watch.name, idType: 'national_id', idNumber: F.watch.idNumber, nationality: F.nationality, birthDate: '1990-03-02', sex: 'M' },
+  // came yesterday: shows the returning-visitor fill
+  { fullName: F.visits[6].name, idType: 'national_id', idNumber: sampleId(7), nationality: F.nationality, birthDate: '1996-06-14', sex: 'F' }
 ]
 let sampleIndex = 0
 
@@ -202,7 +206,7 @@ async function badgePng(visitId: number, s: BadgeSettings): Promise<string> {
   g.textAlign = rtl ? 'right' : 'left'
   g.fillStyle = '#fff'
   g.fillRect(0, 0, c.width, c.height)
-  g.fillStyle = '#0f2a44'
+  g.fillStyle = BRAND.badgeColor
   g.fillRect(0, 0, c.width, 9 * k)
   g.fillStyle = '#fff'
   g.font = `700 ${5 * k}px Segoe UI, Arial`
@@ -428,7 +432,7 @@ export const demoApi: Api = {
     },
     async readText() {
       await wait(800)
-      return ['CARTE NATIONALE D’IDENTITÉ', 'بطاقة التعريف الوطنية', 'Nom : BEN AMOR', 'Prénom : Olfa', 'الاسم : ألفة بن عمر', 'Né(e) le 14/06/1996 à Sousse']
+      return F.cardText
     },
     async barcodes(image) {
       return readQr(image)

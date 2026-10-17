@@ -149,6 +149,22 @@ npm run dev:demo
 `npm run build:demo` builds it into `demo-dist/`. On Vercel, import the repository: `vercel.json` already sets the install
 command, build command and output folder. Logins: app *Admin* / PIN `1234`, dashboard `demo@security-register.app` / `demo1234`.
 
+## Branded builds (organisation logo and colours)
+The same code builds the generic product or a version branded for one organisation. Brands are defined in
+`src/renderer/src/brand.ts` (name in AR/EN/FR, logo, colours) and the demo data of each brand in `demo/flavors.ts`.
+Without a brand, nothing changes: the generic look and data are used.
+
+| Brand | How to build |
+|---|---|
+| Generic | `npm run dev`, `npm run build:demo` … (as usual) |
+| University of Ghardaia | `npm run dev:ghardaia`, `npm run dev:demo:ghardaia`, `npm run build:demo:ghardaia`, `npm run build:dashboard:ghardaia`, or set `VITE_BRAND=ghardaia` before any build |
+
+Each build only contains its own brand. The branded demo keeps its data apart from the generic one in the browser.
+To add an organisation: put its logo in `src/renderer/src/assets/brands/`, add an entry in `brand.ts` and, for the demo, a flavour in `demo/flavors.ts`.
+
+**Two demos on Vercel from one repository**: keep the first project (generic). Create a second Vercel project from the same
+repository and add the environment variable `VITE_BRAND` = `ghardaia` in its settings. Both projects redeploy on every push.
+
 ## Project layout
 ```
 src/main/       Electron main process: database, encryption, scanning (OCR/MRZ/barcodes), exports, IPC

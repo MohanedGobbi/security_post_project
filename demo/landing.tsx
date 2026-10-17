@@ -6,6 +6,8 @@ import './demo.css'
 import { StrictMode, useEffect, useState, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import Icon, { type IconName } from '@renderer/components/Icon'
+import BrandMark from '@renderer/components/BrandMark'
+import { applyBrand, BRAND } from '@renderer/brand'
 import type { Lang } from '@shared/types'
 import { resetDemo } from './store'
 
@@ -13,7 +15,7 @@ const REPO = 'https://github.com/MohanedGobbi/security_post_project'
 
 const T: Record<Lang, {
   title: string; tagline: string; app: string; appDesc: string; dash: string; dashDesc: string; open: string; login: string
-  featuresTitle: string; features: [IconName, string, string][]; note: string; reset: string; code: string
+  featuresTitle: string; features: [IconName, string, string][]; note: string; reset: string; code: string; madeFor: string
 }> = {
   en: {
     title: 'Security Register', tagline: 'The digital logbook for security guard posts: companies, universities, hospitals, sites of every size.',
@@ -30,7 +32,7 @@ const T: Record<Lang, {
       ['gear', 'Fits small and large sites', 'Profiles and switches: a one-door office sees a simple app, a university gets everything.']
     ],
     note: 'This demo runs entirely in your browser with sample data (nothing is sent anywhere). The real product is a Windows desktop app with offline OCR and a self-hosted server.',
-    reset: 'Reset the demo data', code: 'Source code'
+    reset: 'Reset the demo data', code: 'Source code', madeFor: 'Demo prepared for'
   },
   fr: {
     title: 'Registre de sécurité', tagline: 'La main courante numérique des postes de sécurité : entreprises, universités, hôpitaux, sites de toutes tailles.',
@@ -47,7 +49,7 @@ const T: Record<Lang, {
       ['gear', 'Pour petits et grands sites', 'Profils et interrupteurs : un petit bureau voit une app simple, une université a tout.']
     ],
     note: 'Cette démo fonctionne entièrement dans votre navigateur avec des données d’exemple (rien n’est envoyé). Le vrai produit est une application Windows avec OCR hors ligne et un serveur auto-hébergé.',
-    reset: 'Réinitialiser les données de démo', code: 'Code source'
+    reset: 'Réinitialiser les données de démo', code: 'Code source', madeFor: 'Démonstration préparée pour'
   },
   ar: {
     title: 'سجل الحراسة', tagline: 'السجل الرقمي لنقاط الحراسة: الشركات، الجامعات، المستشفيات، ومواقع بكل الأحجام.',
@@ -64,7 +66,7 @@ const T: Record<Lang, {
       ['gear', 'للمواقع الصغيرة والكبيرة', 'نماذج ومفاتيح تفعيل: مكتب صغير يرى تطبيقًا بسيطًا، والجامعة تحصل على كل شيء.']
     ],
     note: 'يعمل هذا العرض بالكامل في متصفحك ببيانات تجريبية (لا يُرسل أي شيء). المنتج الحقيقي تطبيق ويندوز مع قراءة ضوئية دون إنترنت وخادم ذاتي الاستضافة.',
-    reset: 'إعادة تعيين بيانات العرض', code: 'الشيفرة المصدرية'
+    reset: 'إعادة تعيين بيانات العرض', code: 'الشيفرة المصدرية', madeFor: 'عرض مُعدّ لـ'
   }
 }
 
@@ -81,6 +83,7 @@ function initialLang(): Lang {
 function Landing(): ReactNode {
   const [lang, setLang] = useState<Lang>(initialLang)
   const t = T[lang]
+  const org = BRAND.org?.[lang] ?? null
   useEffect(() => {
     document.documentElement.lang = lang
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'
@@ -95,7 +98,7 @@ function Landing(): ReactNode {
   return (
     <div className="landing">
       <header className="landing-top">
-        <div className="brand"><span className="brand-mark"><Icon name="shield" size={22} /></span><strong>{t.title}</strong></div>
+        <div className="brand"><BrandMark /><strong>{t.title}</strong></div>
         <div className="lang-switch" role="group" aria-label="Language">
           {(['ar', 'en', 'fr'] as Lang[]).map((l) => (
             <button key={l} type="button" lang={l} className={l === lang ? 'active' : ''} onClick={() => setLang(l)}>
@@ -106,6 +109,13 @@ function Landing(): ReactNode {
       </header>
       <main>
         <section className="hero">
+          {org && BRAND.logo && (
+            <div className="hero-org">
+              <img src={BRAND.logo} alt="" />
+              <span>{t.madeFor}</span>
+              <strong>{org}</strong>
+            </div>
+          )}
           <h1>{t.title}</h1>
           <p>{t.tagline}</p>
         </section>
@@ -146,4 +156,5 @@ function Landing(): ReactNode {
   )
 }
 
+applyBrand()
 createRoot(document.getElementById('root') as HTMLElement).render(<StrictMode><Landing /></StrictMode>)

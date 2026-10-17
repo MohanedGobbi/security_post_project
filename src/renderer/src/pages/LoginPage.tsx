@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { Role, User } from '@shared/types'
 import { LangSwitch } from '../App'
 import { errorText } from '../util'
-import Icon from '../components/Icon'
+import BrandMark from '../components/BrandMark'
 
 interface LoginUser { id: number; name: string; role: Role }
 
@@ -58,7 +58,7 @@ export default function LoginPage({ siteName, onDone, toast }: {
       <div className="card auth-card">
         <LangSwitch />
         <div className="login-head">
-          <span className="brand-mark big"><Icon name="shield" size={30} /></span>
+          <BrandMark big />
           <div><h1>{t('app.title')}</h1>{siteName && <p className="muted">{siteName}</p>}</div>
         </div>
         {!selected ? (

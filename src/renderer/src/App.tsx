@@ -23,6 +23,7 @@ import ExpectedPage from './pages/ExpectedPage'
 import SettingsPage from './pages/SettingsPage'
 import EndShiftDialog from './components/EndShiftDialog'
 import Icon, { type IconName } from './components/Icon'
+import BrandMark from './components/BrandMark'
 
 export type Page = 'home' | 'in' | 'out' | 'expected' | 'vehicles' | 'deliveries' | 'incidents' | 'patrols' | 'keys' | 'notes' | 'log' | 'watchlist' | 'settings'
 
@@ -229,7 +230,7 @@ export default function App(): ReactNode {
       <div className="shell">
         <header className="topbar">
           <div className="brand">
-            <span className="brand-mark"><Icon name="shield" size={22} /></span>
+            <BrandMark />
             <div>
               <strong>{t('app.title')}</strong>
               {siteName && <span>{siteName}</span>}

@@ -4,6 +4,8 @@ import type { Lang } from '@shared/types'
 import i18n from '@desktop/i18n'
 import { LANGS } from '@shared/i18n'
 import Icon, { type IconName } from '@desktop/components/Icon'
+import BrandMark from '@desktop/components/BrandMark'
+import { orgName } from '@desktop/brand'
 import { errText, get, patch, post } from './api'
 import type { Me, Role } from './types'
 import OverviewPage from './pages/OverviewPage'
@@ -69,8 +71,8 @@ function AuthScreen({ setup, onDone, toast }: { setup: boolean; onDone(me: Me): 
       <form className="card auth-card" onSubmit={submit}>
         <LangSwitch />
         <div className="login-head">
-          <span className="brand-mark big"><Icon name="shield" size={30} /></span>
-          <div><h1>{t('app.title')}</h1><p className="muted">{t('dash.subtitle')}</p></div>
+          <BrandMark big />
+          <div><h1>{t('app.title')}</h1><p className="muted">{orgName(i18n.language) ?? t('dash.subtitle')}</p></div>
         </div>
         {setup && (
           <>
@@ -134,8 +136,8 @@ export default function App(): ReactNode {
       <div className="shell">
         <header className="topbar">
           <div className="brand">
-            <span className="brand-mark"><Icon name="shield" size={22} /></span>
-            <div><strong>{t('app.title')}</strong><span>{t('dash.subtitle')}</span></div>
+            <BrandMark />
+            <div><strong>{t('app.title')}</strong><span>{orgName(i18n.language) ?? t('dash.subtitle')}</span></div>
           </div>
           <div className="topbar-end">
             <LangSwitch onChange={(l) => { void patch('/api/me', { language: l }) }} />

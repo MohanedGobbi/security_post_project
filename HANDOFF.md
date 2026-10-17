@@ -37,12 +37,12 @@ Each reception PC works fully offline on its own. The server is optional.
 ```
 src/main/         Electron main process: one file per domain (visits in db.ts, vehicles.ts, keys.ts, patrols.ts, sync.ts, badges.ts ...), ipc.ts wires them
 src/preload/      exposes window.api (typed by Api in src/shared/types.ts)
-src/renderer/src/ React UI: pages/, components/ (CameraPanel, QrScanner ...), styles.css
+src/renderer/src/ React UI: pages/, components/ (CameraPanel, QrScanner, BrandMark ...), styles.css, brand.ts (organisation branding)
 src/shared/       types, sync contract, feature switches, AR/EN/FR locales
 resources/tessdata/  OCR models (licences in NOTICE.md)
 server/           index.ts (start), routes-device.ts (sync API for posts), routes-dashboard.ts, auth.ts, db.ts, crypto.ts
 dashboard/src/    dashboard SPA; api.ts talks to /api/* (or to the demo mock when VITE_DEMO=1)
-demo/             web demo: landing page, mock window.api (reception-api.ts), mock /api/* (dashboard-api.ts), shared localStorage store (store.ts)
+demo/             web demo: landing page, mock window.api (reception-api.ts), mock /api/* (dashboard-api.ts), shared localStorage store (store.ts), demo data per brand (flavors.ts)
 vercel.json       Vercel build settings for the demo
 ```
 
@@ -81,6 +81,19 @@ Environment variables:
   - Sync is simulated.
 - To add a new `Api` method, implement it in `demo/reception-api.ts` too, or the demo type-check fails.
   To add a new dashboard route, add it to `demo/dashboard-api.ts`.
+
+## Branding (white-label builds)
+- `src/renderer/src/brand.ts` defines the brands; each one has a name in three languages, a logo, colour overrides of the CSS tokens in `styles.css`, and a badge colour.
+  - Today there are two: generic (default) and `ghardaia` (University of Ghardaia, green and red from its logo).
+- The brand is chosen at build time: `VITE_BRAND=ghardaia` or `--mode ghardaia`.
+  - The three vite configs (`electron.vite.config.ts`, `dashboard/vite.config.ts`, `demo/vite.config.ts`) turn it into the `__BRAND__` constant.
+  - `__BRAND__` is compared with string literals so the bundler drops the other brands' code and data.
+- `BrandMark` shows the logo instead of the shield. `applyBrand()` sets the colours and the favicon.
+- Demo data per brand is in `demo/flavors.ts`: names, places, companies, licence plates, ID number format and card text.
+  - Each brand has its own localStorage key.
+- Not branded yet: printed badges and reports of the desktop app (main process).
+  - Next step: a logo upload in Settings, so each organisation can brand its own install without a special build.
+- On Vercel there are two projects from the same repository. The second one sets the environment variable `VITE_BRAND=ghardaia`.
 
 ## What was tested
 - Server API script: 25/25 checks passed.
