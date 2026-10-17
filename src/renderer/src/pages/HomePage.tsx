@@ -1,0 +1,87 @@
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TodayStats, VisitRow } from '@shared/types'
+import { pageOn, useApp, type Page } from '../App'
+import { currentLang } from '../i18n'
+import InsideList from '../components/InsideList'
+import AlertsPanel from '../components/AlertsPanel'
+import Icon, { type IconName } from '../components/Icon'
+import { errorText } from '../util'
+
+const TILES: { page: Page; key: string; icon: IconName; kbd: string; cls: string }[] = [
+  { page: 'in', key: 'nav.visitorIn', icon: 'enter', kbd: 'F2', cls: 'tile-in' },
+  { page: 'out', key: 'nav.visitorOut', icon: 'exit', kbd: 'F3', cls: 'tile-out' },
+  { page: 'expected', key: 'nav.expected', icon: 'calendar', kbd: 'F12', cls: 'tile-expected' },
+  { page: 'vehicles', key: 'nav.vehicles', icon: 'car', kbd: 'F4', cls: 'tile-car' },
+  { page: 'deliveries', key: 'nav.deliveries', icon: 'box', kbd: 'F5', cls: 'tile-box' },
+  { page: 'incidents', key: 'nav.incidents', icon: 'alert', kbd: 'F6', cls: 'tile-incident' },
+  { page: 'patrols', key: 'nav.patrols', icon: 'shield', kbd: 'F10', cls: 'tile-patrol' },
+  { page: 'keys', key: 'nav.keys', icon: 'key', kbd: 'F11', cls: 'tile-key' },
+  { page: 'notes', key: 'nav.notes', icon: 'note', kbd: 'F7', cls: 'tile-note' }
+]
+
+export default function HomePage(): ReactNode {
+  const { t } = useTranslation()
+  const { go, toast, alerts, features } = useApp()
+  const on = features.modules
+  const [stats, setStats] = useState<TodayStats | null>(null)
+  const [inside, setInside] = useState<VisitRow[]>([])
+
+  const load = useCallback(async () => {
+    const [s, i] = await Promise.all([window.api.visits.stats(), window.api.visits.insideNow()])
+    setStats(s)
+    setInside(i)
+  }, [])
+
+  useEffect(() => {
+    load()
+    const timer = setInterval(load, 60000)
+    return () => clearInterval(timer)
+  }, [load])
+
+  const evacuation = async (): Promise<void> => {
+    try {
+      await window.api.exports.evacuation(currentLang())
+    } catch (e) {
+      toast(errorText(e, t), 'error')
+    }
+  }
+
+  const stat = (value: number | undefined, key: string, page?: Page, cls = ''): ReactNode => (
+    <button type="button" className={`stat ${cls}`} onClick={() => page && go(page)} disabled={!page}>
+      <strong>{value ?? '–'}</strong><span>{t(key)}</span>
+    </button>
+  )
+
+  return (
+    <div className="home">
+      <section className="actions-grid">
+        {TILES.filter((x) => pageOn(x.page, features)).map((x) => (
+          <button key={x.page} type="button" className={`tile ${x.cls}`} onClick={() => go(x.page)}>
+            <span className="tile-icon"><Icon name={x.icon} size={30} /></span>
+            <strong>{t(x.key)}</strong><kbd>{x.kbd}</kbd>
+          </button>
+        ))}
+      </section>
+
+      <div className="stack">
+        <AlertsPanel alerts={alerts} />
+        <section className="card inside-card">
+          <div className="stats">
+            {stat(stats?.inside, 'home.inside', 'out', 'accent')}
+            {on.vehicles && stat(stats?.vehiclesInside, 'home.vehiclesInside', 'vehicles')}
+            {on.deliveries && stat(stats?.parcelsWaiting, 'home.parcelsWaiting', 'deliveries', stats?.parcelsWaiting ? 'warn' : '')}
+            {on.incidents && stat(stats?.openIncidents, 'home.openIncidents', 'incidents', stats?.openIncidents ? 'danger' : '')}
+            {stat(stats?.inToday, 'home.inToday')}
+            {stat(stats?.outToday, 'home.outToday')}
+          </div>
+          <div className="section-head">
+            <h2>{t('home.insideNow')}</h2>
+            <button type="button" className="warn-outline" onClick={evacuation} disabled={inside.length === 0}>{t('home.evacuation')}</button>
+          </div>
+          <InsideList rows={inside} onChanged={load} emptyText={t('home.nobodyInside')} />
+        </section>
+      </div>
+    </div>
+  )
+}

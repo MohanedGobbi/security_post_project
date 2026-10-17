@@ -1,0 +1,48 @@
+/* Dashboard additions on top of the reception app's stylesheet */
+.stats.totals { margin-bottom: 18px; }
+.site-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 18px; margin-bottom: 18px; }
+.site-card { display: flex; flex-direction: column; gap: 12px; }
+.site-card.disabled { opacity: 0.55; }
+.site-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.site-head h2 { margin: 0; }
+.site-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.site-stats .stat strong { font-size: 1.5rem; }
+.device-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.device-list li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.device-list li.disabled { opacity: 0.5; }
+.device-list .muted { font-size: 0.85rem; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--line); }
+.dot.on { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
+.dot.off { background: #b0b8c4; }
+.danger-link { color: var(--danger) !important; margin-inline-start: auto; }
+.enroll-box { background: var(--accent-soft); border-radius: 10px; padding: 12px 14px; display: grid; gap: 8px; }
+.enroll-box .detail-grid { margin: 0; }
+.enroll-code { font-size: 1.6rem; letter-spacing: 0.15em; color: #0b3fa8; }
+.empty-state { text-align: center; display: grid; gap: 12px; justify-items: center; padding: 40px; }
+a.button {
+  font: inherit; font-weight: 600; border-radius: 9px; padding: 8px 14px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--ink); text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+}
+a.button:hover { border-color: var(--ink-2); }
+.small { font-size: 0.8rem; }
+
+/* visitor pass */
+.pass-card { width: min(460px, 100%); }
+.pass {
+  border: 2px dashed var(--line); border-radius: 14px; padding: 0 0 16px; margin-bottom: 14px; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+}
+.pass-band { width: 100%; background: var(--brand); color: #fff; padding: 8px; font-weight: 700; letter-spacing: 0.04em; }
+.pass-qr { width: 190px; height: 190px; margin-top: 10px; }
+.pass-code { font-size: 1.5rem; letter-spacing: 0.2em; font-weight: 700; }
+.pass-name { font-size: 1.25rem; }
+
+@media print {
+  body * { visibility: hidden; }
+  .printable, .printable * { visibility: visible; }
+  .printable { position: fixed; inset: 0 auto auto 0; width: 90mm; border: 1px solid #999; }
+  .modal { background: none; }
+}
+@media (max-width: 900px) {
+  .site-grid { grid-template-columns: 1fr; }
+}

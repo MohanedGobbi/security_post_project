@@ -1,0 +1,921 @@
+// window.api for the browser demo of the reception app: same contract as the Electron main process,
+// backed by the demo store instead of SQLite, OCR and printers.
+import type {
+  ActivityItem, AlertItem, Api, BadgeSettings, Checkpoint, DeliveryRow, ExpectedVisitor, Features, IncidentRow, KeyItem, KeyLoan, Lang,
+  PatrolRound, PatrolRoundDetail, PersonFields, RangeQuery, ScanResult, SearchQuery, ShiftRow, ShiftSummary, User, VehicleRow, VisitDetail,
+  VisitRow, WatchHit, WatchRow
+} from '@shared/types'
+import { formatDateTime, translate } from '@shared/i18n'
+import { normalizeFeatures, PROFILES, summaryKeyOn } from '@shared/features'
+import { QR_BADGE, QR_PREREG } from '@shared/sync'
+import {
+  db, dayBounds, fail, nextId, nowIso, photos, refresh, save, today, wait,
+  type DExpected, type DLoan, type DRound, type DShift, type DUser, type DVisit
+} from './store'
+import { qrDataUrl, qrSvg, readQr } from './qr'
+import { downloadCsv, openReport } from './report'
+
+// ---------- helpers ----------
+const normId = (s: string): string => s.toUpperCase().replace(/[\s\-.<\/]/g, '')
+const normPlate = (p: string): string => p.toUpperCase().replace(/[\s\-.·]/g, '')
+const normName = (n: string): string => n.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim().split(' ').filter(Boolean).sort().join(' ')
+const has = (hay: unknown[], text: string): boolean => {
+  const n = text.trim().toLowerCase()
+  return !n || hay.some((h) => String(h ?? '').toLowerCase().includes(n))
+}
+const inRange = (t: string | null, from: string, to: string): boolean => {
+  if (!t) return false
+  const [a, b] = dayBounds(from, to)
+  return t >= a && t <= b
+}
+const between = (t: string | null, a: string, b: string): boolean => !!t && t >= a && t <= b
+
+function me(): DUser {
+  refresh()
+  const u = db().users.find((x) => x.id === db().currentUserId && x.active)
+  if (!u) fail('error.forbidden')
+  return u as DUser
+}
+const admin = (): DUser => {
+  const u = me()
+  if (u.role !== 'admin') fail('error.forbidden')
+  return u
+}
+const need = (m: keyof Features['modules']): void => {
+  if (!db().features.modules[m]) fail('error.featureOff')
+}
+const toUser = (u: DUser): User => ({ id: u.id, name: u.name, role: u.role, language: u.language, active: u.active })
+const lang = (): Lang => (db().users.find((u) => u.id === db().currentUserId)?.language ?? 'fr')
+const done = <T>(v: T): T => {
+  save()
+  return v
+}
+
+// ---------- visits ----------
+const visitRow = (v: DVisit): VisitRow => ({
+  id: v.id, personId: v.id, fullName: v.fullName, fullNameAlt: v.fullNameAlt, idType: v.idType, idNumber: v.idNumber, company: v.company,
+  host: v.host, purpose: v.purpose, badgeNo: v.badgeNo, vehiclePlate: v.vehiclePlate, notes: v.notes, timeIn: v.timeIn, timeOut: v.timeOut,
+  guardIn: v.guardIn, guardOut: v.guardOut, hasPhoto: v.hasPhoto, custom: v.custom
+})
+
+function watchHits(q: { idNumber?: string; name?: string; plate?: string }): WatchHit[] {
+  if (!db().features.modules.watchlist) return []
+  const out: WatchHit[] = []
+  for (const w of db().watch.filter((x) => x.active)) {
+    const id = w.org ? -w.id : w.id
+    if (q.idNumber && normId(q.idNumber) && w.idNumber && normId(w.idNumber) === normId(q.idNumber)) out.push({ id, level: w.level, reason: w.reason, name: w.name, match: 'id' })
+    else if (q.plate && normPlate(q.plate).length >= 3 && w.plate && normPlate(w.plate) === normPlate(q.plate)) out.push({ id, level: w.level, reason: w.reason, name: w.name, match: 'plate' })
+    else if (q.name && normName(q.name).includes(' ') && w.name && normName(w.name) === normName(q.name)) out.push({ id, level: w.level, reason: w.reason, name: w.name, match: 'name' })
+  }
+  return out
+}
+
+function enforceWatch(q: { idNumber?: string; name?: string; plate?: string }, pin?: string): void {
+  const blocking = watchHits(q).some((h) => h.level === 'deny' && h.match !== 'name')
+  if (!blocking) return
+  if (!pin) fail('error.watchlistDeny')
+  if (!db().users.some((u) => u.role === 'admin' && u.active && u.pin === pin)) fail('error.supervisorPin')
+}
+
+function checkCustom(entity: 'visit' | 'vehicle' | 'delivery', values: Record<string, string> | undefined): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const f of db().customFields.filter((x) => x.entity === entity && x.active)) {
+    const v = String(values?.[String(f.id)] ?? '').trim()
+    if (f.required && !v) fail(`error.customRequired:${f.id}`)
+    if (v) out[String(f.id)] = v
+  }
+  return out
+}
+
+/** Sample cards returned by "Scan card" in turn: a new visitor, a watchlisted person, a returning visitor */
+const SAMPLE_CARDS: Partial<PersonFields>[] = [
+  { fullName: 'Anna Maria Eriksson', idType: 'passport', idNumber: 'L898902C3', nationality: 'SWE', birthDate: '1974-08-12', sex: 'F' },
+  { fullName: 'Karim Ben Youssef', idType: 'national_id', idNumber: '09876543', nationality: 'TUN', birthDate: '1990-03-02', sex: 'M' },
+  { fullName: 'Olfa Ben Amor', idType: 'national_id', idNumber: String(10000000 + 7 * 7919), nationality: 'TUN', birthDate: '1996-06-14', sex: 'F' }
+]
+let sampleIndex = 0
+
+// ---------- shifts / activity ----------
+function summary(from: string, to: string): ShiftSummary {
+  const s = db()
+  const sum = (xs: { parcels: number }[]): number => xs.reduce((n, x) => n + x.parcels, 0)
+  return {
+    visitorsIn: s.visits.filter((v) => between(v.timeIn, from, to)).length,
+    visitorsOut: s.visits.filter((v) => between(v.timeOut, from, to)).length,
+    vehiclesIn: s.vehicles.filter((v) => between(v.timeIn, from, to)).length,
+    vehiclesOut: s.vehicles.filter((v) => between(v.timeOut, from, to)).length,
+    parcelsReceived: sum(s.deliveries.filter((d) => between(d.time, from, to))),
+    parcelsPickedUp: sum(s.deliveries.filter((d) => between(d.pickedUpAt, from, to))),
+    incidents: s.incidents.filter((i) => between(i.occurredAt, from, to)).length,
+    notes: s.notes.filter((n) => between(n.time, from, to)).length,
+    patrols: s.rounds.filter((r) => between(r.endedAt, from, to)).length,
+    insideNow: s.visits.filter((v) => !v.timeOut).length,
+    vehiclesInside: s.vehicles.filter((v) => !v.timeOut).length,
+    parcelsWaiting: sum(s.deliveries.filter((d) => !d.pickedUpAt)),
+    openIncidents: s.incidents.filter((i) => !i.closedAt).length,
+    keysOut: s.loans.filter((l) => !l.returnedAt).length
+  }
+}
+
+const shiftRow = (x: DShift): ShiftRow => ({
+  id: x.id, userId: x.userId, guard: x.guard, post: x.post, startedAt: x.startedAt, endedAt: x.endedAt, handoverNote: x.handoverNote, acknowledgedBy: x.acknowledgedBy
+})
+
+function activity(from: string, to: string | null): ActivityItem[] {
+  const s = db()
+  const end = to ?? nowIso()
+  const out: ActivityItem[] = []
+  const add = (time: string | null, kind: ActivityItem['kind'], title: string, detail: string, guard: string | null): void => {
+    if (between(time, from, end)) out.push({ time: time as string, kind, title, detail, guard: guard ?? '' })
+  }
+  for (const v of s.visits) { add(v.timeIn, 'visit_in', v.fullName, v.host, v.guardIn); add(v.timeOut, 'visit_out', v.fullName, v.notes, v.guardOut) }
+  for (const v of s.vehicles) { add(v.timeIn, 'vehicle_in', v.plate, v.driverName, v.guardIn); add(v.timeOut, 'vehicle_out', v.plate, v.driverName, v.guardOut) }
+  for (const d of s.deliveries) { add(d.time, 'delivery', d.recipient, `${d.carrier} ×${d.parcels}`, d.guard); add(d.pickedUpAt, 'pickup', d.recipient, d.pickedUpBy, d.guardPickup) }
+  for (const i of s.incidents) { add(i.occurredAt, 'incident', i.type, [i.location, i.description].filter(Boolean).join(' — '), i.guard); add(i.closedAt, 'incident_closed', i.type, i.resolution, i.closedBy) }
+  for (const n of s.notes) add(n.time, 'note', n.category, n.text, n.guard)
+  for (const x of s.shifts) { add(x.startedAt, 'shift_start', x.guard, x.post, x.guard); add(x.endedAt, 'shift_end', x.guard, x.handoverNote, x.guard) }
+  for (const r of s.rounds) add(r.endedAt, 'patrol', `${r.checks.length} / ${s.checkpoints.filter((c) => c.active).length}`, r.note, r.guard)
+  for (const l of s.loans) {
+    const item = s.keyItems.find((k) => k.id === l.itemId)?.label ?? ''
+    add(l.outAt, 'key_out', item, l.borrower, l.guardOut); add(l.returnedAt, 'key_in', item, l.borrower, l.guardIn)
+  }
+  return out.sort((a, b) => (a.time < b.time ? -1 : 1))
+}
+
+// ---------- patrols ----------
+function roundDetail(r: DRound): PatrolRoundDetail {
+  const cps = db().checkpoints.filter((c) => c.active || r.checks.some((k) => k.checkpointId === c.id))
+  return {
+    id: r.id, guard: r.guard, startedAt: r.startedAt, endedAt: r.endedAt, note: r.note, total: cps.length, done: r.checks.length,
+    issues: r.checks.filter((c) => c.status === 'issue').length,
+    checks: cps.map((c) => {
+      const k = r.checks.find((x) => x.checkpointId === c.id)
+      return { checkpointId: c.id, name: c.name, location: c.location, time: k?.time ?? null, status: k?.status ?? null, note: k?.note ?? '', method: k?.method ?? '' }
+    })
+  }
+}
+const roundRow = (r: DRound): PatrolRound => {
+  const { checks: _c, ...rest } = roundDetail(r)
+  return rest
+}
+
+// ---------- keys ----------
+const loanRow = (l: DLoan): KeyLoan => ({
+  ...l, itemLabel: db().keyItems.find((k) => k.id === l.itemId)?.label ?? ''
+})
+
+// ---------- expected ----------
+const expectedRow = (e: DExpected): ExpectedVisitor => ({
+  id: e.id, refCode: e.refCode, fullName: e.fullName, company: e.company, host: e.host, purpose: e.purpose, phone: e.phone, validFrom: e.validFrom,
+  validTo: e.validTo, notes: e.notes, status: e.status, source: e.source, arrivedAt: e.arrivedAt, visitId: e.visitId
+})
+const newRef = (): string => {
+  const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  return Array.from({ length: 6 }, () => a[Math.floor(Math.random() * a.length)]).join('')
+}
+
+// ---------- badges (drawn on a canvas instead of a printer page) ----------
+const BADGE_MM: Record<BadgeSettings['size'], [number, number]> = { cr80: [85.6, 54], label62: [62, 100], a6: [105, 148] }
+
+async function loadImage(src: string): Promise<HTMLImageElement> {
+  const img = new Image()
+  img.src = src
+  await img.decode()
+  return img
+}
+
+async function badgePng(visitId: number, s: BadgeSettings): Promise<string> {
+  const v = db().visits.find((x) => x.id === visitId)
+  if (!v) fail('error.notFound')
+  const visit = v as DVisit
+  const l = lang()
+  const t = (k: string): string => translate(l, k)
+  const [wmm, hmm] = BADGE_MM[s.size]
+  const k = 6 // px per mm
+  const c = document.createElement('canvas')
+  c.width = Math.round(wmm * k)
+  c.height = Math.round(hmm * k)
+  const g = c.getContext('2d') as CanvasRenderingContext2D
+  const rtl = l === 'ar'
+  g.direction = rtl ? 'rtl' : 'ltr'
+  const x0 = rtl ? c.width - 3 * k : 3 * k
+  g.textAlign = rtl ? 'right' : 'left'
+  g.fillStyle = '#fff'
+  g.fillRect(0, 0, c.width, c.height)
+  g.fillStyle = '#0f2a44'
+  g.fillRect(0, 0, c.width, 9 * k)
+  g.fillStyle = '#fff'
+  g.font = `700 ${5 * k}px Segoe UI, Arial`
+  g.fillText(t('badge.visitor'), x0, 6.5 * k)
+  g.font = `${2.3 * k}px Segoe UI, Arial`
+  g.textAlign = rtl ? 'left' : 'right'
+  g.fillText(db().settings.siteName, rtl ? 3 * k : c.width - 3 * k, 6 * k, c.width * 0.5)
+  g.textAlign = rtl ? 'right' : 'left'
+  g.fillStyle = '#111'
+  let y = 16 * k
+  const photo = photos.get(`visit:${visitId}`)?.[0]
+  let textX = x0
+  if (s.showPhoto && photo) {
+    const img = await loadImage(URL.createObjectURL(new Blob([photo as BlobPart], { type: 'image/jpeg' })))
+    const pw = 18 * k
+    g.drawImage(img, rtl ? c.width - 3 * k - pw : 3 * k, 12 * k, pw, pw * 1.2)
+    textX = rtl ? c.width - 24 * k : 24 * k
+  }
+  g.font = `700 ${4.2 * k}px Segoe UI, Arial`
+  g.fillText(visit.fullName, textX, y, c.width * 0.62)
+  g.font = `${2.6 * k}px Segoe UI, Arial`
+  for (const line of [visit.company, visit.host && `${t('badge.visiting')}: ${visit.host}`, `${t('visitor.timeIn')}: ${formatDateTime(visit.timeIn, l)}`]) {
+    if (!line) continue
+    y += 4.4 * k
+    g.fillText(line, textX, y, c.width * 0.62)
+  }
+  const qr = await loadImage(await qrDataUrl(`${QR_BADGE}${visitId}`))
+  const q = Math.min(20 * k, c.height * 0.42)
+  g.drawImage(qr, rtl ? 3 * k : c.width - 3 * k - q, c.height - q - 6 * k, q, q)
+  g.font = `${2.2 * k}px Segoe UI, Arial`
+  g.fillStyle = '#555'
+  if (visit.badgeNo) g.fillText(`${t('visitor.badgeNo')}: ${visit.badgeNo}`, x0, c.height - 2 * k)
+  return c.toDataURL('image/png')
+}
+
+// ---------- the API ----------
+export const demoApi: Api = {
+  auth: {
+    async status() {
+      refresh()
+      const s = db()
+      const u = s.users.find((x) => x.id === s.currentUserId && x.active)
+      return { needsSetup: false, user: u ? toUser(u) : null, siteName: s.settings.siteName, features: normalizeFeatures(s.features) }
+    },
+    async setup(input) {
+      const s = db()
+      s.settings.siteName = input.siteName
+      s.settings.postName = input.postName
+      s.features = PROFILES[input.profile]
+      const id = nextId()
+      s.users = [{ id, name: input.adminName, role: 'admin', pin: input.pin, language: input.language, active: true }]
+      s.currentUserId = id
+      return done(toUser(s.users[0]))
+    },
+    async loginUsers() {
+      refresh()
+      return db().users.filter((u) => u.active).map((u) => ({ id: u.id, name: u.name, role: u.role }))
+    },
+    async login(userId, pin) {
+      await wait(250)
+      const u = db().users.find((x) => x.id === userId && x.active)
+      if (!u || u.pin !== String(pin)) fail('login.wrongPin')
+      db().currentUserId = userId
+      return done(toUser(u as DUser))
+    },
+    async logout() {
+      db().currentUserId = null
+      done(undefined)
+    },
+    async setLanguage(l) {
+      me().language = l
+      done(undefined)
+    }
+  },
+
+  visits: {
+    async lookup(idNumber) {
+      const n = normId(idNumber)
+      if (n.length < 4) return null
+      const list = db().visits.filter((v) => normId(v.idNumber) === n).sort((a, b) => (a.timeIn < b.timeIn ? 1 : -1))
+      if (!list.length) return null
+      const last = list[0]
+      return {
+        personId: last.id, visitsCount: list.length, lastSeen: last.timeIn, insideVisitId: list.find((v) => !v.timeOut)?.id ?? null,
+        lastHost: last.host, lastPurpose: last.purpose,
+        fields: { fullName: last.fullName, fullNameAlt: last.fullNameAlt, idType: last.idType, idNumber: last.idNumber, nationality: last.nationality,
+          birthDate: last.birthDate, sex: last.sex, phone: last.phone, company: last.company }
+      }
+    },
+    async checkIn(input) {
+      const u = me()
+      const s = db()
+      if (!input.fullName.trim()) fail('error.nameRequired')
+      if (!normId(input.idNumber) && s.features.requireIdNumber) fail('error.idRequired')
+      enforceWatch({ idNumber: input.idNumber, name: input.fullName, plate: input.vehiclePlate }, input.supervisorPin)
+      const custom = checkCustom('visit', input.custom)
+      await wait(200)
+      const id = nextId()
+      const plate = input.vehiclePlate.trim().toUpperCase()
+      s.visits.push({
+        id, fullName: input.fullName.trim(), fullNameAlt: input.fullNameAlt.trim(), idType: input.idType, idNumber: normId(input.idNumber),
+        nationality: input.nationality, birthDate: input.birthDate, sex: input.sex, phone: input.phone, company: input.company.trim(), host: input.host.trim(),
+        purpose: input.purpose.trim(), badgeNo: input.badgeNo.trim(), vehiclePlate: plate, notes: input.notes.trim(), timeIn: nowIso(), timeOut: null,
+        guardIn: u.name, guardOut: null, custom, hasPhoto: !!input.photo
+      })
+      if (input.photo) photos.set(`visit:${id}`, [input.photo])
+      if (plate) s.vehicles.push({ id: nextId(), plate, vehicleType: 'car', color: '', driverName: input.fullName, company: input.company, passengers: 0, cargo: '',
+        notes: '', visitId: id, timeIn: nowIso(), timeOut: null, guardIn: u.name, guardOut: null, custom: {}, hasPhoto: false })
+      const e = s.expected.find((x) => x.id === input.expectedId && x.status === 'pending')
+      if (e) Object.assign(e, { status: 'arrived', arrivedAt: nowIso(), visitId: id })
+      return done(id)
+    },
+    async checkOut(visitId, note) {
+      const u = me()
+      const v = db().visits.find((x) => x.id === visitId)
+      if (!v) fail('error.notFound')
+      const visit = v as DVisit
+      if (visit.timeOut) fail('error.alreadyOut')
+      visit.timeOut = nowIso()
+      visit.guardOut = u.name
+      if (note.trim()) visit.notes = [visit.notes, note.trim()].filter(Boolean).join(' | ')
+      for (const veh of db().vehicles.filter((x) => x.visitId === visitId && !x.timeOut)) Object.assign(veh, { timeOut: nowIso(), guardOut: u.name })
+      done(undefined)
+    },
+    async insideNow() {
+      refresh()
+      return db().visits.filter((v) => !v.timeOut).sort((a, b) => (a.timeIn < b.timeIn ? 1 : -1)).map(visitRow)
+    },
+    async search(q: SearchQuery) {
+      return db().visits
+        .filter((v) => inRange(v.timeIn, q.from, q.to))
+        .filter((v) => (q.status === 'inside' ? !v.timeOut : q.status === 'left' ? !!v.timeOut : true))
+        .filter((v) => has([v.fullName, v.fullNameAlt, v.company, v.host, v.purpose, v.badgeNo, v.vehiclePlate, v.notes, v.idNumber], q.text))
+        .sort((a, b) => (a.timeIn < b.timeIn ? 1 : -1)).map(visitRow)
+    },
+    async get(visitId): Promise<VisitDetail> {
+      const v = db().visits.find((x) => x.id === visitId)
+      if (!v) fail('error.notFound')
+      const visit = v as DVisit
+      return { ...visitRow(visit), nationality: visit.nationality, birthDate: visit.birthDate, sex: visit.sex, phone: visit.phone, photo: photos.get(`visit:${visitId}`)?.[0] ?? null }
+    },
+    async stats() {
+      refresh()
+      const s = summary(...dayBounds(today(), today()))
+      return {
+        inside: s.insideNow, inToday: s.visitorsIn, outToday: s.visitorsOut, notesToday: s.notes,
+        vehiclesInside: s.vehiclesInside, parcelsWaiting: s.parcelsWaiting, openIncidents: s.openIncidents
+      }
+    },
+    async suggestions() {
+      const top = (xs: string[]): string[] => [...xs.reduce((m, x) => m.set(x, (m.get(x) ?? 0) + 1), new Map<string, number>())]
+        .filter(([x]) => x).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([x]) => x)
+      return { hosts: top(db().visits.map((v) => v.host)), purposes: top(db().visits.map((v) => v.purpose)) }
+    }
+  },
+
+  notes: {
+    async add(category, text) {
+      need('notes')
+      if (!text.trim()) fail('error.textRequired')
+      db().notes.push({ id: nextId(), time: nowIso(), category, text: text.trim(), guard: me().name })
+      done(undefined)
+    },
+    async list(from, to) {
+      return db().notes.filter((n) => inRange(n.time, from, to)).sort((a, b) => (a.time < b.time ? 1 : -1)).map((n) => ({ ...n }))
+    }
+  },
+
+  users: {
+    async list() {
+      admin()
+      return db().users.map(toUser)
+    },
+    async create(name, role, pin, language) {
+      admin()
+      if (!name.trim()) fail('error.nameRequired')
+      if (!/^\d{4,8}$/.test(pin)) fail('setup.pinShort')
+      db().users.push({ id: nextId(), name: name.trim(), role, pin, language, active: true })
+      done(undefined)
+    },
+    async update(id, patch) {
+      admin()
+      const u = db().users.find((x) => x.id === id)
+      if (!u) fail('error.notFound')
+      const target = u as DUser
+      const admins = db().users.filter((x) => x.role === 'admin' && x.active).length
+      if (target.role === 'admin' && target.active && (patch.active === false || patch.role === 'guard') && admins <= 1) fail('error.lastAdmin')
+      if (patch.pin !== undefined && !/^\d{4,8}$/.test(patch.pin)) fail('setup.pinShort')
+      Object.assign(target, Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)))
+      done(undefined)
+    }
+  },
+
+  settings: {
+    async get() {
+      return { ...db().settings }
+    },
+    async set(s) {
+      admin()
+      db().settings = { ...s }
+      done(undefined)
+    },
+    async getFeatures() {
+      refresh()
+      return normalizeFeatures(db().features)
+    },
+    async setFeatures(f) {
+      admin()
+      db().features = normalizeFeatures(f)
+      done(undefined)
+    }
+  },
+
+  scan: {
+    async analyze(image): Promise<ScanResult> {
+      const codes = image.length ? await readQr(image) : []
+      const empty: ScanResult = { source: 'none', fields: {}, valid: false, rawMrz: [], barcodes: codes.map((text) => ({ format: 'QRCode', text })), lines: [] }
+      if (codes.some((c) => c.startsWith('SECREG-'))) return empty
+      // the desktop app reads the MRZ / barcode with offline OCR; the demo fills a sample card
+      await wait(900)
+      const fields = SAMPLE_CARDS[sampleIndex++ % SAMPLE_CARDS.length]
+      return { ...empty, source: 'mrz', fields, valid: true }
+    },
+    async readText() {
+      await wait(800)
+      return ['CARTE NATIONALE D’IDENTITÉ', 'بطاقة التعريف الوطنية', 'Nom : BEN AMOR', 'Prénom : Olfa', 'الاسم : ألفة بن عمر', 'Né(e) le 14/06/1996 à Sousse']
+    },
+    async barcodes(image) {
+      return readQr(image)
+    }
+  },
+
+  exports: {
+    async pdf(r) {
+      const t = (k: string): string => translate(r.lang, k)
+      const visits = await demoApi.visits.search({ from: r.from, to: r.to, text: '', status: 'all' })
+      const notes = await demoApi.notes.list(r.from, r.to)
+      openReport(r.lang, t('export.reportTitle'), `${r.from} → ${r.to}`, [
+        { title: t('export.visitorsTitle'), head: [t('visitor.timeIn'), t('visitor.timeOut'), t('visitor.fullName'), t('visitor.company'), t('visitor.host'), t('visitor.guardIn')],
+          rows: visits.reverse().map((v) => [formatDateTime(v.timeIn, r.lang), formatDateTime(v.timeOut, r.lang), v.fullName, v.company, v.host, v.guardIn]) },
+        { title: t('export.notesTitle'), head: [t('activity.time'), t('notes.category'), t('notes.text')],
+          rows: notes.reverse().map((n) => [formatDateTime(n.time, r.lang), t(`notes.cat.${n.category}`), n.text]) }
+      ])
+      return t('common.print')
+    },
+    async excel(r) {
+      const t = (k: string): string => translate(r.lang, k)
+      const visits = await demoApi.visits.search({ from: r.from, to: r.to, text: '', status: 'all' })
+      downloadCsv(`register_${r.from}_${r.to}.csv`, [t('visitor.timeIn'), t('visitor.timeOut'), t('visitor.fullName'), t('visitor.idNumber'), t('visitor.company'), t('visitor.host'), t('visitor.purpose')],
+        visits.reverse().map((v) => [formatDateTime(v.timeIn, r.lang), formatDateTime(v.timeOut, r.lang), v.fullName, v.idNumber, v.company, v.host, v.purpose]))
+      return `register_${r.from}_${r.to}.csv`
+    },
+    async evacuation(l) {
+      const t = (k: string): string => translate(l, k)
+      const rows = await demoApi.visits.insideNow()
+      openReport(l, t('export.evacuationTitle'), formatDateTime(nowIso(), l), [{
+        title: t('export.visitorsTitle'), head: [t('visitor.fullName'), t('visitor.company'), t('visitor.host'), t('visitor.timeIn'), t('visitor.badgeNo')],
+        rows: rows.map((v) => [v.fullName, v.company, v.host, formatDateTime(v.timeIn, l), v.badgeNo])
+      }])
+      return t('common.print')
+    },
+    async shiftReport(shiftId, l) {
+      const t = (k: string): string => translate(l, k)
+      const x = db().shifts.find((s) => s.id === shiftId)
+      if (!x) fail('error.notFound')
+      const shift = x as DShift
+      const end = shift.endedAt ?? nowIso()
+      const sum = summary(shift.startedAt, end)
+      const cells = (Object.keys(sum) as (keyof ShiftSummary)[]).filter((k) => summaryKeyOn(k, db().features))
+        .map((k) => `<div style="border:1px solid #bbb;border-radius:4px;padding:4px 8px"><b style="font-size:13pt">${sum[k]}</b><br>${t(`shift.sum.${k}`)}</div>`).join('')
+      openReport(l, t('shift.reportTitle'), `${t('shift.guard')}: ${shift.guard} · ${formatDateTime(shift.startedAt, l)} → ${shift.endedAt ? formatDateTime(shift.endedAt, l) : t('shift.ongoing')}`,
+        [{ title: t('activity.title'), head: [t('activity.time'), t('activity.event'), t('activity.subject'), t('activity.detail'), t('activity.guard')],
+          rows: activity(shift.startedAt, end).map((a) => [formatDateTime(a.time, l), t(`activity.kind.${a.kind}`), a.title, a.detail, a.guard]) }],
+        `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">${cells}</div>` +
+        (shift.handoverNote ? `<h2>${t('shift.handover')}</h2><div style="border:2px solid #111;padding:8px">${shift.handoverNote.replace(/</g, '&lt;')}</div>` : ''))
+      return t('common.print')
+    }
+  },
+
+  vehicles: {
+    async lookup(plate) {
+      const p = normPlate(plate)
+      if (p.length < 3) return null
+      const list = db().vehicles.filter((v) => normPlate(v.plate) === p).sort((a, b) => (a.timeIn < b.timeIn ? 1 : -1))
+      if (!list.length) return null
+      const l = list[0]
+      return { visits: list.length, lastSeen: l.timeIn, insideId: list.find((v) => !v.timeOut)?.id ?? null,
+        last: { vehicleType: l.vehicleType, color: l.color, driverName: l.driverName, company: l.company } }
+    },
+    async checkIn(input) {
+      need('vehicles')
+      const u = me()
+      const plate = input.plate.trim().toUpperCase()
+      if (!normPlate(plate)) fail('error.plateRequired')
+      if (db().vehicles.some((v) => !v.timeOut && normPlate(v.plate) === normPlate(plate))) fail('error.vehicleInside')
+      enforceWatch({ plate, name: input.driverName }, input.supervisorPin)
+      const custom = checkCustom('vehicle', input.custom)
+      const id = nextId()
+      db().vehicles.push({ id, plate, vehicleType: input.vehicleType, color: input.color, driverName: input.driverName, company: input.company,
+        passengers: Number(input.passengers) || 0, cargo: input.cargo, notes: input.notes, visitId: null, timeIn: nowIso(), timeOut: null,
+        guardIn: u.name, guardOut: null, custom, hasPhoto: !!input.photo })
+      if (input.photo) photos.set(`vehicle:${id}`, [input.photo])
+      return done(id)
+    },
+    async checkOut(id, note) {
+      need('vehicles')
+      const v = db().vehicles.find((x) => x.id === id)
+      if (!v) fail('error.notFound')
+      if (v?.timeOut) fail('error.alreadyOut')
+      Object.assign(v as object, { timeOut: nowIso(), guardOut: me().name, notes: [v?.notes, note.trim()].filter(Boolean).join(' | ') })
+      done(undefined)
+    },
+    async inside(): Promise<VehicleRow[]> {
+      return db().vehicles.filter((v) => !v.timeOut).map((v) => ({ ...v }))
+    },
+    async search(q: RangeQuery) {
+      return db().vehicles.filter((v) => inRange(v.timeIn, q.from, q.to) && has([v.plate, v.driverName, v.company, v.cargo, v.notes], q.text))
+        .sort((a, b) => (a.timeIn < b.timeIn ? 1 : -1)).map((v) => ({ ...v }))
+    },
+    async photo(id) {
+      return photos.get(`vehicle:${id}`)?.[0] ?? null
+    }
+  },
+
+  deliveries: {
+    async add(input) {
+      need('deliveries')
+      if (!input.recipient.trim()) fail('error.recipientRequired')
+      const custom = checkCustom('delivery', input.custom)
+      const id = nextId()
+      db().deliveries.push({ id, time: nowIso(), carrier: input.carrier, courierName: input.courierName, recipient: input.recipient.trim(),
+        parcels: Math.max(1, Number(input.parcels) || 1), tracking: input.tracking, notes: input.notes, guard: me().name, pickedUpAt: null,
+        pickedUpBy: '', guardPickup: null, custom, hasPhoto: !!input.photo })
+      if (input.photo) photos.set(`delivery:${id}`, [input.photo])
+      return done(id)
+    },
+    async pickUp(id, by) {
+      need('deliveries')
+      if (!by.trim()) fail('error.pickupRequired')
+      const d = db().deliveries.find((x) => x.id === id)
+      if (!d) fail('error.notFound')
+      if (d?.pickedUpAt) fail('error.alreadyPickedUp')
+      Object.assign(d as object, { pickedUpAt: nowIso(), pickedUpBy: by.trim(), guardPickup: me().name })
+      done(undefined)
+    },
+    async waiting(): Promise<DeliveryRow[]> {
+      return db().deliveries.filter((d) => !d.pickedUpAt).map((d) => ({ ...d }))
+    },
+    async search(q) {
+      return db().deliveries.filter((d) => inRange(d.time, q.from, q.to) && has([d.carrier, d.recipient, d.tracking, d.pickedUpBy, d.notes], q.text))
+        .sort((a, b) => (a.time < b.time ? 1 : -1)).map((d) => ({ ...d }))
+    },
+    async photo(id) {
+      return photos.get(`delivery:${id}`)?.[0] ?? null
+    },
+    async recipients() {
+      return [...new Set(db().deliveries.map((d) => d.recipient))].slice(0, 8)
+    }
+  },
+
+  incidents: {
+    async add(input) {
+      need('incidents')
+      if (!input.description.trim()) fail('error.textRequired')
+      const id = nextId()
+      db().incidents.push({ id, type: input.type, severity: input.severity, occurredAt: new Date(input.occurredAt).toISOString(), createdAt: nowIso(),
+        location: input.location, description: input.description.trim(), peopleInvolved: input.peopleInvolved, actionTaken: input.actionTaken,
+        guard: me().name, closedAt: null, closedBy: null, resolution: '', photoCount: input.photos.length })
+      if (input.photos.length) photos.set(`incident:${id}`, input.photos)
+      return done(id)
+    },
+    async close(id, resolution) {
+      need('incidents')
+      const i = db().incidents.find((x) => x.id === id)
+      if (!i) fail('error.notFound')
+      if (i?.closedAt) fail('error.alreadyClosed')
+      Object.assign(i as object, { closedAt: nowIso(), closedBy: me().name, resolution: resolution.trim() })
+      done(undefined)
+    },
+    async open(): Promise<IncidentRow[]> {
+      const rank = { high: 0, medium: 1, low: 2 }
+      return db().incidents.filter((i) => !i.closedAt).sort((a, b) => rank[a.severity] - rank[b.severity]).map((i) => ({ ...i }))
+    },
+    async search(q) {
+      return db().incidents.filter((i) => inRange(i.occurredAt, q.from, q.to) && has([i.location, i.description, i.peopleInvolved, i.actionTaken, i.resolution], q.text))
+        .sort((a, b) => (a.occurredAt < b.occurredAt ? 1 : -1)).map((i) => ({ ...i }))
+    },
+    async get(id) {
+      const i = db().incidents.find((x) => x.id === id)
+      if (!i) fail('error.notFound')
+      return { ...(i as IncidentRow), photos: photos.get(`incident:${id}`) ?? [] }
+    }
+  },
+
+  shifts: {
+    async state() {
+      const u = me()
+      const s = db()
+      const mine = s.shifts.find((x) => x.userId === u.id && !x.endedAt) ?? null
+      const previous = [...s.shifts].filter((x) => x.endedAt).sort((a, b) => ((a.endedAt as string) < (b.endedAt as string) ? 1 : -1))[0] ?? null
+      const from = mine?.startedAt ?? previous?.startedAt ?? dayBounds(today(), today())[0]
+      const to = mine ? nowIso() : previous?.endedAt ?? nowIso()
+      return {
+        mine: mine ? shiftRow(mine) : null, previous: previous ? shiftRow(previous) : null,
+        othersOpen: s.shifts.filter((x) => !x.endedAt && x.userId !== u.id).map(shiftRow), summary: summary(from, to)
+      }
+    },
+    async start() {
+      need('shifts')
+      const u = me()
+      const s = db()
+      const existing = s.shifts.find((x) => x.userId === u.id && !x.endedAt)
+      if (existing) return shiftRow(existing)
+      for (const x of s.shifts.filter((y) => !y.endedAt)) x.endedAt = nowIso()
+      const prev = [...s.shifts].filter((x) => x.endedAt).sort((a, b) => ((a.endedAt as string) < (b.endedAt as string) ? 1 : -1))[0]
+      if (prev && prev.userId !== u.id && !prev.acknowledgedBy) prev.acknowledgedBy = u.name
+      const x: DShift = { id: nextId(), userId: u.id, guard: u.name, post: s.settings.postName, startedAt: nowIso(), endedAt: null, handoverNote: '', acknowledgedBy: null }
+      s.shifts.push(x)
+      return done(shiftRow(x))
+    },
+    async end(note) {
+      need('shifts')
+      const u = me()
+      const x = db().shifts.find((y) => y.userId === u.id && !y.endedAt)
+      if (!x) fail('error.noShift')
+      Object.assign(x as DShift, { endedAt: nowIso(), handoverNote: note.trim() })
+      return done(shiftRow(x as DShift))
+    },
+    async activity(from, to) {
+      return activity(from, to)
+    },
+    async list(q) {
+      return db().shifts.filter((x) => inRange(x.startedAt, q.from, q.to) && has([x.guard, x.handoverNote], q.text))
+        .sort((a, b) => (a.startedAt < b.startedAt ? 1 : -1)).map(shiftRow)
+    }
+  },
+
+  patrols: {
+    async checkpoints(all) {
+      return db().checkpoints.filter((c) => all || c.active).map((c) => ({ ...c }))
+    },
+    async addCheckpoint(name, location) {
+      admin()
+      need('patrols')
+      if (!name.trim()) fail('error.nameRequired')
+      db().checkpoints.push({ id: nextId(), name: name.trim(), location: location.trim(), code: newRef() + newRef().slice(0, 2), active: true })
+      done(undefined)
+    },
+    async updateCheckpoint(id, patch) {
+      admin()
+      Object.assign(db().checkpoints.find((c) => c.id === id) ?? {}, Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)))
+      done(undefined)
+    },
+    async labelsPdf(l) {
+      const cps = db().checkpoints.filter((c) => c.active)
+      if (!cps.length) fail('error.noCheckpoints')
+      const labels = await Promise.all(cps.map(async (c: Checkpoint) =>
+        `<div style="border:1.5px dashed #555;border-radius:4mm;padding:5mm;text-align:center;break-inside:avoid"><div style="width:42mm;height:42mm;margin:auto">${await qrSvg(`SECREG-CP:${c.code}`)}</div>
+          <b style="font-size:15pt">${c.name}</b><div>${c.location}</div><code>${c.code}</code><div style="font-size:8pt;color:#666">${translate(l, 'patrol.labelHint')}</div></div>`))
+      openReport(l, translate(l, 'patrol.labels'), db().settings.siteName, [], `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8mm">${labels.join('')}</div>`)
+      return translate(l, 'common.print')
+    },
+    async current() {
+      const u = me()
+      const r = db().rounds.find((x) => x.guardId === u.id && !x.endedAt)
+      return r ? roundDetail(r) : null
+    },
+    async start() {
+      need('patrols')
+      const u = me()
+      const open = db().rounds.find((x) => x.guardId === u.id && !x.endedAt)
+      if (open) return roundDetail(open)
+      if (!db().checkpoints.some((c) => c.active)) fail('error.noCheckpoints')
+      const r: DRound = { id: nextId(), guardId: u.id, guard: u.name, startedAt: nowIso(), endedAt: null, note: '', checks: [] }
+      db().rounds.push(r)
+      return done(roundDetail(r))
+    },
+    async check(roundId, checkpointId, status, note, method) {
+      need('patrols')
+      const r = db().rounds.find((x) => x.id === roundId)
+      if (!r) fail('error.notFound')
+      const round = r as DRound
+      if (round.endedAt) fail('error.roundFinished')
+      if (status === 'issue' && !note.trim()) fail('error.issueNote')
+      round.checks = round.checks.filter((c) => c.checkpointId !== checkpointId)
+      round.checks.push({ checkpointId, time: nowIso(), status, note: note.trim(), method })
+      return done(roundDetail(round))
+    },
+    async findByCode(code) {
+      const c = code.trim().toUpperCase().replace('SECREG-CP:', '')
+      return db().checkpoints.find((x) => x.active && x.code === c) ?? null
+    },
+    async finish(roundId, note) {
+      need('patrols')
+      const r = db().rounds.find((x) => x.id === roundId)
+      if (!r || r.endedAt) fail('error.roundFinished')
+      Object.assign(r as DRound, { endedAt: nowIso(), note: note.trim() })
+      done(undefined)
+    },
+    async list(q) {
+      return db().rounds.filter((r) => inRange(r.startedAt, q.from, q.to) && has([r.guard, r.note], q.text))
+        .sort((a, b) => (a.startedAt < b.startedAt ? 1 : -1)).map(roundRow)
+    },
+    async get(id) {
+      const r = db().rounds.find((x) => x.id === id)
+      if (!r) fail('error.notFound')
+      return roundDetail(r as DRound)
+    }
+  },
+
+  keys: {
+    async items(all): Promise<KeyItem[]> {
+      return db().keyItems.filter((k) => all || k.active).map((k) => {
+        const l = db().loans.find((x) => x.itemId === k.id && !x.returnedAt)
+        return { ...k, loan: l ? loanRow(l) : null }
+      })
+    },
+    async addItem(input) {
+      admin()
+      need('keys')
+      if (!input.label.trim()) fail('error.nameRequired')
+      db().keyItems.push({ id: nextId(), ...input, label: input.label.trim(), active: true })
+      done(undefined)
+    },
+    async setActive(id, active) {
+      admin()
+      Object.assign(db().keyItems.find((k) => k.id === id) ?? {}, { active })
+      done(undefined)
+    },
+    async lend(itemId, input) {
+      need('keys')
+      if (!input.borrower.trim()) fail('error.borrowerRequired')
+      if (db().loans.some((l) => l.itemId === itemId && !l.returnedAt)) fail('error.keyOut')
+      db().loans.push({ id: nextId(), itemId, borrower: input.borrower.trim(), borrowerInfo: input.borrowerInfo, outAt: nowIso(), dueAt: input.dueAt,
+        returnedAt: null, guardOut: me().name, guardIn: null, notes: input.notes })
+      done(undefined)
+    },
+    async giveBack(loanId, note) {
+      need('keys')
+      const l = db().loans.find((x) => x.id === loanId)
+      if (!l) fail('error.notFound')
+      if (l?.returnedAt) fail('error.alreadyReturned')
+      Object.assign(l as object, { returnedAt: nowIso(), guardIn: me().name, notes: [l?.notes, note.trim()].filter(Boolean).join(' | ') })
+      done(undefined)
+    },
+    async loans(q) {
+      return db().loans.filter((l) => inRange(l.outAt, q.from, q.to)).map(loanRow).filter((l) => has([l.itemLabel, l.borrower, l.borrowerInfo, l.notes], q.text))
+        .sort((a, b) => (a.outAt < b.outAt ? 1 : -1))
+    }
+  },
+
+  alerts: {
+    async list(): Promise<AlertItem[]> {
+      refresh()
+      const s = db()
+      const on = s.features.modules
+      const now = Date.now()
+      const out: AlertItem[] = []
+      let closing: number | null = null
+      if (s.settings.closingTime) {
+        const c = new Date(`${today()}T${s.settings.closingTime}:00`).getTime()
+        if (now > c) closing = c
+      }
+      for (const v of s.visits.filter((x) => !x.timeOut)) {
+        if (s.settings.overstayHours > 0 && now - Date.parse(v.timeIn) > s.settings.overstayHours * 3600000) {
+          out.push({ kind: 'visitor_overstay', refId: v.id, title: v.fullName, detail: v.host, since: v.timeIn })
+        } else if (closing !== null) out.push({ kind: 'visitor_after_closing', refId: v.id, title: v.fullName, detail: v.host, since: v.timeIn })
+      }
+      if (on.vehicles && s.settings.vehicleOverstayHours > 0) {
+        for (const v of s.vehicles.filter((x) => !x.timeOut && now - Date.parse(x.timeIn) > s.settings.vehicleOverstayHours * 3600000)) {
+          out.push({ kind: 'vehicle_overstay', refId: v.id, title: v.plate, detail: v.driverName, since: v.timeIn })
+        }
+      }
+      if (on.keys) {
+        for (const l of s.loans.filter((x) => !x.returnedAt && x.dueAt && Date.parse(x.dueAt) < now)) {
+          out.push({ kind: 'key_overdue', refId: l.id, title: loanRow(l).itemLabel, detail: l.borrower, since: l.dueAt })
+        }
+      }
+      if (on.patrols && s.settings.patrolIntervalHours > 0 && s.checkpoints.some((c) => c.active)) {
+        const last = s.rounds.map((r) => r.endedAt).filter(Boolean).sort().pop() ?? null
+        if (!last || now - Date.parse(last) > s.settings.patrolIntervalHours * 3600000) out.push({ kind: 'patrol_due', refId: null, title: '', detail: '', since: last })
+      }
+      return out
+    }
+  },
+
+  customFields: {
+    async list(all) {
+      return db().customFields.filter((f) => all || f.active).map((f) => ({ ...f }))
+    },
+    async add(input) {
+      admin()
+      const labels = { ar: input.labels.ar.trim(), en: input.labels.en.trim(), fr: input.labels.fr.trim() }
+      if (!labels.ar && !labels.en && !labels.fr) fail('error.labelRequired')
+      const options = [...new Set(input.options.map((o) => o.trim()).filter(Boolean))]
+      if (input.type === 'select' && options.length < 2) fail('error.optionsRequired')
+      db().customFields.push({ id: nextId(), ...input, labels, options, active: true })
+      done(undefined)
+    },
+    async update(id, patch) {
+      admin()
+      Object.assign(db().customFields.find((f) => f.id === id) ?? {}, Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)))
+      done(undefined)
+    }
+  },
+
+  expected: {
+    async list() {
+      refresh()
+      const t = today()
+      const until = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10)
+      const rank = { pending: 0, arrived: 1, cancelled: 2 }
+      return db().expected.filter((e) => e.siteId === 1 && e.validTo >= t && e.validFrom <= until && e.status !== 'cancelled')
+        .sort((a, b) => rank[a.status] - rank[b.status] || a.validFrom.localeCompare(b.validFrom)).map(expectedRow)
+    },
+    async add(input) {
+      need('preregistration')
+      if (!input.fullName.trim()) fail('error.nameRequired')
+      db().expected.push({ id: nextId(), refCode: newRef(), ...input, fullName: input.fullName.trim(), validTo: input.validTo >= input.validFrom ? input.validTo : input.validFrom,
+        status: 'pending', source: 'local', arrivedAt: null, visitId: null, siteId: 1, createdBy: me().name, email: '', createdAt: nowIso() })
+      done(undefined)
+    },
+    async cancel(id) {
+      need('preregistration')
+      const e = db().expected.find((x) => x.id === id)
+      if (!e) fail('error.notFound')
+      if (e?.source === 'server') fail('error.serverManaged')
+      Object.assign(e as object, { status: 'cancelled' })
+      done(undefined)
+    },
+    async findByRef(ref) {
+      refresh()
+      const code = ref.trim().toUpperCase().replace(QR_PREREG, '')
+      const e = db().expected.find((x) => x.refCode === code && x.siteId === 1)
+      return e ? expectedRow(e) : null
+    }
+  },
+
+  sync: {
+    async status() {
+      const s = db().sync
+      return { configured: s.configured, url: 'https://demo.security-register.app', siteName: db().sites[0]?.name ?? '', deviceName: s.deviceName,
+        lastSync: s.lastSync, lastError: '', online: s.configured, syncing: false }
+    },
+    async connect(_url, code, deviceName) {
+      admin()
+      await wait(600)
+      if (!/^[A-Z0-9]{6,12}$/i.test(code.trim())) fail('error.syncBadCode')
+      Object.assign(db().sync, { configured: true, deviceName: deviceName || 'Post', lastSync: nowIso() })
+      save()
+      return demoApi.sync.status()
+    },
+    async disconnect() {
+      admin()
+      db().sync.configured = false
+      done(undefined)
+    },
+    async now() {
+      await wait(500)
+      if (db().sync.configured) db().sync.lastSync = nowIso()
+      save()
+      return demoApi.sync.status()
+    }
+  },
+
+  badges: {
+    async settings() {
+      return { ...db().badge }
+    },
+    async setSettings(s) {
+      admin()
+      db().badge = { ...s }
+      done(undefined)
+    },
+    async printers() {
+      return ['Demo — badge printer']
+    },
+    async print(visitId) {
+      need('badges')
+      const png = await badgePng(visitId, db().badge)
+      const w = window.open('', '_blank')
+      if (!w) return
+      w.document.write(`<title>Badge</title><body style="margin:0;display:grid;place-items:center;min-height:100vh;background:#eee"><img src="${png}" style="max-width:90vw;box-shadow:0 2px 12px #0003"><script>setTimeout(()=>print(),300)</script></body>`)
+      w.document.close()
+    },
+    async preview(visitId, s) {
+      return badgePng(visitId, { ...db().badge, ...s })
+    }
+  },
+
+  watchlist: {
+    async check(q) {
+      return watchHits(q)
+    },
+    async list(): Promise<WatchRow[]> {
+      return db().watch.map((w) => ({ id: w.org ? -w.id : w.id, name: w.name, idNumber: w.idNumber, plate: w.plate, reason: w.reason, level: w.level,
+        addedBy: w.org ? '' : w.addedBy, createdAt: w.createdAt, active: w.active, source: w.org ? 'server' : 'local' }))
+    },
+    async add(input) {
+      admin()
+      need('watchlist')
+      if (!input.name.trim() && !normId(input.idNumber) && !normPlate(input.plate)) fail('error.watchTarget')
+      if (!input.reason.trim()) fail('error.reasonRequired')
+      db().watch.push({ id: nextId(), name: input.name.trim(), idNumber: normId(input.idNumber), plate: input.plate.trim().toUpperCase(), reason: input.reason.trim(),
+        level: input.level, active: true, addedBy: me().name, createdAt: nowIso(), org: false })
+      done(undefined)
+    },
+    async setActive(id, active) {
+      admin()
+      if (id < 0) fail('error.serverManaged')
+      Object.assign(db().watch.find((w) => w.id === id) ?? {}, { active })
+      done(undefined)
+    }
+  }
+}
+

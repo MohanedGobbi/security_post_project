@@ -1,0 +1,10 @@
+node_modules/
+out/
+release/
+server/public/
+server-data/
+*.log
+demo-dist/
+.vercel/
+*.tsbuildinfo
+.env*

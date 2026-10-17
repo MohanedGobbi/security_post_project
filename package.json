@@ -1,0 +1,70 @@
+{
+  "name": "security-register",
+  "productName": "Security Register",
+  "version": "0.1.0",
+  "description": "Digital logbook for security guard posts (AR / EN / FR)",
+  "main": "./out/main/index.js",
+  "author": "Mouhaned Gobbi",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json && tsc -p tsconfig.server.json && tsc --noEmit -p dashboard/tsconfig.json && tsc --noEmit -p demo/tsconfig.json",
+    "dist": "electron-vite build && electron-builder --win",
+    "server": "node server/index.ts",
+    "build:dashboard": "vite build --config dashboard/vite.config.ts",
+    "dev:dashboard": "vite --config dashboard/vite.config.ts",
+    "build:demo": "vite build --config demo/vite.config.ts",
+    "dev:demo": "vite --config demo/vite.config.ts"
+  },
+  "build": {
+    "appId": "com.securityregister.app",
+    "productName": "Security Register",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/tesseract.js-core/**",
+      "node_modules/@tesseract.js-data/**",
+      "node_modules/zxing-wasm/**"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDir": true
+    }
+  },
+  "dependencies": {
+    "@tesseract.js-data/ara": "^1.0.0",
+    "@tesseract.js-data/eng": "^1.0.0",
+    "@tesseract.js-data/fra": "^1.0.0",
+    "exceljs": "^4.4.0",
+    "mrz": "^5.0.2",
+    "tesseract.js": "^7.0.0",
+    "zxing-wasm": "^3.1.5"
+  },
+  "devDependencies": {
+    "@fontsource/cairo": "^5.3.0",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^44.9.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^6.0.0",
+    "i18next": "^26.4.7",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-i18next": "^17.0.20",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.4"
+  }
+}
