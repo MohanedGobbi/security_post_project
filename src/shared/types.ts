@@ -466,6 +466,27 @@ export interface EntryQuery {
   openOnly: boolean
 }
 
+// ---------- audit trail ----------
+export interface AuditRow {
+  id: number
+  time: string
+  /** account name; null = done by the program itself (automatic clean-up…) */
+  user: string | null
+  action: string
+  entity: string
+  entityId: number | null
+  detail: string
+}
+
+export interface AuditQuery {
+  /** YYYY-MM-DD */
+  from: string
+  to: string
+  userId: number | null
+  /** one action, or '' for all */
+  action: string
+}
+
 // ---------- patrols ----------
 export interface Checkpoint {
   id: number
@@ -659,6 +680,10 @@ export interface Api {
     accounts(): Promise<{ id: number; name: string; role: Role }[]>
     /** administrators: opens the ready-made registers with these keys that do not exist yet; returns how many */
     installTemplates(keys: string[]): Promise<number>
+  }
+  audit: {
+    /** administrators: the audit trail of a period, newest first */
+    list(q: AuditQuery): Promise<AuditRow[]>
   }
   users: {
     list(): Promise<User[]>

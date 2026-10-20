@@ -2,7 +2,7 @@ import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import type {
   BadgeSettings, CheckInInput, CheckStatus, CustomFieldInput, ExpectedInput, DeliveryInput, ExportRange, IncidentInput, KeyItemInput, Lang, LendInput, NoteCategory,
   Features, Module, RangeQuery, Role, SearchQuery, SetupInput, Settings, User, VehicleInInput, WatchHit, WatchInput,
-  EntryInputValues, EntryQuery, FieldInput, RegisterDefInput
+  AuditQuery, EntryInputValues, EntryQuery, FieldInput, RegisterDefInput
 } from '@shared/types'
 import { ALL_ON, PROFILES } from '@shared/features'
 import { LANGS } from '@shared/i18n'
@@ -209,6 +209,9 @@ export function registerIpc(): void {
     if (n) db.audit(u.id, 'register_open', 'register', null, `templates:${n}`)
     return n
   })
+
+  // ---------- audit trail ----------
+  handle('audit:list', 'admin', (_u, q: AuditQuery) => db.listAudit(q))
 
   // ---------- users ----------
   handle('users:list', 'admin', () => db.listUsers(false))

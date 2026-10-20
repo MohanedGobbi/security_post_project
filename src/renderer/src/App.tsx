@@ -17,6 +17,7 @@ import DeliveriesPage from './pages/DeliveriesPage'
 import IncidentsPage from './pages/IncidentsPage'
 import NotesPage from './pages/NotesPage'
 import RegistersPage from './pages/RegistersPage'
+import AdminPage from './pages/AdminPage'
 import LogPage from './pages/LogPage'
 import WatchlistPage from './pages/WatchlistPage'
 import PatrolsPage from './pages/PatrolsPage'
@@ -27,7 +28,7 @@ import EndShiftDialog from './components/EndShiftDialog'
 import Icon, { type IconName } from './components/Icon'
 import BrandMark from './components/BrandMark'
 
-export type Page = 'home' | 'in' | 'out' | 'expected' | 'vehicles' | 'deliveries' | 'incidents' | 'patrols' | 'keys' | 'notes' | 'registers' | 'log' | 'watchlist' | 'settings'
+export type Page = 'home' | 'in' | 'out' | 'expected' | 'vehicles' | 'deliveries' | 'incidents' | 'patrols' | 'keys' | 'notes' | 'registers' | 'admin' | 'log' | 'watchlist' | 'settings'
 
 interface Toast { id: number; text: string; kind: 'ok' | 'error' }
 
@@ -76,6 +77,7 @@ const NAV: { page: Page; key: string; icon: IconName; shortcut?: string }[] = [
   { page: 'keys', key: 'nav.keys', icon: 'key', shortcut: 'F11' },
   { page: 'notes', key: 'nav.notes', icon: 'note', shortcut: 'F7' },
   { page: 'registers', key: 'nav.registers', icon: 'book' },
+  { page: 'admin', key: 'nav.admin', icon: 'users' },
   { page: 'log', key: 'nav.log', icon: 'list', shortcut: 'F8' },
   { page: 'watchlist', key: 'nav.watchlist', icon: 'eye' },
   { page: 'settings', key: 'nav.settings', icon: 'gear', shortcut: 'F9' }
@@ -169,7 +171,7 @@ export default function App(): ReactNode {
     setPage('home')
     // organisation builds (PIN-only login): administrators go straight to administration, without a guard shift
     if (BRAND.loginMode === 'pin' && u.role === 'admin') {
-      setPage('settings')
+      setPage('admin')
       return setState('ready')
     }
     if (!f.modules.shifts) return setState('ready')
@@ -200,7 +202,8 @@ export default function App(): ReactNode {
     setState('login')
   }
 
-  const nav = NAV.filter((n) => pageOn(n.page, features))
+  // the Administration page is for administrators only
+  const nav = NAV.filter((n) => pageOn(n.page, features) && (n.page !== 'admin' || user?.role === 'admin'))
   // the first of the bottom items (watchlist, settings) is pushed to the bottom of the sidebar
   const bottomPage = nav.find((n) => n.page === 'watchlist' || n.page === 'settings')?.page
 
@@ -273,7 +276,8 @@ export default function App(): ReactNode {
               <span>{user.name}</span>
               <button type="button" className="link" onClick={logout}>{t('nav.logout')}</button>
             </div>
-            {features.modules.shifts && (
+            {/* administrators of a PIN-only build skip the guard shift, so they have none to end */}
+            {features.modules.shifts && !(BRAND.loginMode === 'pin' && user.role === 'admin') && (
               <button type="button" className="end-shift" onClick={() => setEnding(true)}><Icon name="clock" size={18} /> {t('nav.endShift')}</button>
             )}
           </div>
@@ -299,6 +303,7 @@ export default function App(): ReactNode {
             {page === 'keys' && <KeysPage />}
             {page === 'notes' && <NotesPage />}
             {page === 'registers' && <RegistersPage />}
+            {page === 'admin' && user.role === 'admin' && <AdminPage />}
             {page === 'log' && <LogPage />}
             {page === 'watchlist' && <WatchlistPage />}
             {page === 'settings' && <SettingsPage />}

@@ -38,6 +38,9 @@ const api: Api = {
     accounts: call('registers:accounts'),
     installTemplates: call('registers:installTemplates')
   },
+  audit: {
+    list: call('audit:list')
+  },
   users: {
     list: call('users:list'),
     create: call('users:create'),

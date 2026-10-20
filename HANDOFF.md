@@ -114,6 +114,11 @@ Environment variables:
   - A `signature` field asks for a PIN and stores who confirmed, never the PIN.
   - Non-admins see the last 24 hours plus open entries; admins see the full history, and that viewing is logged.
 - **Tested on the real desktop app** through the Chrome debugging port, with a throw-away data folder (`SECREG_DATA_DIR`).
+- **Administration page** (`pages/AdminPage.tsx`, administrators only; where PIN-only builds send them):
+  - accounts (`UserSettings` from `SettingsPage.tsx`);
+  - the register builder (`components/RegisterBuilder.tsx`);
+  - the audit trail (`components/AuditLog.tsx`, API `audit.list`, labels in `audit.actions.*`).
+- **Audit trail in the demo:** the demo keeps its own copy in `demo/store.ts` (`audit`), filled by `log()` in `demo/reception-api.ts`.
 
 ## What was tested
 - Server API script: 25/25 checks passed.

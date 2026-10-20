@@ -51,6 +51,9 @@ export interface DDevice { id: number; siteId: number; name: string; lastSeen: s
 export interface DOtherRecord { entity: string; localId: number; siteId: number; device: string; time: string; data: Record<string, unknown> }
 
 /** register engine: an entry keeps the names as they were, like the main process */
+/** the audit trail, like the audit table of the desktop app */
+export interface DAudit { id: number; time: string; userId: number | null; action: string; entity: string; entityId: number | null; detail: string }
+
 export interface DEntry {
   id: number; registerId: number; number: number; values: EntryValues; createdById: number; createdBy: string; createdAt: string
   post: string; closedBy: string | null; closedAt: string | null
@@ -77,6 +80,8 @@ export interface DemoStore {
   watch: DWatch[]
   customFields: CustomField[]
   expected: DExpected[]
+  /** optional: stores saved before the audit trail existed have none */
+  audit?: DAudit[]
   registers: RegisterDef[]
   entries: DEntry[]
   corrections: DCorrection[]
@@ -167,6 +172,8 @@ function seed(): DemoStore {
   const [d1, d2, d3] = F.deliveries
   const [e1, e2, e3] = F.expected
 
+  const entries = sampleEntries(registers)
+
   return {
     version: VERSION,
     settings: { siteName: F.siteName, postName: F.postName, retentionDays: 365, overstayHours: 8, closingTime: '', vehicleOverstayHours: 0, patrolIntervalHours: 4 },
@@ -233,7 +240,14 @@ function seed(): DemoStore {
         notes: '', status: 'pending', source: 'server', arrivedAt: null, visitId: null, siteId: 1, createdBy: F.owner, email: '', createdAt: iso(5 * H) }
     ],
     registers,
-    entries: sampleEntries(registers),
+    entries,
+    audit: [
+      { id: 1, time: iso(40 * 24 * H), userId: 1, action: 'setup', entity: '', entityId: null, detail: '' },
+      ...entries.flatMap((e) => [
+        { id: 0, time: e.createdAt, userId: e.createdById, action: 'entry_add', entity: 'register_entry', entityId: e.id, detail: String(e.registerId) },
+        ...(e.closedAt ? [{ id: 0, time: e.closedAt, userId: F.users.findIndex((x) => x.name === e.closedBy) + 1, action: 'entry_close', entity: 'register_entry', entityId: e.id, detail: String(e.registerId) }] : [])
+      ])
+    ].map((a, i) => ({ ...a, id: i + 1 })),
     corrections: [],
     sync: { configured: true, deviceName: F.devices[0], lastSync: iso(30000) },
     dashUsers: [

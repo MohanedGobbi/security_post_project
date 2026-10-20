@@ -7,7 +7,20 @@
 - Eight Word templates of their paper registers (`D:\Temppp\سجل … .docx`).
 - The two logos.
 
-**Status (20 Oct 2026):** phases A, B and C are built and tested; phases D–G are not started.
+**Status (20 Oct 2026):** phases A–D are built and tested; phases E–G are not started.
+- **Phase D, administration:** a new Administration page (`AdminPage.tsx`) where administrators land. It has three tabs:
+  - **Accounts:** moved from Settings.
+  - **Registers:** the register builder (`RegisterBuilder.tsx`):
+    - create a register;
+    - names in three languages and an icon;
+    - who records and who closes;
+    - fields of 12 types, with the list choices for list fields;
+    - a live preview;
+    - order of the tiles, on/off.
+    - Saved fields keep their type and encryption, and are hidden, never deleted.
+  - **Audit trail** (`AuditLog.tsx`): every action in plain words, with date, account and action filters.
+  - Tested in the faculty demo and on the real desktop app.
+- **Not in phase D:** assigning guards to teams (waits for Q8), reports (phase E).
 - **Phase C, the faculty's registers:** all of §3 are templates in `src/shared/registerTemplates.ts`.
   - **On:** shift, custody, incidents, lost and found, letters, events.
   - **Off until the admin turns them on:** reports, maintenance, official visits, evacuation drills, alarms.

@@ -6,7 +6,6 @@ import { currentLang } from '../i18n'
 import { errorText, saveCameraId, savedCameraId } from '../util'
 import CustomFieldsEditor from '../components/CustomFieldsEditor'
 import FeaturesSettings from '../components/FeaturesSettings'
-import RegisterSwitches from '../components/RegisterSwitches'
 import ServerSettings from '../components/ServerSettings'
 import BadgeSettingsCard from '../components/BadgeSettingsCard'
 
@@ -84,7 +83,8 @@ function SiteSettings(): ReactNode {
   )
 }
 
-function UserSettings(): ReactNode {
+/** Accounts: shown on the Administration page */
+export function UserSettings(): ReactNode {
   const { t } = useTranslation()
   const { toast, user: me } = useApp()
   const [users, setUsers] = useState<User[]>([])
@@ -180,11 +180,9 @@ export default function SettingsPage(): ReactNode {
       <div className="settings-grid">
         <CameraSettings />
         {user.role === 'admin' && <FeaturesSettings />}
-        {user.role === 'admin' && <RegisterSwitches />}
         {user.role === 'admin' && <SiteSettings />}
         {user.role === 'admin' && <ServerSettings />}
         {user.role === 'admin' && features.modules.badges && <BadgeSettingsCard />}
-        {user.role === 'admin' && <UserSettings />}
         {user.role === 'admin' && <CustomFieldsEditor />}
       </div>
     </div>

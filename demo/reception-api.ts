@@ -50,6 +50,13 @@ const need = (m: keyof Features['modules']): void => {
 }
 const toUser = (u: DUser): User => ({ id: u.id, name: u.name, role: u.role, language: u.language, active: u.active })
 // ---------- register engine (same rules as src/main/registers.ts, shared in @shared/registers) ----------
+/** one line of the audit trail, by the current user (null = nobody logged in) */
+function log(action: string, entity = '', entityId: number | null = null, detail = ''): void {
+  const s = db()
+  s.audit ??= []
+  s.audit.push({ id: nextId(), time: nowIso(), userId: s.currentUserId, action, entity, entityId, detail })
+}
+
 function regOf(id: number): RegisterDef {
   const r = db().registers.find((x) => x.id === id)
   if (!r) fail('error.notFound')
@@ -304,19 +311,30 @@ export const demoApi: Api = {
     async login(userId, pin) {
       await wait(250)
       const u = db().users.find((x) => x.id === userId && x.active)
-      if (!u || u.pin !== String(pin)) fail('login.wrongPin')
+      if (!u || u.pin !== String(pin)) {
+        log('login_failed', '', userId)
+        done(undefined)
+        fail('login.wrongPin')
+      }
       db().currentUserId = userId
+      log('login')
       return done(toUser(u as DUser))
     },
     async loginPin(pin) {
       await wait(250)
       refresh()
       const u = db().users.find((x) => x.pin === String(pin) && x.active)
-      if (!u) fail('login.wrongPin')
+      if (!u) {
+        log('login_failed', '', null, 'pin')
+        done(undefined)
+        fail('login.wrongPin')
+      }
       db().currentUserId = (u as DUser).id
+      log('login', '', null, 'pin')
       return done(toUser(u as DUser))
     },
     async logout() {
+      log('logout')
       db().currentUserId = null
       done(undefined)
     },
@@ -361,6 +379,7 @@ export const demoApi: Api = {
         notes: '', visitId: id, timeIn: nowIso(), timeOut: null, guardIn: u.name, guardOut: null, custom: {}, hasPhoto: false })
       const e = s.expected.find((x) => x.id === input.expectedId && x.status === 'pending')
       if (e) Object.assign(e, { status: 'arrived', arrivedAt: nowIso(), visitId: id })
+      log('check_in', 'visit', id)
       return done(id)
     },
     async checkOut(visitId, note) {
@@ -373,6 +392,7 @@ export const demoApi: Api = {
       visit.guardOut = u.name
       if (note.trim()) visit.notes = [visit.notes, note.trim()].filter(Boolean).join(' | ')
       for (const veh of db().vehicles.filter((x) => x.visitId === visitId && !x.timeOut)) Object.assign(veh, { timeOut: nowIso(), guardOut: u.name })
+      log('check_out', 'visit', visitId)
       done(undefined)
     },
     async insideNow() {
@@ -440,6 +460,7 @@ export const demoApi: Api = {
       for (const f of old?.fields ?? []) if (!fields.some((x) => x.key === f.key)) fields.push({ ...f, active: false })
       const reg: RegisterDef = { ...def, id: old?.id ?? nextId(), fields, openedAt: old?.openedAt ?? nowIso(), openedBy: old?.openedBy ?? u.name }
       db().registers = old ? regs.map((r) => (r.id === reg.id ? reg : r)) : [...regs, reg]
+      log(old ? 'register_update' : 'register_open', 'register', reg.id)
       return done(reg.id)
     },
     async entries(q) {
@@ -463,6 +484,11 @@ export const demoApi: Api = {
         const plainKeys = reg.fields.filter((f) => !f.sensitive).map((f) => f.key)
         rows = rows.filter((e) => JSON.stringify(plainKeys.map((k) => e.values[k] ?? '')).toLowerCase().includes(text))
       }
+      // browsing a register's history is logged, like asking the dean's permission to read the book
+      if (u.role === 'admin' && q.from) {
+        log('view', 'register', reg.id, `${q.from}..${q.to}`)
+        save()
+      }
       return rows.sort((a, b) => b.number - a.number).map(toEntry)
     },
     async add(registerId, input) {
@@ -472,6 +498,7 @@ export const demoApi: Api = {
       const number = Math.max(0, ...db().entries.filter((e) => e.registerId === reg.id).map((e) => e.number)) + 1
       const id = nextId()
       db().entries.push({ id, registerId: reg.id, number, values, createdById: u.id, createdBy: u.name, createdAt: nowIso(), post: db().settings.postName, closedBy: null, closedAt: null })
+      log('entry_add', 'register_entry', id, String(reg.id))
       return done({ id, number })
     },
     async close(entryId, input) {
@@ -483,6 +510,7 @@ export const demoApi: Api = {
       e.values = { ...e.values, ...cleanStep(reg.fields, 'close', input, resolvers()) }
       e.closedBy = u.name
       e.closedAt = nowIso()
+      log('entry_close', 'register_entry', e.id, String(reg.id))
       done(undefined)
     },
     async correct(entryId, fieldKey, input, reason) {
@@ -497,6 +525,7 @@ export const demoApi: Api = {
       db().corrections.push({ id: nextId(), entryId, fieldKey, oldValue: e.values[fieldKey] ?? null, newValue: value, reason: String(reason).trim(), by: u.name, at: nowIso() })
       if (value === null) delete e.values[fieldKey]
       else e.values[fieldKey] = value
+      log('entry_correct', 'register_entry', e.id, fieldKey)
       done(undefined)
     },
     async corrections(entryId) {
@@ -511,7 +540,20 @@ export const demoApi: Api = {
       const u = admin()
       const missing = templatesFor(keys).filter((t) => !db().registers.some((r) => r.key === t.key))
       for (const t of missing) db().registers.push({ ...cleanDefinition(t), id: nextId(), openedAt: nowIso(), openedBy: u.name } as RegisterDef)
+      if (missing.length) log('register_open', 'register', null, `templates:${missing.length}`)
       return done(missing.length)
+    }
+  },
+
+  audit: {
+    async list(q) {
+      admin()
+      const [from, to] = dayBounds(q.from, q.to)
+      const name = (id: number | null): string | null => db().users.find((x) => x.id === id)?.name ?? null
+      return [...(db().audit ?? [])]
+        .filter((a) => a.time >= from && a.time <= to && (!q.userId || a.userId === q.userId) && (!q.action || a.action === q.action))
+        .sort((a, b) => (a.time < b.time ? 1 : -1))
+        .map((a) => ({ id: a.id, time: a.time, user: name(a.userId), action: a.action, entity: a.entity, entityId: a.entityId, detail: a.detail }))
     }
   },
 
@@ -525,7 +567,9 @@ export const demoApi: Api = {
       if (!name.trim()) fail('error.nameRequired')
       if (!/^\d{4,8}$/.test(pin)) fail('setup.pinShort')
       if (db().users.some((x) => x.pin === pin)) fail('error.pinTaken')
-      db().users.push({ id: nextId(), name: name.trim(), role: checkRole(role), pin, language, active: true })
+      const id = nextId()
+      db().users.push({ id, name: name.trim(), role: checkRole(role), pin, language, active: true })
+      log('user_create', 'user', id)
       done(undefined)
     },
     async update(id, patch) {
@@ -540,6 +584,7 @@ export const demoApi: Api = {
       if (patch.pin !== undefined && !/^\d{4,8}$/.test(patch.pin)) fail('setup.pinShort')
       if (patch.pin !== undefined && db().users.some((x) => x.pin === patch.pin && x.id !== id)) fail('error.pinTaken')
       Object.assign(target, Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)))
+      log('user_update', 'user', id, Object.keys(patch).join(','))
       done(undefined)
     }
   },
@@ -551,6 +596,7 @@ export const demoApi: Api = {
     async set(s) {
       admin()
       db().settings = { ...s }
+      log('settings')
       done(undefined)
     },
     async getFeatures() {
@@ -560,6 +606,7 @@ export const demoApi: Api = {
     async setFeatures(f) {
       admin()
       db().features = normalizeFeatures(f)
+      log('features')
       done(undefined)
     }
   },

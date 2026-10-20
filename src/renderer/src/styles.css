@@ -523,3 +523,34 @@ h2.spaced { margin-top: 18px; }
 .log-table td .tag, .detail-table td .tag { margin-inline-start: 6px; }
 .home.tiles-only { display: block; }
 .home.tiles-only .actions-grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+
+/* ---------- administration: register builder, audit trail ---------- */
+.admin-page { display: grid; gap: 14px; }
+.admin-page > .section-head { margin-bottom: 0; }
+.admin-tabs { margin-bottom: 0; }
+.admin-tabs .seg-btn { gap: 8px; }
+.builder-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.builder-list li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.builder-list li.off { background: var(--surface-2); }
+.builder-list li.off strong { color: var(--ink-2); }
+.builder-list .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.builder-list .switch-row { border-bottom: none; padding: 0 4px; }
+.builder-list .tile-icon, .builder .tile-icon { width: 38px; height: 38px; background: var(--accent-soft); color: var(--accent-ink); }
+.field-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.field-group .field-label, .builder-preview .field-label { font-weight: 600; font-size: 0.9rem; color: var(--ink-2); }
+.label-inputs { margin-bottom: 8px; }
+.label-inputs > label { margin-bottom: 4px; }
+.label-inputs > .row2 { margin-top: 6px; }
+.icon-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.icon-pick button { width: 42px; height: 42px; padding: 0; }
+.icon-pick button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
+.builder-fields { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+.builder-fields > li { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.builder-fields > li.off { background: var(--surface-2); }
+.builder-field-head { display: flex; align-items: center; gap: 6px; padding: 6px 8px; }
+.builder-field-head .grow { flex: 1; min-width: 0; text-align: start; color: var(--ink); justify-content: flex-start; }
+.builder-field-body { padding: 4px 12px 12px; border-top: 1px solid var(--line); }
+.builder-field-body label.check { margin-bottom: 8px; }
+.builder-preview { position: sticky; top: 0; }
+.builder-preview .register-head h3 { margin: 0; }
+.warn-row td { background: var(--warn-soft); }

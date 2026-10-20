@@ -3,7 +3,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { join } from 'node:path'
 import { app } from 'electron'
 import type {
-  CheckInInput, Features, IdType, Lang, NoteCategory, NoteRow, PersonFields, PersonLookup,
+  AuditQuery, AuditRow, CheckInInput, Features, IdType, Lang, NoteCategory, NoteRow, PersonFields, PersonLookup,
   Role, SearchQuery, Settings, TodayStats, User, VisitDetail, VisitRow
 } from '@shared/types'
 import { decryptBuffer, decryptText, encrypt, hashPin, idHash, normalizeId, pinLookup, verifyPin } from './crypto'
@@ -375,6 +375,25 @@ export const todayLocal = (): string => {
 export function audit(userId: number | null, action: string, entity = '', entityId: number | null = null, detail = ''): void {
   db.prepare('INSERT INTO audit (time, user_id, action, entity, entity_id, detail) VALUES (?, ?, ?, ?, ?, ?)')
     .run(now(), userId, action, entity, entityId, detail)
+}
+
+/** The audit trail of a period, newest first (at most 5000 lines). */
+export function listAudit(q: AuditQuery): AuditRow[] {
+  const where = ['a.time BETWEEN ? AND ?']
+  const params: (string | number)[] = [dayStart(q.from), dayEnd(q.to)]
+  if (q.userId) {
+    where.push('a.user_id = ?')
+    params.push(q.userId)
+  }
+  if (q.action) {
+    where.push('a.action = ?')
+    params.push(q.action)
+  }
+  const rows = db.prepare(`SELECT a.id, a.time, u.name AS user, a.action, a.entity, a.entity_id, a.detail FROM audit a
+    LEFT JOIN users u ON u.id = a.user_id WHERE ${where.join(' AND ')} ORDER BY a.id DESC LIMIT 5000`).all(...params) as {
+    id: number; time: string; user: string | null; action: string; entity: string; entity_id: number | null; detail: string
+  }[]
+  return rows.map((r) => ({ id: r.id, time: r.time, user: r.user, action: r.action, entity: r.entity, entityId: r.entity_id, detail: r.detail }))
 }
 
 // ---------- settings ----------
