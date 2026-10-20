@@ -7,42 +7,28 @@
 - Eight Word templates of their paper registers (`D:\Temppp\سجل … .docx`).
 - The two logos.
 
-**Status (20 Oct 2026):** phases A–D are built and tested; phases E–G are not started.
-- **Phase D, administration:** a new Administration page (`AdminPage.tsx`) where administrators land. It has three tabs:
-  - **Accounts:** moved from Settings.
-  - **Registers:** the register builder (`RegisterBuilder.tsx`):
-    - create a register;
-    - names in three languages and an icon;
-    - who records and who closes;
-    - fields of 12 types, with the list choices for list fields;
-    - a live preview;
-    - order of the tiles, on/off.
-    - Saved fields keep their type and encryption, and are hidden, never deleted.
-  - **Audit trail** (`AuditLog.tsx`): every action in plain words, with date, account and action filters.
-  - Tested in the faculty demo and on the real desktop app.
-- **Not in phase D:** assigning guards to teams (waits for Q8), reports (phase E).
-- **Phase C, the faculty's registers:** all of §3 are templates in `src/shared/registerTemplates.ts`.
-  - **On:** shift, custody, incidents, lost and found, letters, events.
-  - **Off until the admin turns them on:** reports, maintenance, official visits, evacuation drills, alarms.
-  - **Installed automatically** at the first admin login of the faculty build; never twice.
-  - **Module switches** are applied at first setup (no profile choice).
-  - **Team leaders** fill the shift and custody registers before their shift starts.
-  - **Home screen:** tiles only. **Settings → Registers** switches each register on or off.
-  - **Tested** in the faculty demo and on the real desktop app (first setup through its own screen).
-- **Decisions made in phase C (to confirm with the client):**
-  - The incidents register is a register of the engine, not the old incidents module. Its columns match their paper book, and the closing step is the deanship visa (administrators). Photos are not available there yet.
-  - The visitors register stays the visitor module (card scanning, people on site, exit), with visitor photo and badge numbers switched off.
-  - The "letters" register replaces parcels. Its list of addressees is a first guess (Q5).
-- **Phase B, the register engine:**
-  - Code: `src/main/registers.ts`, the shared rules in `src/shared/registers.ts`, and the page `RegistersPage.tsx`.
-  - Every field type works, with closing steps, corrections that are kept, PIN confirmations, the role limits, and the 24-hour view for non-admins.
-  - The first two templates (lost and found, custody) are in `src/shared/registerTemplates.ts`. They are used by the demo; installing them in the desktop app is phase C.
-- **Phase A status:**
-- **Brand `ghardaia-law`:** both logos, the Arabic program name, Arabic by default.
-- **PIN-only login:** both logos on the page; administrators go straight to administration (the Settings page until phase D).
-- **Accounts:** team leader role (`leader`); unique PINs; administrators create admin, team leader and guard accounts.
-- **Database:** existing desktop databases are migrated automatically (the users table is rebuilt to allow the new role; the rebuild was tested on a copy).
-- **Faculty demo:** `npm run build:demo`; `/` opens the login page. Sample PINs: administrator 1234, team leader 2580, guard 5678.
+**Status (20 Oct 2026): phases A to D are built and tested on the real desktop app; E, F and G are not done.** See `HANDOFF.md` for the full picture.
+
+| Phase | State | Notes |
+|---|---|---|
+| A. Identity | done | PIN-only login, both logos, roles admin / team leader / guard, unique PINs. **No setup screen**: the program creates its settings, registers and two accounts at the first start (`src/shared/faculty.ts`). |
+| B. Register engine | done | Numbered entries that are never erased (corrections are kept), 12 field types, closing steps, PIN confirmations, 24-hour view for guards. |
+| C. Faculty registers | done | Shift, custody, incidents (deanship visa), lost and found, letters, events; reports, maintenance, official visits, evacuation, alarms are ready but off. Team leaders fill the shift and custody registers before a shift. Tiles-only home. |
+| D. Administration | done | Administration page: accounts, register builder, audit trail. |
+| E. Statistics and printed reports | **not started** | §7. |
+| F. Demo and presentation | partly | Demo works on Arabic sample data (not on Vercel yet). The presentation deck was made before the faculty version and needs a rebuild. |
+| G. Pilot at the security office | not started | Needs real ID cards tested first. |
+
+Done beyond the plan, at the user's request:
+- Only the faculty version exists (the generic and University-of-Ghardaia versions were removed).
+- **Automatic ID card scanning** from the live camera: several enhanced versions of each frame until the check digits validate (synthetic cards: 17/18, was 13/18). Not tested on real Algerian cards.
+- **Every scanned card picture is saved with its log entry**, encrypted, up to 3 per entry.
+
+Next, in order: extract information from the saved pictures (the Gemini question is open, see `HANDOFF.md` §8), finish the scanner (name confirmation, country code, live-camera test), phase E, then the client questions in §9.
+
+Decisions made without the client (to confirm): the incidents register is an engine register whose closing step is the deanship visa and has no photos yet;
+the visitors register stays the visitor module (card scanning, people on site, exit) with visitor photo and badge numbers off;
+the letters register replaces parcels and its list of addressees is a guess (Q5).
 
 ---
 

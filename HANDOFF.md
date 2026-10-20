@@ -1,111 +1,155 @@
 # Handoff: برنامج إدارة الأمن بالكلية (faculty security program)
 
-Status on 20 October 2026. Read this first, then `README.md` (features, how to run) and `PLAN_FACULTY.md` (what the client asked for, phases and status).
+Written 20 October 2026, last commit `f947bbb` on `main` (pushed to https://github.com/MohanedGobbi/security_post_project).
+Read this first. Then `README.md` (features, how to run) and `PLAN_FACULTY.md` (what the client asked for, the phases, the questions for the client).
 
-## What it is
-The security office program of the **Faculty of Law and Political Science, University of Ghardaia**. It replaces the paper registers
-of the office. Arabic first (right to left), French and English. Parts:
+## 1. What this is
+The security-office program of the **Faculty of Law and Political Science, University of Ghardaia** (مكتب الأمن الداخلي للكلية,
+dean: Prof. Dr. Ferrouhat Said). It replaces the paper registers of the office with a Windows desktop program that works offline,
+reads ID cards with the webcam, keeps numbered registers that cannot be erased, and logs everything. Arabic first (right to left),
+French and English. Built by ROWD Tech (Mohaned Gobbi, CTO) as a client project. There is **one program**: the earlier generic
+and University-of-Ghardaia versions were deleted on 20 Oct 2026.
 
 | Part | Folder | Runs on | Purpose |
 |---|---|---|---|
-| Reception app | `src/` | Windows PC at the security office (Electron) | Registers, visitors with ID scanning, shifts. Works offline. |
-| Organisation server | `server/` | Any PC with Node.js 22.5+ | Optional. Links several posts, serves the dashboard. |
-| Supervisor dashboard | `dashboard/` | Browser (served by the server) | Records search, invitations, shared watchlist, users. |
-| Web demo | `demo/` | Vercel (static) | The real app screens with their API answered in the browser, on Arabic sample data. |
+| Desktop app | `src/` | Windows PC at the security office (Electron) | Registers, visitors with ID scanning, shifts, administration. Offline. |
+| Organisation server | `server/` | Any PC with Node.js 22.5+ | Optional: links several posts, serves the dashboard. Not part of the faculty's current need. |
+| Supervisor dashboard | `dashboard/` | Browser, served by the server | Optional, same. |
+| Web demo | `demo/` | Vercel (static) | The real screens with their API answered in the browser, Arabic sample data, for showing the client. |
+| Test bench | `tools/scan-test/` | Windows, Python | Synthetic ID cards and a runner that measures the scanner on the real app. |
 
-The earlier generic and University-of-Ghardaia versions were removed on 20 Oct 2026: there is one program, no brand switch, no build modes.
-
-## Tech stack
-- Electron 44, electron-vite, Vite 8, React 19, TypeScript 5.9, i18next.
-- Local database: `node:sqlite` (`DatabaseSync`).
-  - Sensitive fields are AES-256-GCM encrypted; the key is protected by Electron `safeStorage` (Windows DPAPI).
-  - ID numbers are looked up through an HMAC hash, so the clear number is never stored.
-  - PINs are scrypt hashes. `users.pin_lookup` is a keyed hash of the PIN so the PIN alone finds its owner (PINs are unique).
-  - Every sensitive action goes to the `audit` table; old records are purged by the retention setting.
-- Scanning (offline): `tesseract.js` (models in `resources/tessdata`: ara, fra, eng, `mrz`), the `mrz` package, `zxing-wasm` for QR / barcodes.
-- Server: plain `node:http`; runs `.ts` directly (Node type stripping), hence `package.json` with `"type":"module"` in `server/` and `src/shared/`.
-
-## Folder map
+## 2. Run it, log in
+```bash
+npm install
+npm run dev          # the desktop app in development mode (a window opens)
+npm run typecheck    # all five TypeScript projects
+npm run build        # production build into out/
+npm run dev:demo     # the web demo
 ```
-src/main/         Electron main process: db.ts, registers.ts, scan.ts, export.ts, ipc.ts (wires everything) ...
+- **No setup screen.** The first start creates the faculty settings, 11 registers and two accounts (`src/shared/faculty.ts`, created by `src/main/seed.ts`):
+
+  | Account | Role | Starting PIN |
+  |---|---|---|
+  | مسؤول الأمن | administrator | `246810` |
+  | رئيس فرقة الأمن | team leader | `135790` |
+
+  A warning on Administration → Accounts stays until the PINs are changed. Guards are added there.
+- Demo PINs (shown in the demo's bottom bar): administrator `1234`, team leaders `2580` and `1357`, guard `5678`; dashboard demo `demo@security-register.app` / `demo1234`.
+- Data folder of the dev app: `%APPDATA%\FacultySecurity` (old test data of the previous product name sits in `%APPDATA%\Security Register`). `SECREG_DATA_DIR` overrides it (all tests use scratch folders).
+- Environment: `SECREG_EXPORT_DIR` (exports without a dialog); server: `SECREG_PORT`, `SECREG_HOST`, `SECREG_DATA`, `SECREG_TLS_CERT`, `SECREG_TLS_KEY`.
+
+## 3. Pushing to GitHub from this machine
+`github.com` on the developer's network often times out on the IP DNS returns. Pushing works through another GitHub address, for one command only:
+```bash
+git -c http.curloptResolve=github.com:443:140.82.112.3 push origin main
+```
+If it times out, try `140.82.113.3`, `20.201.28.151` or `20.205.243.166`. Git identity is already set (MohanedGobbi). Commits end with the `Co-Authored-By` line given by the session.
+
+## 4. Tech stack
+- Electron 44, electron-vite, Vite 8, React 19, TypeScript 5.9, i18next. Fonts: Cairo.
+- Database `node:sqlite` (`DatabaseSync`), file `register.db` in the data folder.
+  - Sensitive fields are AES-256-GCM encrypted. The data key (`data.key`) is protected by Electron `safeStorage` (Windows DPAPI).
+  - ID numbers are looked up through an HMAC hash; PINs are scrypt hashes; `users.pin_lookup` is a keyed hash of the PIN so the PIN alone finds its owner (PINs are unique).
+  - Every sensitive action goes to the `audit` table. Old records are purged by the retention setting (default 365 days); card pictures and other children go with their parent (`ON DELETE CASCADE`).
+- Scanning (offline): `tesseract.js` (models in `resources/tessdata`: ara, fra, eng and `mrz`), the `mrz` package, `zxing-wasm` for QR codes.
+- Server: plain `node:http`, runs `.ts` directly (Node type stripping), hence `package.json` with `"type":"module"` in `server/` and `src/shared/`.
+
+## 5. Folder map
+```
+src/main/         Electron main process: db.ts, registers.ts, seed.ts, scan.ts, export.ts, crypto.ts, ipc.ts (wires every handler), index.ts (startup)
 src/preload/      window.api (typed by Api in src/shared/types.ts)
-src/renderer/src/ React UI: pages/, components/, styles.css, brand.ts (the faculty's name, logos, colours, settings), scanPipeline.ts
-src/shared/       types, AR/EN/FR locales, register rules (registers.ts) and templates (registerTemplates.ts), sync contract, feature switches
+src/renderer/src/ React UI: pages/, components/, styles.css, brand.ts (names, logos, colours of the faculty), scanPipeline.ts
+src/shared/       types.ts (Api), faculty.ts (first-start settings and accounts), registers.ts (rules), registerTemplates.ts, features.ts, locales/{ar,fr,en}.json
 resources/tessdata/  OCR models (licences in NOTICE.md)
 server/, dashboard/  optional multi-site server and its web dashboard
-demo/             web demo: mock window.api (reception-api.ts), mock /api/* (dashboard-api.ts), store.ts, sample data (flavors.ts)
+demo/             web demo: reception-api.ts (mock of window.api), dashboard-api.ts, store.ts, flavors.ts (sample data)
+tools/scan-test/  scanner test bench (README inside)
 vercel.json       Vercel build settings for the demo
 ```
 
-## Commands
-| Command | What it does |
-|---|---|
-| `npm install` | Install dependencies (set `ELECTRON_SKIP_BINARY_DOWNLOAD=1` if you only need the demo). |
-| `npm run dev` | The app in development mode. |
-| `npm run build` / `npm start` | Build / run the built app. |
-| `npm run dist` | Windows installer (electron-builder). **Not tested yet.** |
-| `npm run build:dashboard` then `npm run server` | Dashboard into `server/public`, then the server on port 8787 (prints a one-time setup code). |
-| `npm run dev:demo` / `npm run build:demo` | Web demo in development / build into `demo-dist/`. |
-| `npm run typecheck` | Type-check app, server, dashboard and demo. |
+## 6. What exists
 
-Environment: `SECREG_DATA_DIR` (data folder of the app), `SECREG_EXPORT_DIR` (exports without a dialog); server: `SECREG_PORT`, `SECREG_HOST`, `SECREG_DATA`, `SECREG_TLS_CERT`, `SECREG_TLS_KEY`.
+### Identity
+PIN-only login (`pages/LoginPage.tsx`): both logos, the program name, a PIN pad, nothing else. Roles `admin`, `leader` (رئيس فرقة الأمن), `guard`.
+Administrators land on the Administration page and never start a guard shift. Failed attempts are rate-limited and audited.
 
-## The faculty's program
-- `src/renderer/src/brand.ts` holds everything specific to the faculty: the name in three languages, both logos, colours, the feature switches applied
-  at first setup, the registers opened at the first administrator login, the tiles-only home screen, and which registers a team leader fills before a shift.
-- **No setup screen.** `src/shared/faculty.ts` holds the settings and the first two accounts (administrator, team leader, with starting PINs); `src/main/seed.ts` creates them at the first start
-  and opens the registers (also completed at later starts). A warning on the accounts page stays until the starting PINs are changed.
-  If the program is killed within the first seconds of its very first start, Windows can lose the key protecting the data key: `initKey()` reports it, and `index.ts`
-  starts over when nothing but the seeded data exists, or shows an error (tested).
-- **Login is PIN only.** Roles: `admin`, `leader` (رئيس فرقة الأمن), `guard`. Administrators land on the Administration page and never start a guard shift.
-  Databases from older versions are migrated in `migrate()` in `src/main/db.ts`.
-- Plan, phases and decisions to confirm with the client: `PLAN_FACULTY.md`.
-
-## Register engine (generic registers)
+### Registers (the core)
 - A register is a definition (name in three languages, icon, fields, who may fill and close it, optional closing step) plus numbered entries.
-  The faculty's paper books are templates of it (`src/shared/registerTemplates.ts`).
-- **Code:** shared rules `src/shared/registers.ts`; storage `src/main/registers.ts` (tables `registers`, `register_fields`, `register_entries`,
-  `register_corrections`); page `pages/RegistersPage.tsx`; inputs `components/RegisterFields.tsx`, `RegisterEntryForm.tsx`; demo: `registers` in `demo/reception-api.ts`.
-- **Rules:**
-  - An entry is never erased. A correction keeps the old and new values (encrypted), the reason and the author.
-  - Confidential fields (always `person`) are stored encrypted and left out of search.
-  - A `signature` field asks for a PIN and stores who confirmed, never the PIN.
-  - Guards see the last 24 hours plus open entries; administrators see everything, and that viewing is logged.
-- Team leaders fill the shift and custody registers at the start of every shift (`pages/ShiftStartPage.tsx`).
+- Code: rules `src/shared/registers.ts`; storage `src/main/registers.ts` (tables `registers`, `register_fields`, `register_entries`, `register_corrections`);
+  page `pages/RegistersPage.tsx`; inputs `components/RegisterFields.tsx`, `RegisterEntryForm.tsx`; the demo has its own copy of the storage in `demo/reception-api.ts`.
+- 12 field types: short and long text, number, date, time, date-time, yes/no, yes/no with "specify", list, person, account, PIN confirmation.
+- Rules taken from the faculty's paper books: an entry is **never erased** (a correction keeps old and new value, encrypted, with reason and author);
+  confidential fields (always `person`) are encrypted and not searchable; a `signature` field stores who confirmed with their PIN, never the PIN;
+  guards see the last 24 hours plus open entries, administrators see everything and that viewing is logged.
+- **Templates** (`src/shared/registerTemplates.ts`), from their Word files: shift, custody handover, incidents (closing step = the deanship's visa), lost and found,
+  letters (replaces parcels), events; switched off until needed: reports, maintenance, official visits, evacuation drills, fire alarms.
+  `seed.ts` opens the missing ones at every start. A team leader fills the shift and custody registers before starting a shift (`pages/ShiftStartPage.tsx`).
+- Home screen: one tile per allowed register (name and light icon only) next to visitor in / out (`brand.homeTilesOnly`).
 
-## Administration page (administrators only)
-`pages/AdminPage.tsx`: accounts (`UserSettings` in `SettingsPage.tsx`), the **register builder** (`components/RegisterBuilder.tsx`: create or change a register, fields of
-12 types, live preview, order, on/off; saved fields keep their type and encryption and are only hidden), and the **audit trail** (`components/AuditLog.tsx`,
-API `audit.list`, action names in `audit.actions.*`). The demo keeps its own audit trail in `demo/store.ts`.
+### Administration (administrators)
+`pages/AdminPage.tsx`: accounts (create, change PIN, deactivate), the **register builder** (`components/RegisterBuilder.tsx`: new register or change one, names in three languages,
+icon, who records and closes, closing step, fields, live preview, order, on/off; saved fields keep their type and encryption and are only hidden),
+and the **audit trail** (`components/AuditLog.tsx`, API `audit.list`, readable action names in `audit.actions.*`).
 
-## ID card scanning
-- `src/main/scan.ts` reads the MRZ (TD1 ID cards, TD3 passports, TD2) with check-digit validation, QR / barcodes, and has a text fallback (Arabic, French, English).
-- `src/renderer/src/scanPipeline.ts` tries several enhanced versions of one frame (MRZ strip, adaptive threshold, sharpening, small rotations) until the document validates.
-  `components/CameraPanel.tsx` runs it automatically on the live camera, and on the Scan button and imported photos.
-- **Card pictures:** `CameraPanel` takes a color snapshot (`snapshot()` in `scanPipeline.ts`) of every scan and hands it to `VisitorInPage`; `checkIn` stores up to
-  `MAX_CARD_PICTURES` JPEGs encrypted in `visit_cards` (deleted with the visit by `ON DELETE CASCADE`); `VisitRow.cardCount`, `VisitDetail.cards`, `CardPictures.tsx`.
-  Tested on the real app: picture unreadable in the database files, removed with the visit.
-- Tested on synthetic Algerian-style cards (TD1 and a passport, with glare, tilt and soft focus) through the real app. **Not tested on real Algerian cards.**
+### Visitors, ID scanning, card pictures
+- `src/main/scan.ts` reads the MRZ (TD1 ID cards, TD3 passports, TD2) with check-digit validation, QR codes, and has a text fallback (Arabic, French, English) that lets the guard pick lines.
+- `src/renderer/src/scanPipeline.ts` tries up to 9 enhanced versions of a frame (MRZ strip, adaptive threshold, sharpening, small rotations) until the check digits validate.
+  `components/CameraPanel.tsx` runs it **automatically on the live camera** (every 0.4 s while text is in the guide frame), and on the Scan button and imported photos.
+- **Every scan is photographed**: a color JPEG (~100-300 KB) is kept with the visit, encrypted, up to 3 per entry (`MAX_CARD_PICTURES`), table `visit_cards`.
+  The guard sees them under the scanner and can remove one; the log marks entries with pictures; the record shows them (`components/CardPictures.tsx`). They never leave the PC.
+- The visitor form has a watchlist check (refusal needs an administrator's PIN), visitor photo and badge number switched off for the faculty (`FACULTY.features`).
 
-## Web demo (Vercel)
-- `vercel.json` installs with `ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install`, builds with `npm run build:demo`, publishes `demo-dist/`. No server side.
-- `/` redirects to `/app/` (the login page); `/dashboard/` is the dashboard demo (`demo@security-register.app` / `demo1234`). Sample PINs are shown in the bar at the bottom.
-- `demo/app/main.ts` sets `window.api = demoApi` before importing the real renderer. Everything is stored in localStorage (`secreg-demo-faculty`); the bar has a reset button.
+### Safety net found by testing
+If the program is killed within the first seconds of its very first start, Windows can lose the key that protects the data key. `initKey()` in `crypto.ts` reports `'lost'`;
+`index.ts` starts over when only the seeded data exists, otherwise shows an Arabic and English error. Tested (kill after 4 s, three times).
+
+## 7. How it was tested (and what that proves)
+All of it on the **real desktop app** driven through Chrome's debugging port (`--remote-debugging-port`, Playwright for Python) on scratch data folders, plus the web demo in the browser pane:
+registers and corrections, the team leader handover, the register builder, the audit trail, first start and restart, lost-key recovery, card pictures (also: unreadable in the database files, removed with the visit).
+Scanner: `tools/scan-test` (synthetic cards). Server API script: 25/25 (earlier phases). **No automated test suite exists**; these were manual scripted runs (the scripts are not in the repo except the scanner bench).
+
+## 8. Scanner status (read before touching it)
+- Synthetic Algerian-style cards through the real app: readable-font set **17/18** (was 13/18 with a single shot), passport read, harsh OCR-A set 4/18 (not representative: the model is OCR-B).
+- **Not tested on real Algerian cards.** Real cards are OCR-B printed but worn, laminated and shiny. Get real cards (CNIBE biometric ID back, biometric passport) and run them before promising anything to the client.
+- Known weaknesses, in order of importance:
+  1. A wrong **letter in the name** (`Benvoucef` for `Benyoucef`) is possible even when all check digits pass: check digits do not cover the name. Plan: confirm with a second, different read and vote per character.
+  2. **Nationality** can be misread (`0ZA` for `DZA`): snap to a known country code (the `mrz` package has the list in `lib/generated/states.js`).
+  3. The automatic camera loop was never run against a **live camera**. Plan: Chromium flags `--use-fake-device-for-media-stream --use-file-for-fake-video-capture=<file.mjpeg>` with a video made from the test cards.
+  4. Reading time varies a lot with machine load (2 s to 20 s per card in the last runs). Profile on the target PC.
+  5. Cards **without a machine-readable zone** (older Algerian ID cards, driving licences, student cards) only have the text fallback: no automatic extraction.
+- The user asked (20 Oct) to **extract information from the saved pictures** next, and asked about using the **Gemini API** for it. Not decided. Points to weigh and tell the client:
+  - Privacy: sending ID card images to Gemini contradicts "no data leaves the PC" (README, plan). Needs the faculty's explicit consent and a review under Algerian personal-data law (law 18-07, to be checked with a lawyer); the Windows PC needs internet.
+  - Speed: a vision-model call is typically a few seconds per image; the offline MRZ read is about 1-3 s when it works.
+  - Best use if accepted: only as a **fallback** for cards without an MRZ, only after the guard presses a button, never automatic; keep the offline reader as the main path.
+  - Alternatives: more offline templates for the Algerian card front (Arabic and Latin name zones), or a local vision model.
+
+## 9. Not done / next steps (suggested order)
+1. **Decide the picture-information approach** (section 8) and finish the scanner items 1-3 above, then test with real cards.
+2. **Phase E: statistics and printed reports** by day, week, month and year, per register, with the official header of their paper books (`PLAN_FACULTY.md` §7), plus "print the register" in the layout of their book. Not started.
+3. **Questions for the client** (13 in `PLAN_FACULTY.md` §9, plus these decisions made without them): the incidents register is an engine register whose closing step is the deanship visa and has no photos yet;
+   the visitors register stays the visitor module; the letters addressee list is a guess. Team assignment (which guards belong to which team) waits for the answer to Q8.
+4. Pictures for registers (e.g. a lost item), and photos on incidents.
+5. Guards can currently open **any** visit record in the log (`F8`), pictures included. The faculty's rule ("no viewing without the dean's written permission") suggests limiting guards to the last 24 hours like registers. Ask the client.
+6. Windows installer (`npm run dist`, electron-builder, never run), code signing, a backup/export routine (a copy of the data folder does not restore on another PC/Windows account).
+7. Refresh the presentation deck (below) and the demo with the faculty version; add automated tests (unit tests for `src/main`, Playwright against the demo).
+
+## 10. Web demo and presentation
+- Demo: `vercel.json` installs with `ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install`, builds `npm run build:demo`, publishes `demo-dist/`. `/` redirects to `/app/`. **Vercel has not been set up for the faculty yet**: import the GitHub repository in Vercel, nothing else (the old two-project instructions are obsolete).
+  Data is in localStorage (`secreg-demo-faculty`), the bottom bar has a reset button. After a rebuild the browser may keep the old script: open `/app/?fresh=1`.
 - To add an `Api` method, implement it in `demo/reception-api.ts` too, or the demo type-check fails.
+- Presentation made for the university (24 slides in the ROWD brand, Claude artifact): https://claude.ai/artifact/9vWEMMpdcszDaGPeRmxWom . It was made **before** the faculty pivot: screenshots show the old University-of-Ghardaia version, the generic feature list and two placeholders (`[demo link]`, `[__ weeks]`). It needs a rebuild around the faculty version.
+- Client material (not in the repo): Word files of the paper registers in `D:\Temppp\` (`سجل … .docx`, `سجلات مركز الأمن بالكلية.docx`), the logos (cropped copies are in `src/renderer/src/assets/brands/`). ROWD brand files: `D:\rowd tech stuff\`.
 
-## What was tested
-- Server API script: 25/25. End to end on one PC: dashboard invitation, pass QR at the webcam, badge, exit, sync, watchlist.
-- Registers, the team leader handover, the administration page and the audit trail: in the demo and on the real desktop app, through its debugging port, on a fresh data folder.
-- Database migration of the users table on an old-style database (accounts and links kept).
+## 11. Gotchas that cost time
+- Windows + Git Bash: long `node -e` one-liners with quotes or backticks break. Write a script file and run it.
+- The three TypeScript projects that share `src/renderer` code (`tsconfig.web.json`, `dashboard/`, `demo/`) resolve different aliases: code shared with the dashboard must import `@desktop/...`, not `@renderer/...`.
+- `electron-vite build` writes `out/` (used by the test scripts); `npm run dev` uses its own dev server and restarts the main process on change.
+- Killing the app hard (`taskkill /F`) in its first seconds is exactly the lost-key case above; the tests use it on purpose.
+- Typing in the browser pane's tools does not send real key events: set input values with the native setter and an `input` event (see how the tests do it).
+- `.gitattributes` forces LF; Windows may warn about CRLF, ignore.
 
-## Not tested / known gaps
-- Real Algerian ID cards, real badge printers, HTTPS, several PCs, the Windows installer, code signing, auto-update.
-- Cards without a machine-readable zone (older ID cards) only have the text fallback.
-- Phase E (statistics and printed reports), team assignment (waits for the client's answer), photos on incidents.
-- No automated UI test suite.
-
-## Security notes
-- Photos and full ID numbers never leave the post PC: `src/shared/sync.ts` masks them on purpose.
+## 12. Security notes
+- Photos, card pictures and full ID numbers never leave the post PC: `src/shared/sync.ts` masks them on purpose (only matters if the optional server is used).
 - The encryption key is tied to the Windows account through DPAPI: back up by exports, not by copying the data folder.
-- Dashboard API calls send `X-Requested-With: secreg` (CSRF check); cookies are HttpOnly and SameSite=Strict.
-- `server-data/server.key` encrypts the watchlist ID numbers; losing it makes them unreadable. Keep `server-data/` out of git.
+- Starting PINs are public in this repository (`src/shared/faculty.ts`): the administrator must change them at the first login (the warning insists).
+- Dashboard API calls send `X-Requested-With: secreg` (CSRF check); cookies are HttpOnly and SameSite=Strict. `server-data/server.key` encrypts the watchlist ID numbers: keep `server-data/` out of git.
