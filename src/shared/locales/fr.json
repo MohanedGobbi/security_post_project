@@ -421,7 +421,10 @@
       "openIncidents": "Incidents ouverts",
       "patrols": "Rondes",
       "keysOut": "Clés / matériel sortis"
-    }
+    },
+    "startLeader": "J’ai lu : remplir les registres de passation",
+    "leaderStep": "Étape {{n}} sur {{total}}",
+    "leaderFill": "Passation avec le chef d’équipe sortant"
   },
   "activity": {
     "title": "Activité",
@@ -910,6 +913,8 @@
     "openedOn": "Ouvert le {{date}} par {{name}}",
     "empty": "(vide)",
     "time": "Date",
-    "status": "Statut"
+    "status": "Statut",
+    "settingsTitle": "Registres",
+    "settingsIntro": "Activez ou désactivez chaque registre. Un registre désactivé disparaît pour les agents et garde ses inscriptions."
   }
 }

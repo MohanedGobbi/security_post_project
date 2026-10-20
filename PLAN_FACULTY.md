@@ -7,7 +7,19 @@
 - Eight Word templates of their paper registers (`D:\Temppp\سجل … .docx`).
 - The two logos.
 
-**Status (20 Oct 2026):** phases A and B are built and tested; phases C–G are not started.
+**Status (20 Oct 2026):** phases A, B and C are built and tested; phases D–G are not started.
+- **Phase C, the faculty's registers:** all of §3 are templates in `src/shared/registerTemplates.ts`.
+  - **On:** shift, custody, incidents, lost and found, letters, events.
+  - **Off until the admin turns them on:** reports, maintenance, official visits, evacuation drills, alarms.
+  - **Installed automatically** at the first admin login of the faculty build; never twice.
+  - **Module switches** are applied at first setup (no profile choice).
+  - **Team leaders** fill the shift and custody registers before their shift starts.
+  - **Home screen:** tiles only. **Settings → Registers** switches each register on or off.
+  - **Tested** in the faculty demo and on the real desktop app (first setup through its own screen).
+- **Decisions made in phase C (to confirm with the client):**
+  - The incidents register is a register of the engine, not the old incidents module. Its columns match their paper book, and the closing step is the deanship visa (administrators). Photos are not available there yet.
+  - The visitors register stays the visitor module (card scanning, people on site, exit), with visitor photo and badge numbers switched off.
+  - The "letters" register replaces parcels. Its list of addressees is a first guess (Q5).
 - **Phase B, the register engine:**
   - Code: `src/main/registers.ts`, the shared rules in `src/shared/registers.ts`, and the page `RegistersPage.tsx`.
   - Every field type works, with closing steps, corrections that are kept, PIN confirmations, the role limits, and the 24-hour view for non-admins.

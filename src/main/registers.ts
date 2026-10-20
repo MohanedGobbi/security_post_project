@@ -5,6 +5,7 @@ import type {
   RegisterDef, RegisterDefInput, RegisterEntry, RegisterField, Role, User
 } from '@shared/types'
 import { cleanDefinition, cleanStep, cleanValue, splitSensitive, type ValueResolvers } from '@shared/registers'
+import { templatesFor } from '@shared/registerTemplates'
 import { decryptText, encrypt } from './crypto'
 import { conn, dayEnd, dayStart, findUserByPin, getUser, now } from './db'
 
@@ -237,4 +238,12 @@ export function listEntries(q: EntryQuery, user: User): RegisterEntry[] {
 /** Active accounts, for 'account' fields (who was absent, who handed over…) */
 export function accountsForFields(): { id: number; name: string; role: Role }[] {
   return conn().prepare('SELECT id, name, role FROM users WHERE active = 1 ORDER BY name').all() as unknown as { id: number; name: string; role: Role }[]
+}
+
+/** Opens the ready-made registers asked for that do not exist yet (an organisation's first start). */
+export function installTemplates(keys: string[], userId: number): number {
+  const have = new Set((conn().prepare('SELECT key FROM registers').all() as { key: string }[]).map((r) => r.key))
+  const missing = templatesFor(keys).filter((t) => !have.has(t.key))
+  for (const t of missing) saveRegister(t, userId)
+  return missing.length
 }

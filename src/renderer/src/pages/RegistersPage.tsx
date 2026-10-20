@@ -7,6 +7,7 @@ import { useApp } from '../App'
 import { currentLang } from '../i18n'
 import Icon, { registerIcon } from '../components/Icon'
 import { FieldInputControl, FieldInputs, missingFields, type AccountOption } from '../components/RegisterFields'
+import RegisterEntryForm, { fieldError, useAccounts } from '../components/RegisterEntryForm'
 import { daysAgo, errorText, todayStr } from '../util'
 
 /** Registers the user may use: tiles first, then one register (new entry + its entries). */
@@ -53,19 +54,11 @@ function RegisterView({ reg, onBack }: { reg: RegisterDef; onBack(): void }): Re
   const lang = currentLang()
   const isAdmin = user.role === 'admin'
   const canFill = isAdmin || reg.fillRoles.includes(user.role)
-  const [values, setValues] = useState<EntryInputValues>({})
-  const [missing, setMissing] = useState<RegisterField[]>([])
-  const [busy, setBusy] = useState(false)
-  const [accounts, setAccounts] = useState<AccountOption[]>([])
+  const accounts = useAccounts(reg)
   const [entries, setEntries] = useState<RegisterEntry[]>([])
   const [q, setQ] = useState({ from: daysAgo(30), to: todayStr(), text: '', openOnly: false })
   const [opened, setOpened] = useState<RegisterEntry | null>(null)
   const yesNo = useYesNo()
-
-  const needsAccounts = reg.fields.some((f) => f.type === 'account')
-  useEffect(() => {
-    if (needsAccounts) window.api.registers.accounts().then(setAccounts)
-  }, [needsAccounts])
 
   const load = useCallback(() => {
     window.api.registers.entries({ registerId: reg.id, from: isAdmin ? q.from : '', to: isAdmin ? q.to : '', text: q.text, openOnly: q.openOnly })
@@ -74,52 +67,22 @@ function RegisterView({ reg, onBack }: { reg: RegisterDef; onBack(): void }): Re
   }, [reg.id, isAdmin, q, toast, t])
   useEffect(load, [load])
 
-  // the first two filled fields describe an entry in the list
+  // the first three opening fields describe an entry in the list
   const summaryFields = useMemo(() => reg.fields.filter((f) => f.active && f.step === 'open').slice(0, 3), [reg])
-
-  const submit = async (e: FormEvent): Promise<void> => {
-    e.preventDefault()
-    const miss = missingFields(reg.fields.filter((f) => f.step === 'open'), values)
-    setMissing(miss)
-    if (miss.length) return toast(t('error.fieldRequired', { s: labelOf(miss[0].labels, lang) }), 'error')
-    setBusy(true)
-    try {
-      const r = await window.api.registers.add(reg.id, values)
-      toast(t('registers.recorded', { n: r.number }))
-      setValues({})
-      load()
-    } catch (err) {
-      toast(fieldError(err, reg, lang, t), 'error')
-    } finally {
-      setBusy(false)
-    }
-  }
 
   return (
     <div className="split-page">
-      {canFill ? (
-        <form className="card" onSubmit={submit}>
-          <button type="button" className="link" onClick={onBack}>← {t('registers.title')}</button>
-          <div className="register-head">
-            <span className="tile-icon"><Icon name={registerIcon(reg.icon)} size={26} /></span>
-            <div>
-              <h1>{labelOf(reg.labels, lang)}</h1>
-              <p className="hint">{t('registers.openedOn', { date: formatDateTime(reg.openedAt, lang), name: reg.openedBy || '—' })}</p>
-            </div>
+      <div className="card">
+        <button type="button" className="link" onClick={onBack}>← {t('registers.title')}</button>
+        <div className="register-head">
+          <span className="tile-icon"><Icon name={registerIcon(reg.icon)} size={26} /></span>
+          <div>
+            <h1>{labelOf(reg.labels, lang)}</h1>
+            <p className="hint">{t('registers.openedOn', { date: formatDateTime(reg.openedAt, lang), name: reg.openedBy || '—' })}</p>
           </div>
-          <h2>{t('registers.newEntry')}</h2>
-          <FieldInputs fields={reg.fields} step="open" values={values} onChange={setValues} accounts={accounts} missing={missing} />
-          <p className="hint">{t('registers.noErase')}</p>
-          <div className="actions">
-            <button className="primary big" disabled={busy}><Icon name={registerIcon(reg.icon)} /> {t('registers.record')}</button>
-          </div>
-        </form>
-      ) : (
-        <div className="card">
-          <button type="button" className="link" onClick={onBack}>← {t('registers.title')}</button>
-          <h1>{labelOf(reg.labels, lang)}</h1>
         </div>
-      )}
+        {canFill && <RegisterEntryForm reg={reg} toast={toast} onSaved={load} />}
+      </div>
 
       <section className="card">
         <div className="section-head">
@@ -178,14 +141,6 @@ function RegisterView({ reg, onBack }: { reg: RegisterDef; onBack(): void }): Re
   )
 }
 
-/** "error.fieldRequired:key" names the field by its label */
-function fieldError(err: unknown, reg: RegisterDef, lang: string, t: (k: string, o?: Record<string, unknown>) => string): string {
-  const msg = err instanceof Error ? err.message : String(err)
-  const m = msg.match(/(error\.\w+):([a-z][a-z0-9_]*)/)
-  const f = m ? reg.fields.find((x) => x.key === m[2]) : undefined
-  return f && m ? t(m[1], { s: labelOf(f.labels, lang) }) : errorText(err, t as never)
-}
-
 function EntryDialog({ reg, entry, accounts, onClose, onChanged }: {
   reg: RegisterDef
   entry: RegisterEntry
@@ -223,7 +178,7 @@ function EntryDialog({ reg, entry, accounts, onClose, onChanged }: {
       toast(ok)
       onChanged()
     } catch (err) {
-      toast(fieldError(err, reg, lang, t), 'error')
+      toast(fieldError(err, reg, t), 'error')
     } finally {
       setBusy(false)
     }

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ShiftSummary } from '@shared/types'
+import type { Features, ShiftSummary } from '@shared/types'
 import { ALL_ON, summaryKeyOn } from '@shared/features'
 import { useApp } from '../App'
 
@@ -8,10 +8,16 @@ const DONE: (keyof ShiftSummary)[] = ['visitorsIn', 'visitorsOut', 'vehiclesIn',
 const LIVE: (keyof ShiftSummary)[] = ['insideNow', 'vehiclesInside', 'parcelsWaiting', 'openIncidents', 'keysOut']
 
 /** Counters of a shift (what happened) and the live situation (what the next guard inherits). */
-export default function ShiftSummaryGrid({ summary, part }: { summary: ShiftSummary; part: 'done' | 'live' }): ReactNode {
+export default function ShiftSummaryGrid({ summary, part, features: given }: {
+  summary: ShiftSummary
+  part: 'done' | 'live'
+  /** the start-of-shift screen has no app context yet: it passes the switches itself */
+  features?: Features
+}): ReactNode {
   const { t } = useTranslation()
   // also shown on the start-of-shift screen, before the app context exists
-  const features = useApp()?.features ?? ALL_ON
+  const ctx = useApp()
+  const features = given ?? ctx?.features ?? ALL_ON
   const keys = (part === 'done' ? DONE : LIVE).filter((k) => summaryKeyOn(k, features))
   return (
     <div className={`sum-grid ${part}`}>

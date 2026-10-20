@@ -421,7 +421,10 @@
       "openIncidents": "Open incidents",
       "patrols": "Patrol rounds",
       "keysOut": "Keys / equipment out"
-    }
+    },
+    "startLeader": "Read: fill the handover registers",
+    "leaderStep": "Step {{n}} of {{total}}",
+    "leaderFill": "Handover with the outgoing team leader"
   },
   "activity": {
     "title": "Activity",
@@ -910,6 +913,8 @@
     "openedOn": "Opened on {{date}} by {{name}}",
     "empty": "(empty)",
     "time": "Date",
-    "status": "Status"
+    "status": "Status",
+    "settingsTitle": "Registers",
+    "settingsIntro": "Switch each register on or off. A switched-off register disappears for guards and keeps its entries."
   }
 }

@@ -204,6 +204,11 @@ export function registerIpc(): void {
   })
   handle('registers:corrections', 'user', (_u, entryId: number) => registers.entryCorrections(entryId))
   handle('registers:accounts', 'user', () => registers.accountsForFields())
+  handle('registers:installTemplates', 'admin', (u, keys: string[]) => {
+    const n = registers.installTemplates(Array.isArray(keys) ? keys.map(String) : [], u.id)
+    if (n) db.audit(u.id, 'register_open', 'register', null, `templates:${n}`)
+    return n
+  })
 
   // ---------- users ----------
   handle('users:list', 'admin', () => db.listUsers(false))

@@ -35,7 +35,8 @@ const api: Api = {
     close: call('registers:close'),
     correct: call('registers:correct'),
     corrections: call('registers:corrections'),
-    accounts: call('registers:accounts')
+    accounts: call('registers:accounts'),
+    installTemplates: call('registers:installTemplates')
   },
   users: {
     list: call('users:list'),

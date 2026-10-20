@@ -4,10 +4,10 @@ import type {
   BadgeSettings, Checkpoint, CheckStatus, CustomField, CustomValues, ExpectedVisitor, Features, IdType, IncidentType, KeyKind,
   EntryValues, Lang, NoteCategory, RegisterDef, Role, Settings, Severity, VehicleType, WatchLevel
 } from '@shared/types'
-import { REGISTER_TEMPLATES } from '@shared/registerTemplates'
+import { templatesFor } from '@shared/registerTemplates'
 import { PROFILES } from '@shared/features'
 import { BRAND } from '@desktop/brand'
-import { F, sampleId } from './flavors'
+import { F, sampleId, type SampleEntry } from './flavors'
 
 export interface DUser { id: number; name: string; role: Role; pin: string; language: Lang; active: boolean }
 export interface DVisit {
@@ -93,8 +93,8 @@ export interface DemoStore {
 
 // one store per brand, so the generic and the branded demo never mix their data
 const KEY = BRAND.id === 'default' ? 'secreg-demo-v1' : `secreg-demo-v1-${BRAND.id}`
-// 2: registers (generic engine)
-const VERSION = 2
+// 2: registers (generic engine) · 3: faculty registers and sample entries
+const VERSION = 3
 
 const iso = (msAgo: number): string => new Date(Date.now() - msAgo).toISOString()
 const H = 3600000
@@ -136,13 +136,41 @@ function seed(): DemoStore {
     return out
   }
   const [v1] = F.visits
+  const registers = templatesFor(F.registerKeys ?? ['lost_found', 'custody']).map((r, i) => ({ ...r, id: i + 1, openedAt: iso(40 * 24 * H), openedBy: A }))
+  /** local "YYYY-MM-DDTHH:MM", the format of datetime fields */
+  const at = (hoursAgo: number): string => {
+    const d = new Date(Date.now() - hoursAgo * H)
+    return new Date(d.getTime() - d.getTimezoneOffset() * M).toISOString().slice(0, 16)
+  }
+  const helpers = { day: (o: number) => dayStr(o), at, user: (i: number) => ({ userId: i + 1, name: F.users[i].name }) }
+  const defaults: SampleEntry[] = [
+    { register: 'lost_found', hoursAgo: 26, by: 0, closedHoursAgo: 3, closedBy: 1, values: (h) => ({
+      item: F.lostSample.item, place: F.lostSample.place, found_on: h.day(-1), finder: F.lostSample.finder,
+      owner: { name: F.visits[6].name, idType: 'CNI', idNumber: sampleId(7) } }) },
+    { register: 'lost_found', hoursAgo: 2, by: 1, values: (h) => ({ item: F.keys[2], place: F.checkpoints[3][0], found_on: h.day(0), finder: F.visits[2].name }) }
+  ]
+  const sampleEntries = (regs: { id: number; key: string }[]): DEntry[] => {
+    const numbers = new Map<number, number>()
+    return (F.samples ?? defaults).flatMap((x, i) => {
+      const reg = regs.find((r) => r.key === x.register)
+      if (!reg) return []
+      const number = (numbers.get(reg.id) ?? 0) + 1
+      numbers.set(reg.id, number)
+      return [{
+        id: i + 1, registerId: reg.id, number, values: x.values(helpers), createdById: x.by + 1, createdBy: F.users[x.by].name,
+        createdAt: iso(x.hoursAgo * H), post: F.postName,
+        closedBy: x.closedHoursAgo !== undefined ? F.users[x.closedBy ?? 0].name : null,
+        closedAt: x.closedHoursAgo !== undefined ? iso(x.closedHoursAgo * H) : null
+      }]
+    })
+  }
   const [d1, d2, d3] = F.deliveries
   const [e1, e2, e3] = F.expected
 
   return {
     version: VERSION,
     settings: { siteName: F.siteName, postName: F.postName, retentionDays: 365, overstayHours: 8, closingTime: '', vehicleOverstayHours: 0, patrolIntervalHours: 4 },
-    features: PROFILES.large,
+    features: BRAND.features ?? PROFILES.large,
     badge: { printer: '', size: 'cr80', autoPrint: false, showPhoto: true },
     users: F.users.map((u, i) => ({ id: i + 1, ...u, active: true })),
     currentUserId: null,
@@ -204,14 +232,8 @@ function seed(): DemoStore {
       { id: 3, refCode: 'HT3PB9', fullName: e3.name, company: e3.company, host: e3.host, purpose: e3.purpose, phone: '', validFrom: dayStr(1), validTo: dayStr(1),
         notes: '', status: 'pending', source: 'server', arrivedAt: null, visitId: null, siteId: 1, createdBy: F.owner, email: '', createdAt: iso(5 * H) }
     ],
-    registers: REGISTER_TEMPLATES.map((r, i) => ({ ...r, id: i + 1, openedAt: iso(40 * 24 * H), openedBy: A })),
-    entries: [
-      { id: 1, registerId: 1, number: 1, createdById: 1, createdBy: A, createdAt: iso(26 * H), post: F.postName, closedBy: G, closedAt: iso(3 * H),
-        values: { item: F.lostSample.item, place: F.lostSample.place, found_on: dayStr(-1), finder: F.lostSample.finder, action: '',
-          owner: { name: F.visits[6].name, idType: 'CNI', idNumber: sampleId(7) } } },
-      { id: 2, registerId: 1, number: 2, createdById: 2, createdBy: G, createdAt: iso(2 * H), post: F.postName, closedBy: null, closedAt: null,
-        values: { item: F.keys[2], place: F.checkpoints[3][0], found_on: dayStr(), finder: F.visits[2].name, action: '' } }
-    ],
+    registers,
+    entries: sampleEntries(registers),
     corrections: [],
     sync: { configured: true, deviceName: F.devices[0], lastSync: iso(30000) },
     dashUsers: [

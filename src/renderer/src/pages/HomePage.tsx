@@ -8,6 +8,7 @@ import InsideList from '../components/InsideList'
 import AlertsPanel from '../components/AlertsPanel'
 import Icon, { registerIcon, type IconName } from '../components/Icon'
 import { errorText } from '../util'
+import { BRAND } from '../brand'
 
 const TILES: { page: Page; key: string; icon: IconName; kbd: string; cls: string }[] = [
   { page: 'in', key: 'nav.visitorIn', icon: 'enter', kbd: 'F2', cls: 'tile-in' },
@@ -35,6 +36,7 @@ export default function HomePage(): ReactNode {
   }, [])
 
   const load = useCallback(async () => {
+    if (BRAND.homeTilesOnly) return
     const [s, i] = await Promise.all([window.api.visits.stats(), window.api.visits.insideNow()])
     setStats(s)
     setInside(i)
@@ -60,8 +62,7 @@ export default function HomePage(): ReactNode {
     </button>
   )
 
-  return (
-    <div className="home">
+  const tiles = (
       <section className="actions-grid">
         {TILES.filter((x) => pageOn(x.page, features)).map((x) => (
           <button key={x.page} type="button" className={`tile ${x.cls}`} onClick={() => go(x.page)}>
@@ -76,6 +77,13 @@ export default function HomePage(): ReactNode {
           </button>
         ))}
       </section>
+  )
+  // the organisation asked for a calm home screen: one tile per task or register, nothing else
+  if (BRAND.homeTilesOnly) return <div className="home tiles-only">{tiles}</div>
+
+  return (
+    <div className="home">
+      {tiles}
 
       <div className="stack">
         <AlertsPanel alerts={alerts} />

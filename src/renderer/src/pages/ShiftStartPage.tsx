@@ -1,12 +1,15 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ShiftState, User } from '@shared/types'
+import type { Features, RegisterDef, ShiftState, User } from '@shared/types'
+import { labelOf } from '@shared/registers'
 import { formatDateTime } from '@shared/i18n'
 import { LangSwitch } from '../App'
 import { currentLang } from '../i18n'
 import ShiftSummaryGrid from '../components/ShiftSummaryGrid'
 import Icon from '../components/Icon'
 import { errorText } from '../util'
+import { BRAND } from '../brand'
+import RegisterEntryForm from '../components/RegisterEntryForm'
 
 export default function ShiftStartPage({ user, onStarted, onLogout, toast }: {
   user: User
@@ -17,11 +20,21 @@ export default function ShiftStartPage({ user, onStarted, onLogout, toast }: {
   const { t } = useTranslation()
   const [s, setS] = useState<ShiftState | null>(null)
   const [busy, setBusy] = useState(false)
+  /** registers a team leader fills before the shift starts (the paper handover), and the one being filled */
+  const [steps, setSteps] = useState<RegisterDef[]>([])
+  const [step, setStep] = useState<number | null>(null)
+  const [features, setFeatures] = useState<Features | undefined>(undefined)
   const lang = currentLang()
 
   useEffect(() => {
     window.api.shifts.state().then(setS)
-  }, [])
+    window.api.settings.getFeatures().then(setFeatures)
+    if (user.role === 'leader' && BRAND.leaderStartRegisters.length) {
+      window.api.registers.list().then((rs) => setSteps(BRAND.leaderStartRegisters
+        .map((k) => rs.find((r) => r.key === k && r.active && r.fillRoles.includes('leader')))
+        .filter((r): r is RegisterDef => !!r)))
+    }
+  }, [user.role])
 
   const start = async (): Promise<void> => {
     setBusy(true)
@@ -32,6 +45,27 @@ export default function ShiftStartPage({ user, onStarted, onLogout, toast }: {
       toast(errorText(e, t), 'error')
       setBusy(false)
     }
+  }
+
+  // team leader: the shift register, then the custody check, each confirmed by the outgoing leader's PIN
+  const current = step !== null ? steps[step] : null
+  if (current) {
+    return (
+      <div className="center-screen">
+        <div className="card shift-card">
+          <div className="shift-head">
+            <div>
+              <h1>{labelOf(current.labels, lang)}</h1>
+              <p className="muted">{t('shift.leaderStep', { n: (step ?? 0) + 1, total: steps.length })} · {user.name}</p>
+            </div>
+          </div>
+          <RegisterEntryForm key={current.id} reg={current} toast={toast} title={t('shift.leaderFill')}
+            onSaved={() => (step !== null && step + 1 < steps.length ? setStep(step + 1) : start())}>
+            <button type="button" onClick={() => setStep(step && step > 0 ? step - 1 : null)}>{t('common.back')}</button>
+          </RegisterEntryForm>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -62,11 +96,13 @@ export default function ShiftStartPage({ user, onStarted, onLogout, toast }: {
             </section>
             <section>
               <h2>{t('shift.situation')}</h2>
-              <ShiftSummaryGrid summary={s.summary} part="live" />
+              <ShiftSummaryGrid summary={s.summary} part="live" features={features} />
             </section>
             <div className="actions">
               <button type="button" onClick={onLogout}>{t('nav.logout')}</button>
-              <button type="button" className="primary big" disabled={busy} onClick={start} autoFocus>{t('shift.start')}</button>
+              <button type="button" className="primary big" disabled={busy} onClick={steps.length ? () => setStep(0) : start} autoFocus>
+                {steps.length ? t('shift.startLeader') : t('shift.start')}
+              </button>
             </div>
           </>
         )}

@@ -657,6 +657,8 @@ export interface Api {
     corrections(entryId: number): Promise<EntryCorrection[]>
     /** accounts for 'account' fields */
     accounts(): Promise<{ id: number; name: string; role: Role }[]>
+    /** administrators: opens the ready-made registers with these keys that do not exist yet; returns how many */
+    installTemplates(keys: string[]): Promise<number>
   }
   users: {
     list(): Promise<User[]>

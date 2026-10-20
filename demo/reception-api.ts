@@ -13,6 +13,7 @@ import {
   type DEntry, type DExpected, type DLoan, type DRound, type DShift, type DUser, type DVisit
 } from './store'
 import { cleanDefinition, cleanStep, cleanValue, type ValueResolvers } from '@shared/registers'
+import { templatesFor } from '@shared/registerTemplates'
 import { qrDataUrl, qrSvg, readQr } from './qr'
 import { downloadCsv, openReport } from './report'
 import { F, sampleId } from './flavors'
@@ -505,6 +506,12 @@ export const demoApi: Api = {
     async accounts() {
       me()
       return db().users.filter((x) => x.active).map((x) => ({ id: x.id, name: x.name, role: x.role }))
+    },
+    async installTemplates(keys) {
+      const u = admin()
+      const missing = templatesFor(keys).filter((t) => !db().registers.some((r) => r.key === t.key))
+      for (const t of missing) db().registers.push({ ...cleanDefinition(t), id: nextId(), openedAt: nowIso(), openedBy: u.name } as RegisterDef)
+      return done(missing.length)
     }
   },
 

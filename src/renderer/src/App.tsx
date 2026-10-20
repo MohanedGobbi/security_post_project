@@ -160,6 +160,10 @@ export default function App(): ReactNode {
   /** After login: a guard without an open shift first reads the handover and starts one (when shifts are used). */
   const enter = useCallback(async (u: User) => {
     setUser(u)
+    // an organisation's registers are opened the first time an administrator logs in (existing ones are left as they are)
+    if (u.role === 'admin' && BRAND.registerTemplates.length) {
+      await window.api.registers.installTemplates(BRAND.registerTemplates).catch(() => 0)
+    }
     const f = await window.api.settings.getFeatures()
     setFeatures(f)
     setPage('home')

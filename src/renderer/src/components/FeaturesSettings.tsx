@@ -9,7 +9,7 @@ type VisitorOption = 'idScan' | 'visitorPhoto' | 'requireIdNumber' | 'badgeNumbe
 const VISITOR_OPTIONS: VisitorOption[] = ['idScan', 'visitorPhoto', 'requireIdNumber', 'badgeNumbers']
 const PROFILE_IDS: ProfileId[] = ['small', 'company', 'large']
 
-function Switch({ on, onChange, name, desc }: { on: boolean; onChange(v: boolean): void; name: string; desc: string }): ReactNode {
+export function Switch({ on, onChange, name, desc }: { on: boolean; onChange(v: boolean): void; name: string; desc: string }): ReactNode {
   return (
     <label className={`switch-row ${on ? 'on' : ''}`}>
       <input type="checkbox" role="switch" checked={on} onChange={(e) => onChange(e.target.checked)} />

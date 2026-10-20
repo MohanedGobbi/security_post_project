@@ -4,6 +4,7 @@ import type { ProfileId, User } from '@shared/types'
 import { LangSwitch } from '../App'
 import { currentLang } from '../i18n'
 import { errorText } from '../util'
+import { BRAND } from '../brand'
 
 const PROFILE_IDS: ProfileId[] = ['small', 'company', 'large']
 
@@ -23,6 +24,8 @@ export default function SetupPage({ onDone, toast }: { onDone(u: User): void; to
       const u = await window.api.auth.setup({
         siteName: f.siteName, postName: f.postName, adminName: f.adminName, pin: f.pin, language: currentLang(), profile
       })
+      // an organisation's build comes with its own switches instead of a profile (the administrator can change them later)
+      if (BRAND.features) await window.api.settings.setFeatures(BRAND.features)
       onDone(u)
     } catch (err) {
       toast(errorText(err, t), 'error')
@@ -40,6 +43,7 @@ export default function SetupPage({ onDone, toast }: { onDone(u: User): void; to
         <label>{t('setup.siteName')}<input value={f.siteName} onChange={set('siteName')} required autoFocus /></label>
         <label>{t('setup.postName')}<input value={f.postName} onChange={set('postName')} /></label>
 
+        {!BRAND.features && (
         <fieldset className="profile-pick">
           <legend>{t('setup.profile')}</legend>
           <div className="profile-grid">
@@ -53,6 +57,7 @@ export default function SetupPage({ onDone, toast }: { onDone(u: User): void; to
           </div>
           <p className="hint">{t('setup.profileHint')}</p>
         </fieldset>
+        )}
 
         <label>{t('setup.adminName')}<input value={f.adminName} onChange={set('adminName')} required /></label>
         <div className="row2">

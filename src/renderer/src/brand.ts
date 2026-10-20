@@ -1,7 +1,7 @@
 // Organisation branding (logo, colours, name, login style), chosen when building:
 //   VITE_BRAND=ghardaia   or   --mode ghardaia
 // Without it, the generic Security Register look is used. One codebase, one build per organisation.
-import type { Lang } from '@shared/types'
+import type { Features, Lang } from '@shared/types'
 import ghardaiaLogo from './assets/brands/ghardaia-university.png'
 import lawFacultyLogo from './assets/brands/ghardaia-law-faculty.png'
 
@@ -26,10 +26,19 @@ export interface Brand {
   loginMode: 'pick' | 'pin'
   /** language before anyone has chosen one; null = the computer's language */
   defaultLang: Lang | null
+  /** the organisation's own feature switches, applied at first setup instead of the profile choice; null = choose a profile */
+  features: Features | null
+  /** register templates (src/shared/registerTemplates.ts) installed for this organisation when missing */
+  registerTemplates: string[]
+  /** home screen with the tiles only (no counters, no list of people on site) */
+  homeTilesOnly: boolean
+  /** registers a team leader fills, in this order, before starting a shift (the paper handover) */
+  leaderStartRegisters: string[]
 }
 
 const GENERIC: Brand = {
-  id: 'default', org: null, appName: null, logo: null, logo2: null, colors: {}, badgeColor: '#0f2a44', loginMode: 'pick', defaultLang: null
+  id: 'default', org: null, appName: null, logo: null, logo2: null, colors: {}, badgeColor: '#0f2a44', loginMode: 'pick', defaultLang: null,
+  features: null, registerTemplates: [], homeTilesOnly: false, leaderStartRegisters: []
 }
 
 // green and red of the University of Ghardaia logos
@@ -68,7 +77,18 @@ const GHARDAIA_LAW: Brand = {
   logo: lawFacultyLogo,
   logo2: ghardaiaLogo,
   loginMode: 'pin',
-  defaultLang: 'ar'
+  defaultLang: 'ar',
+  // their paper books become registers; incidents, parcels (letters) and keys are registers too
+  features: {
+    modules: {
+      vehicles: false, deliveries: false, incidents: false, patrols: false, keys: false, notes: false,
+      watchlist: true, shifts: true, preregistration: false, badges: false
+    },
+    idScan: true, visitorPhoto: false, requireIdNumber: true, badgeNumbers: false
+  },
+  registerTemplates: ['shift', 'custody', 'incidents', 'lost_found', 'letters', 'events', 'reports', 'maintenance', 'official_visits', 'evacuation', 'alarms'],
+  homeTilesOnly: true,
+  leaderStartRegisters: ['shift', 'custody']
 }
 
 // compared with literals so the bundler drops the other brands (logo, colours, demo data) from each build

@@ -521,3 +521,5 @@ h2.spaced { margin-top: 18px; }
 .corrections { margin: 0 0 14px; padding-inline-start: 18px; display: grid; gap: 6px; font-size: 0.9rem; }
 .sub-form { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 6px; }
 .log-table td .tag, .detail-table td .tag { margin-inline-start: 6px; }
+.home.tiles-only { display: block; }
+.home.tiles-only .actions-grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
