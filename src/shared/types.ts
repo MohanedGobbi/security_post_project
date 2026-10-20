@@ -46,6 +46,9 @@ export interface PersonFields {
   company: string
 }
 
+/** Pictures of the ID card kept with one entry */
+export const MAX_CARD_PICTURES = 3
+
 export interface CheckInInput extends PersonFields {
   host: string
   purpose: string
@@ -54,6 +57,8 @@ export interface CheckInInput extends PersonFields {
   notes: string
   /** JPEG bytes of the visitor photo taken at the desk */
   photo: Uint8Array | null
+  /** JPEG pictures of the ID card(s) taken by the scanner (at most MAX_CARD_PICTURES), saved encrypted with the entry */
+  cards?: Uint8Array[]
   /** an administrator's PIN, to let in someone on the "deny" watchlist */
   supervisorPin?: string
   custom: CustomValues
@@ -89,6 +94,8 @@ export interface VisitRow {
   guardIn: string
   guardOut: string | null
   hasPhoto: boolean
+  /** how many pictures of the ID card are saved with this entry */
+  cardCount: number
   custom: CustomValues
 }
 
@@ -98,6 +105,8 @@ export interface VisitDetail extends VisitRow {
   sex: string
   phone: string
   photo: Uint8Array | null
+  /** the saved pictures of the ID card, oldest first */
+  cards: Uint8Array[]
 }
 
 export interface SearchQuery {

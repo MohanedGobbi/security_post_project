@@ -7,6 +7,7 @@ import type {
   AuditQuery, AuditRow, CheckInInput, Features, IdType, Lang, NoteCategory, NoteRow, PersonFields, PersonLookup,
   Role, SearchQuery, Settings, TodayStats, User, VisitDetail, VisitRow
 } from '@shared/types'
+import { MAX_CARD_PICTURES } from '@shared/types'
 import { decryptBuffer, decryptText, encrypt, hashPin, idHash, normalizeId, pinLookup, verifyPin } from './crypto'
 import { normalizeFeatures } from '@shared/features'
 
@@ -123,6 +124,14 @@ CREATE TABLE IF NOT EXISTS incidents (
   post TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS incidents_time ON incidents(occurred_at);
+/** pictures of the ID card taken by the scanner, encrypted; they go with their visit */
+CREATE TABLE IF NOT EXISTS visit_cards (
+  id INTEGER PRIMARY KEY,
+  visit_id INTEGER NOT NULL REFERENCES visits(id) ON DELETE CASCADE,
+  image_enc BLOB NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS visit_cards_visit ON visit_cards(visit_id);
 CREATE TABLE IF NOT EXISTS incident_photos (
   id INTEGER PRIMARY KEY,
   incident_id INTEGER NOT NULL REFERENCES incidents(id) ON DELETE CASCADE,
@@ -609,6 +618,15 @@ function upsertPerson(input: PersonFields): number {
 }
 
 // ---------- visits ----------
+const MAX_CARD_BYTES = 4 * 1024 * 1024
+
+/** The card pictures of an entry: JPEG only, a few of them, none too large (anything else is dropped) */
+function cleanCards(cards: Uint8Array[] | undefined): Uint8Array[] {
+  return (Array.isArray(cards) ? cards : [])
+    .filter((c) => c instanceof Uint8Array && c.length > 100 && c.length <= MAX_CARD_BYTES && c[0] === 0xff && c[1] === 0xd8)
+    .slice(0, MAX_CARD_PICTURES)
+}
+
 export function checkIn(input: CheckInInput, guardId: number, post: string): number {
   if (!input.fullName.trim()) throw new Error('error.nameRequired')
   if (!normalizeId(input.idNumber) && getFeatures().requireIdNumber) throw new Error('error.idRequired')
@@ -623,6 +641,9 @@ export function checkIn(input: CheckInInput, guardId: number, post: string): num
       plate, input.notes.trim(), input.photo ? encrypt(Buffer.from(input.photo)) : null, guardId, post, JSON.stringify(input.custom ?? {})
     )
     const visitId = Number(r.lastInsertRowid)
+    for (const card of cleanCards(input.cards)) {
+      db.prepare('INSERT INTO visit_cards (visit_id, image_enc, created_at) VALUES (?, ?, ?)').run(visitId, encrypt(Buffer.from(card)), time)
+    }
     // a visitor who drives in also gets a vehicle entry, released when they check out
     if (normPlate(plate)) {
       db.prepare(`INSERT INTO vehicle_logs (plate, plate_norm, driver_name, company, visit_id, time_in, guard_in, post)
@@ -649,7 +670,8 @@ export function checkOut(visitId: number, guardId: number, note: string): void {
 const VISIT_SELECT = `
 SELECT v.id, v.person_id, p.full_name, p.full_name_alt, p.id_type, p.id_number_enc, p.company, p.nationality,
   p.birth_date_enc, p.sex, p.phone_enc, v.host, v.purpose, v.badge_no, v.vehicle_plate, v.notes, v.time_in, v.time_out,
-  gi.name AS guard_in_name, go.name AS guard_out_name, (v.photo_enc IS NOT NULL) AS has_photo, v.custom_json
+  gi.name AS guard_in_name, go.name AS guard_out_name, (v.photo_enc IS NOT NULL) AS has_photo, v.custom_json,
+  (SELECT COUNT(*) FROM visit_cards c WHERE c.visit_id = v.id) AS card_count
 FROM visits v
 JOIN persons p ON p.id = v.person_id
 JOIN users gi ON gi.id = v.guard_in
@@ -659,7 +681,7 @@ interface VisitDb {
   id: number; person_id: number; full_name: string; full_name_alt: string; id_type: IdType; id_number_enc: Uint8Array
   company: string; nationality: string; birth_date_enc: Uint8Array | null; sex: string; phone_enc: Uint8Array | null
   host: string; purpose: string; badge_no: string; vehicle_plate: string; notes: string; time_in: string
-  time_out: string | null; guard_in_name: string; guard_out_name: string | null; has_photo: number; custom_json: string
+  time_out: string | null; guard_in_name: string; guard_out_name: string | null; has_photo: number; custom_json: string; card_count: number
 }
 
 const toVisitRow = (r: VisitDb): VisitRow => ({
@@ -680,6 +702,7 @@ const toVisitRow = (r: VisitDb): VisitRow => ({
   guardIn: r.guard_in_name,
   guardOut: r.guard_out_name,
   hasPhoto: r.has_photo === 1,
+  cardCount: r.card_count,
   custom: parseCustom(r.custom_json)
 })
 
@@ -715,7 +738,11 @@ export function getVisit(visitId: number): VisitDetail {
     birthDate: decryptText(r.birth_date_enc),
     sex: r.sex,
     phone: decryptText(r.phone_enc),
-    photo: buf ? new Uint8Array(buf) : null
+    photo: buf ? new Uint8Array(buf) : null,
+    cards: (db.prepare('SELECT image_enc FROM visit_cards WHERE visit_id = ? ORDER BY id').all(visitId) as { image_enc: Uint8Array }[])
+      .map((c) => decryptBuffer(c.image_enc))
+      .filter((b): b is Buffer => !!b)
+      .map((b) => new Uint8Array(b))
   }
 }
 

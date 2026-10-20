@@ -1042,5 +1042,11 @@
       "watchlist_hit": "Alerte liste de surveillance",
       "watchlist_override": "Refus levé par un responsable"
     }
+  },
+  "card": {
+    "title": "Photos de la pièce d’identité",
+    "savedWithEntry": "Photos de la pièce : enregistrées, chiffrées, avec cette inscription.",
+    "enlarge": "Agrandir la photo",
+    "remove": "Ne pas enregistrer cette photo"
   }
 }

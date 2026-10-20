@@ -566,3 +566,14 @@ h2.spaced { margin-top: 18px; }
 .auto-badge.done { background: rgb(13 138 78 / 92%); }
 .auto-toggle { margin: 6px 0 0; }
 .camera-busy small { margin-inline-start: 8px; opacity: 0.8; }
+
+/* ---------- pictures of the ID card ---------- */
+.card-pictures { margin-top: 10px; }
+.card-pictures ul, .card-gallery ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.card-pictures li { position: relative; }
+.thumb { padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface-2); line-height: 0; }
+.thumb img { width: 150px; height: 96px; object-fit: cover; }
+.thumb.big img { width: 300px; height: 190px; }
+.thumb-remove { position: absolute; top: 4px; inset-inline-end: 4px; background: rgb(15 23 32 / 70%); color: #fff; border: none; border-radius: 999px; padding: 3px; }
+.card-gallery h3 { margin: 14px 0 0; }
+.card-mark { margin-inline-start: 8px; background: var(--accent-soft); color: var(--accent-ink); vertical-align: middle; }

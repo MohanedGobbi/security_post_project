@@ -29,6 +29,11 @@ All reading is offline, on the PC. A webcam reads passports and ID cards through
 importing a photo work too. Each frame is tried in several enhanced versions until the check digits of the document
 validate. Cards without an MRZ fall back to a text read that lets the guard pick lines.
 
+**Every scanned card is photographed.** The picture (color, about 100-300 KB) is kept with the visitor's entry, encrypted
+like the other personal data, up to 3 per entry (e.g. both sides of a card). The guard sees the pictures under the scanner and can
+remove one before saving; the log shows a mark on entries that have pictures, and the record shows them. They are deleted
+with their entry by the retention clean-up and never leave the PC.
+
 ## Run it
 Requires Node.js.
 

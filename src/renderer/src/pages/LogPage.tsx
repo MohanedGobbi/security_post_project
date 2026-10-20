@@ -12,6 +12,7 @@ import { IncidentDialog } from './IncidentsPage'
 import Icon from '../components/Icon'
 import { customRows, useCustomFields } from '../components/CustomFields'
 import { bytesToUrl, errorText, todayStr } from '../util'
+import { CardGallery } from '../components/CardPictures'
 
 type Tab = 'visits' | 'vehicles' | 'deliveries' | 'incidents' | 'patrols' | 'keys' | 'notes' | 'shifts' | 'activity'
 const TABS: Tab[] = ['visits', 'vehicles', 'deliveries', 'incidents', 'patrols', 'keys', 'notes', 'shifts', 'activity']
@@ -111,10 +112,13 @@ function DetailDialog({ id, onClose }: { id: number; onClose(): void }): ReactNo
           {photoUrl && <img className="visitor-photo big" src={photoUrl} alt={t('visitor.photo')} />}
         </div>
         {!v ? <p>{t('common.loading')}</p> : (
-          <dl className="detail-grid">
-            {rows.filter(([, val]) => val).map(([k, val]) => <div key={k}><dt>{t(k)}</dt><dd dir="auto">{val}</dd></div>)}
-            {extra.map(([k, val]) => <div key={k}><dt>{k}</dt><dd dir="auto">{val}</dd></div>)}
-          </dl>
+          <>
+            <dl className="detail-grid">
+              {rows.filter(([, val]) => val).map(([k, val]) => <div key={k}><dt>{t(k)}</dt><dd dir="auto">{val}</dd></div>)}
+              {extra.map(([k, val]) => <div key={k}><dt>{k}</dt><dd dir="auto">{val}</dd></div>)}
+            </dl>
+            <CardGallery cards={v.cards} />
+          </>
         )}
         <div className="actions"><button type="button" onClick={onClose} autoFocus>{t('common.close')}</button></div>
       </div>
@@ -214,7 +218,7 @@ export default function LogPage(): ReactNode {
       data.visits.map((v) => (
         <tr key={v.id} onClick={() => setVisitDetail(v.id)} tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setVisitDetail(v.id)}>
           <td>{dt(v.timeIn)}</td><td>{v.timeOut ? dt(v.timeOut) : insideTag}</td>
-          <td dir="auto"><strong>{v.fullName}</strong>{v.fullNameAlt && <div className="muted">{v.fullNameAlt}</div>}</td>
+          <td dir="auto"><strong>{v.fullName}</strong>{v.fullNameAlt && <div className="muted">{v.fullNameAlt}</div>}{v.cardCount > 0 && <span className="tag card-mark" title={t('card.title')}><Icon name="scan" size={12} /> {v.cardCount}</span>}</td>
           <td className="mono" dir="ltr">{v.idNumber}</td><td dir="auto">{v.company}</td><td dir="auto">{v.host}</td>
           <td>{v.badgeNo}</td><td>{v.guardIn}</td>
         </tr>

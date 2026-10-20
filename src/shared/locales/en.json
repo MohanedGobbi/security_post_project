@@ -1042,5 +1042,11 @@
       "watchlist_hit": "Watchlist match",
       "watchlist_override": "Refusal overridden"
     }
+  },
+  "card": {
+    "title": "Pictures of the ID card",
+    "savedWithEntry": "Pictures of the card: saved, encrypted, with this entry.",
+    "enlarge": "Enlarge the picture",
+    "remove": "Do not save this picture"
   }
 }

@@ -12,6 +12,7 @@ import {
   db, dayBounds, fail, nextId, nowIso, photos, refresh, save, today, wait,
   type DEntry, type DExpected, type DLoan, type DRound, type DShift, type DUser, type DVisit
 } from './store'
+import { MAX_CARD_PICTURES } from '@shared/types'
 import { cleanDefinition, cleanStep, cleanValue, type ValueResolvers } from '@shared/registers'
 import { templatesFor } from '@shared/registerTemplates'
 import { qrDataUrl, qrSvg, readQr } from './qr'
@@ -100,7 +101,7 @@ const done = <T>(v: T): T => {
 const visitRow = (v: DVisit): VisitRow => ({
   id: v.id, personId: v.id, fullName: v.fullName, fullNameAlt: v.fullNameAlt, idType: v.idType, idNumber: v.idNumber, company: v.company,
   host: v.host, purpose: v.purpose, badgeNo: v.badgeNo, vehiclePlate: v.vehiclePlate, notes: v.notes, timeIn: v.timeIn, timeOut: v.timeOut,
-  guardIn: v.guardIn, guardOut: v.guardOut, hasPhoto: v.hasPhoto, custom: v.custom
+  guardIn: v.guardIn, guardOut: v.guardOut, hasPhoto: v.hasPhoto, cardCount: photos.get(`visitcards:${v.id}`)?.length ?? 0, custom: v.custom
 })
 
 function watchHits(q: { idNumber?: string; name?: string; plate?: string }): WatchHit[] {
@@ -365,6 +366,8 @@ export const demoApi: Api = {
         guardIn: u.name, guardOut: null, custom, hasPhoto: !!input.photo
       })
       if (input.photo) photos.set(`visit:${id}`, [input.photo])
+      // pictures of the ID card (kept in memory in the demo, like photos)
+      if (input.cards?.length) photos.set(`visitcards:${id}`, input.cards.slice(0, MAX_CARD_PICTURES))
       if (plate) s.vehicles.push({ id: nextId(), plate, vehicleType: 'car', color: '', driverName: input.fullName, company: input.company, passengers: 0, cargo: '',
         notes: '', visitId: id, timeIn: nowIso(), timeOut: null, guardIn: u.name, guardOut: null, custom: {}, hasPhoto: false })
       const e = s.expected.find((x) => x.id === input.expectedId && x.status === 'pending')
@@ -400,7 +403,7 @@ export const demoApi: Api = {
       const v = db().visits.find((x) => x.id === visitId)
       if (!v) fail('error.notFound')
       const visit = v as DVisit
-      return { ...visitRow(visit), nationality: visit.nationality, birthDate: visit.birthDate, sex: visit.sex, phone: visit.phone, photo: photos.get(`visit:${visitId}`)?.[0] ?? null }
+      return { ...visitRow(visit), nationality: visit.nationality, birthDate: visit.birthDate, sex: visit.sex, phone: visit.phone, photo: photos.get(`visit:${visitId}`)?.[0] ?? null, cards: photos.get(`visitcards:${visitId}`) ?? [] }
     },
     async stats() {
       refresh()

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { ScanResult } from '@shared/types'
 import Icon from './Icon'
 import { savedCameraId } from '../util'
-import { isDone, looksLikeCardText, scanFrame, type Region } from '../scanPipeline'
+import { isDone, looksLikeCardText, scanFrame, snapshot, type Region } from '../scanPipeline'
 
 const CARD_RATIO = 85.6 / 53.98 // ID-1 card format
 const GUIDE_WIDTH = 0.82 // share of the video width covered by the guide frame
@@ -24,6 +24,8 @@ const analyze = (image: Uint8Array, opts: { barcodes?: boolean; text?: boolean }
 
 interface Props {
   onScan(result: ScanResult): void
+  /** a picture of the card that was just scanned: it is saved with the entry */
+  onCard(jpeg: Uint8Array): void
   onPhoto(jpeg: Uint8Array): void
   onTextLines(lines: string[]): void
   onError(message: string): void
@@ -76,7 +78,7 @@ async function prepareForOcr(src: CanvasImageSource, sx: number, sy: number, sw:
   return canvasToBytes(c, 0.92)
 }
 
-export default function CameraPanel({ onScan, onPhoto, onTextLines, onError, hasPhoto, scan, photo }: Props): ReactNode {
+export default function CameraPanel({ onScan, onCard, onPhoto, onTextLines, onError, hasPhoto, scan, photo }: Props): ReactNode {
   const { t } = useTranslation()
   const videoRef = useRef<HTMLVideoElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -148,7 +150,10 @@ export default function CameraPanel({ onScan, onPhoto, onTextLines, onError, has
     setBusy('scan')
     setProgress([0, MANUAL_VARIANTS])
     try {
+      // the picture is taken first: the camera moves on while the reading goes on
+      const picture = await snapshot(src, region)
       const r = await scanFrame(src, region, analyze, { variants: MANUAL_VARIANTS, onProgress: (d, n) => setProgress([d, n]) })
+      onCard(picture)
       onScan(r)
       if (isDone(r)) setFound(true)
     } catch (e) {
@@ -190,11 +195,14 @@ export default function CameraPanel({ onScan, onPhoto, onTextLines, onError, has
         if (!looksLikeCardText(v, region)) { failures = 0; setAutoState('idle'); continue }
         setAutoState(failures >= AUTO_TROUBLE_AFTER ? 'trouble' : 'reading')
         try {
+          // the picture of the frame being read, kept only if the reading succeeds
+          const picture = await snapshot(v, region)
           const r = await scanFrame(v, region, analyze, { variants: AUTO_VARIANTS, signal })
           if (signal.cancelled) return
           if (isDone(r)) {
             setFound(true)
             setAutoState('idle')
+            onCard(picture)
             onScan(r)
             return
           }

@@ -123,6 +123,17 @@ async function render(src: CanvasImageSource, region: Region, targetWidth: numbe
   return new Uint8Array(await blob.arrayBuffer())
 }
 
+/**
+ * A picture of the card as the guard sees it (color, not the black-and-white version used for reading),
+ * small enough to keep with the entry: about 250 KB as JPEG.
+ */
+export async function snapshot(src: CanvasImageSource, region: Region, maxWidth = 1600): Promise<Uint8Array> {
+  const width = Math.min(maxWidth, Math.round(region[2]))
+  const c = canvasFor(src, region, width)
+  const blob = await new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('encode'))), 'image/jpeg', 0.85))
+  return new Uint8Array(await blob.arrayBuffer())
+}
+
 /** Variants of one frame, most promising first. The MRZ is in the bottom part of a card: that strip alone is faster and sharper to read. */
 interface Variant { treatment: Treatment; strip: boolean; rotate: number }
 const VARIANTS: Variant[] = [

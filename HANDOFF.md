@@ -82,6 +82,9 @@ API `audit.list`, action names in `audit.actions.*`). The demo keeps its own aud
 - `src/main/scan.ts` reads the MRZ (TD1 ID cards, TD3 passports, TD2) with check-digit validation, QR / barcodes, and has a text fallback (Arabic, French, English).
 - `src/renderer/src/scanPipeline.ts` tries several enhanced versions of one frame (MRZ strip, adaptive threshold, sharpening, small rotations) until the document validates.
   `components/CameraPanel.tsx` runs it automatically on the live camera, and on the Scan button and imported photos.
+- **Card pictures:** `CameraPanel` takes a color snapshot (`snapshot()` in `scanPipeline.ts`) of every scan and hands it to `VisitorInPage`; `checkIn` stores up to
+  `MAX_CARD_PICTURES` JPEGs encrypted in `visit_cards` (deleted with the visit by `ON DELETE CASCADE`); `VisitRow.cardCount`, `VisitDetail.cards`, `CardPictures.tsx`.
+  Tested on the real app: picture unreadable in the database files, removed with the visit.
 - Tested on synthetic Algerian-style cards (TD1 and a passport, with glare, tilt and soft focus) through the real app. **Not tested on real Algerian cards.**
 
 ## Web demo (Vercel)

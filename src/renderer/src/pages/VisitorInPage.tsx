@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { CustomField, CustomValues, ExpectedVisitor, IdType, PersonFields, PersonLookup, ScanResult, WatchHit } from '@shared/types'
+import { MAX_CARD_PICTURES, type CustomField, type CustomValues, type ExpectedVisitor, type IdType, type PersonFields, type PersonLookup, type ScanResult, type WatchHit } from '@shared/types'
 import { QR_BADGE, QR_PREREG } from '@shared/sync'
 import { formatDateTime } from '@shared/i18n'
 import { useApp } from '../App'
 import { currentLang } from '../i18n'
 import CameraPanel from '../components/CameraPanel'
+import { CardPictures } from '../components/CardPictures'
 import Icon from '../components/Icon'
 import WatchAlert, { isBlocking } from '../components/WatchAlert'
 import { openExpectedByCode } from './ExpectedPage'
@@ -38,6 +39,8 @@ export default function VisitorInPage(): ReactNode {
   const [status, setStatus] = useState<Status | null>(null)
   const [returning, setReturning] = useState<PersonLookup | null>(null)
   const [lines, setLines] = useState<string[]>([])
+  /** pictures of the ID card taken by the scanner: saved with the entry */
+  const [cards, setCards] = useState<Uint8Array[]>([])
   const [barcodes, setBarcodes] = useState<string[]>([])
   const [suggest, setSuggest] = useState<{ hosts: string[]; purposes: string[] }>({ hosts: [], purposes: [] })
   const [busy, setBusy] = useState(false)
@@ -155,7 +158,7 @@ export default function VisitorInPage(): ReactNode {
   const save = async (supervisorPin?: string): Promise<void> => {
     setBusy(true)
     try {
-      const visitId = await window.api.visits.checkIn({ ...f, photo, supervisorPin, custom, expectedId: expected?.id ?? null })
+      const visitId = await window.api.visits.checkIn({ ...f, photo, cards, supervisorPin, custom, expectedId: expected?.id ?? null })
       if (features.modules.badges) {
         const b = await window.api.badges.settings()
         if (b.autoPrint) window.api.badges.print(visitId).catch((err) => toast(errorText(err, t), 'error'))
@@ -195,6 +198,7 @@ export default function VisitorInPage(): ReactNode {
       <section className="card">
         <CameraPanel
           onScan={applyScan}
+          onCard={(jpeg) => setCards((cur) => [...cur, jpeg].slice(-MAX_CARD_PICTURES))}
           onPhoto={setPhoto}
           onTextLines={(ls) => { setLines(ls); setStatus(null) }}
           onError={(m) => setStatus({ kind: 'error', text: errorText(m, t) })}
@@ -202,6 +206,7 @@ export default function VisitorInPage(): ReactNode {
           scan={features.idScan}
           photo={features.visitorPhoto}
         />
+        <CardPictures cards={cards} onRemove={(i) => setCards((cur) => cur.filter((_, k) => k !== i))} />
         {(lines.length > 0 || barcodes.length > 0) && (
           <div className="ocr-lines">
             <p className="hint">{t(lines.length ? 'visitor.textHint' : 'visitor.barcodeHint')}</p>
