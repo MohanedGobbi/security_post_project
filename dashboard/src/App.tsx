@@ -5,7 +5,7 @@ import i18n from '@desktop/i18n'
 import { LANGS } from '@shared/i18n'
 import Icon, { type IconName } from '@desktop/components/Icon'
 import BrandMark from '@desktop/components/BrandMark'
-import { orgName } from '@desktop/brand'
+import { appTitle, orgName } from '@desktop/brand'
 import { errText, get, patch, post } from './api'
 import type { Me, Role } from './types'
 import OverviewPage from './pages/OverviewPage'
@@ -72,7 +72,7 @@ function AuthScreen({ setup, onDone, toast }: { setup: boolean; onDone(me: Me): 
         <LangSwitch />
         <div className="login-head">
           <BrandMark big />
-          <div><h1>{t('app.title')}</h1><p className="muted">{orgName(i18n.language) ?? t('dash.subtitle')}</p></div>
+          <div><h1>{appTitle(i18n.language, t)}</h1><p className="muted">{orgName(i18n.language) ?? t('dash.subtitle')}</p></div>
         </div>
         {setup && (
           <>
@@ -137,7 +137,7 @@ export default function App(): ReactNode {
         <header className="topbar">
           <div className="brand">
             <BrandMark />
-            <div><strong>{t('app.title')}</strong><span>{orgName(i18n.language) ?? t('dash.subtitle')}</span></div>
+            <div><strong>{appTitle(i18n.language, t)}</strong><span>{orgName(i18n.language) ?? t('dash.subtitle')}</span></div>
           </div>
           <div className="topbar-end">
             <LangSwitch onChange={(l) => { void patch('/api/me', { language: l }) }} />

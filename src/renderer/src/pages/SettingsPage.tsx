@@ -126,6 +126,7 @@ function UserSettings(): ReactNode {
               <td>
                 <select value={u.role} onChange={(e) => run(() => window.api.users.update(u.id, { role: e.target.value as Role }))}>
                   <option value="guard">{t('settings.roles.guard')}</option>
+                  <option value="leader">{t('settings.roles.leader')}</option>
                   <option value="admin">{t('settings.roles.admin')}</option>
                 </select>
               </td>
@@ -157,6 +158,7 @@ function UserSettings(): ReactNode {
           <label>{t('settings.role')}
             <select value={nu.role} onChange={(e) => setNu({ ...nu, role: e.target.value as Role })}>
               <option value="guard">{t('settings.roles.guard')}</option>
+              <option value="leader">{t('settings.roles.leader')}</option>
               <option value="admin">{t('settings.roles.admin')}</option>
             </select>
           </label>

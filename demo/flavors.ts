@@ -1,9 +1,14 @@
 // Place-specific text of the demo data: one set per brand (src/renderer/src/brand.ts).
 // store.ts builds the records (times, ids, statuses) and takes names, places and companies from here.
+import type { Lang, Role } from '@shared/types'
 
 type Visit = { name: string; company: string; host: string; purpose: string; alt?: string; plate?: string }
 
+/** a reception-app account of the demo; the first one is the administrator, the second signs the handover */
+export interface DemoUser { name: string; role: Role; pin: string; language: Lang }
+
 export interface Flavor {
+  users: DemoUser[]
   nationality: string
   /** ID numbers of the sample visitors: idBase + id * 7919 */
   idBase: number
@@ -36,6 +41,10 @@ export interface Flavor {
 }
 
 const TUNIS: Flavor = {
+  users: [
+    { name: 'Admin', role: 'admin', pin: '1234', language: 'fr' },
+    { name: 'Sonia', role: 'guard', pin: '5678', language: 'ar' }
+  ],
   nationality: 'TUN',
   idBase: 10000000,
   siteName: 'Université de Tunis — démo',
@@ -75,6 +84,10 @@ const TUNIS: Flavor = {
 
 // University of Ghardaia: Algerian names, companies and plates (serial, type + year, wilaya 47)
 const GHARDAIA: Flavor = {
+  users: [
+    { name: 'Admin', role: 'admin', pin: '1234', language: 'fr' },
+    { name: 'Sonia', role: 'guard', pin: '5678', language: 'ar' }
+  ],
   nationality: 'DZA',
   idBase: 100000000,
   siteName: 'Université de Ghardaïa',
@@ -112,8 +125,22 @@ const GHARDAIA: Flavor = {
   cardText: ['الجمهورية الجزائرية الديمقراطية الشعبية', 'CARTE NATIONALE D’IDENTITÉ', 'Nom : BENYOUCEF', 'Prénom : Khadidja', 'اللقب : بن يوسف', 'الاسم : خديجة', 'Né(e) le 14/06/1996 à Ghardaïa']
 }
 
+// Faculty of Law and Political Science: same campus data, Arabic accounts, PIN-only login (admin, team leader, guard)
+const GHARDAIA_LAW: Flavor = {
+  ...GHARDAIA,
+  users: [
+    { name: 'مسؤول الأمن', role: 'admin', pin: '1234', language: 'ar' },
+    { name: 'يوسف (رئيس الفرقة)', role: 'leader', pin: '2580', language: 'ar' },
+    { name: 'محمد (عون أمن)', role: 'guard', pin: '5678', language: 'ar' }
+  ],
+  siteName: 'كلية الحقوق والعلوم السياسية',
+  postName: 'مكتب الأمن الرئيسي',
+  sites: [['كلية الحقوق والعلوم السياسية', 'جامعة غرداية'], ...GHARDAIA.sites.slice(1)],
+  devices: ['مكتب الأمن الرئيسي', GHARDAIA.devices[1], GHARDAIA.devices[2]]
+}
+
 declare const __BRAND__: string
-export const F: Flavor = __BRAND__ === 'ghardaia' ? GHARDAIA : TUNIS
+export const F: Flavor = __BRAND__ === 'ghardaia-law' ? GHARDAIA_LAW : __BRAND__ === 'ghardaia' ? GHARDAIA : TUNIS
 
 /** ID number of sample visit `id` */
 export const sampleId = (id: number): string => String(F.idBase + id * 7919)

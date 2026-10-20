@@ -5,6 +5,7 @@ import type { AlertItem, ExpectedVisitor, Features, Lang, Module, SyncStatus, Us
 import { formatDateTime } from '@shared/i18n'
 import { ALL_ON } from '@shared/features'
 import i18n from './i18n'
+import { appTitle, BRAND } from './brand'
 import SetupPage from './pages/SetupPage'
 import LoginPage from './pages/LoginPage'
 import ShiftStartPage from './pages/ShiftStartPage'
@@ -154,6 +155,11 @@ export default function App(): ReactNode {
     const f = await window.api.settings.getFeatures()
     setFeatures(f)
     setPage('home')
+    // organisation builds (PIN-only login): administrators go straight to administration, without a guard shift
+    if (BRAND.loginMode === 'pin' && u.role === 'admin') {
+      setPage('settings')
+      return setState('ready')
+    }
     if (!f.modules.shifts) return setState('ready')
     const s = await window.api.shifts.state()
     setState(s.mine ? 'ready' : 'shift')
@@ -232,7 +238,7 @@ export default function App(): ReactNode {
           <div className="brand">
             <BrandMark />
             <div>
-              <strong>{t('app.title')}</strong>
+              <strong>{appTitle(i18n.language, t)}</strong>
               {siteName && <span>{siteName}</span>}
             </div>
           </div>

@@ -6,22 +6,26 @@ import type {
   CheckInInput, Features, IdType, Lang, NoteCategory, NoteRow, PersonFields, PersonLookup,
   Role, SearchQuery, Settings, TodayStats, User, VisitDetail, VisitRow
 } from '@shared/types'
-import { decryptBuffer, decryptText, encrypt, hashPin, idHash, normalizeId } from './crypto'
+import { decryptBuffer, decryptText, encrypt, hashPin, idHash, normalizeId, pinLookup, verifyPin } from './crypto'
 import { normalizeFeatures } from '@shared/features'
 
 let db: DatabaseSync
 
-const SCHEMA = `
-CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS users (
+/** leader = head of a guard team; pin_lookup finds a user by PIN alone (see crypto.pinLookup) */
+const usersTable = (name: string): string => `CREATE TABLE IF NOT EXISTS ${name} (
   id INTEGER PRIMARY KEY,
   name TEXT NOT NULL,
-  role TEXT NOT NULL CHECK (role IN ('admin','guard')),
+  role TEXT NOT NULL CHECK (role IN ('admin','leader','guard')),
   pin_hash TEXT NOT NULL,
+  pin_lookup TEXT,
   language TEXT NOT NULL DEFAULT 'en',
   active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL
-);
+);`
+
+const SCHEMA = `
+CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+${usersTable('users')}
 CREATE TABLE IF NOT EXISTS persons (
   id INTEGER PRIMARY KEY,
   id_hash TEXT NOT NULL UNIQUE,
@@ -260,6 +264,30 @@ function migrate(): void {
   for (const table of ['visits', 'vehicle_logs', 'deliveries']) {
     if (!hasColumn(table, 'custom_json')) db.exec(`ALTER TABLE ${table} ADD COLUMN custom_json TEXT NOT NULL DEFAULT '{}'`)
   }
+  // the team leader role: SQLite cannot change a CHECK constraint, so the users table is rebuilt (ids kept)
+  const users = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'").get() as { sql: string }
+  if (!users.sql.includes("'leader'")) {
+    db.exec('PRAGMA foreign_keys = OFF')
+    try {
+      db.exec(`BEGIN;
+        ${usersTable('users_new')}
+        INSERT INTO users_new (id, name, role, pin_hash, language, active, created_at)
+          SELECT id, name, role, pin_hash, language, active, created_at FROM users;
+        DROP TABLE users;
+        ALTER TABLE users_new RENAME TO users;
+        COMMIT;`)
+    } catch (e) {
+      try {
+        db.exec('ROLLBACK')
+      } catch {
+        // the transaction never started
+      }
+      throw e
+    } finally {
+      db.exec('PRAGMA foreign_keys = ON')
+    }
+  }
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_pin_lookup ON users (pin_lookup) WHERE pin_lookup IS NOT NULL')
 }
 
 /** Custom field values are stored as JSON next to the record */
@@ -348,7 +376,7 @@ export function setSettings(s: Settings): void {
 }
 
 // ---------- users ----------
-interface UserDb { id: number; name: string; role: Role; pin_hash: string; language: Lang; active: number }
+export interface UserDb { id: number; name: string; role: Role; pin_hash: string; pin_lookup: string | null; language: Lang; active: number }
 
 const toUser = (r: UserDb): User => ({ id: r.id, name: r.name, role: r.role, language: r.language, active: r.active === 1 })
 
@@ -356,9 +384,30 @@ export function userCount(): number {
   return (db.prepare('SELECT COUNT(*) AS n FROM users').get() as { n: number }).n
 }
 
+/**
+ * The account owning this PIN (active or not). Accounts made before PIN lookups existed are checked
+ * against their scrypt hash one by one, and get their lookup on the first match.
+ */
+export function findUserByPin(pin: string): UserDb | undefined {
+  const lookup = pinLookup(pin)
+  const hit = db.prepare('SELECT * FROM users WHERE pin_lookup = ?').get(lookup) as UserDb | undefined
+  if (hit) return hit
+  const legacy = db.prepare('SELECT * FROM users WHERE pin_lookup IS NULL').all() as unknown as UserDb[]
+  const match = legacy.find((u) => verifyPin(pin, u.pin_hash))
+  if (match) db.prepare('UPDATE users SET pin_lookup = ? WHERE id = ?').run(lookup, match.id)
+  return match
+}
+
+/** Each PIN belongs to one person, so that the PIN alone can say who is logging in. */
+function assertPinFree(pin: string, userId: number | null): void {
+  const owner = findUserByPin(pin)
+  if (owner && owner.id !== userId) throw new Error('error.pinTaken')
+}
+
 export function createUser(name: string, role: Role, pin: string, language: Lang): number {
-  const r = db.prepare('INSERT INTO users (name, role, pin_hash, language, created_at) VALUES (?, ?, ?, ?, ?)')
-    .run(name.trim(), role, hashPin(pin), language, now())
+  assertPinFree(pin, null)
+  const r = db.prepare('INSERT INTO users (name, role, pin_hash, pin_lookup, language, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(name.trim(), role, hashPin(pin), pinLookup(pin), language, now())
   return Number(r.lastInsertRowid)
 }
 
@@ -378,7 +427,10 @@ export function listUsers(activeOnly: boolean): User[] {
 
 export function updateUser(id: number, patch: { active?: boolean; pin?: string; role?: Role; language?: Lang }): void {
   if (patch.active !== undefined) db.prepare('UPDATE users SET active = ? WHERE id = ?').run(patch.active ? 1 : 0, id)
-  if (patch.pin) db.prepare('UPDATE users SET pin_hash = ? WHERE id = ?').run(hashPin(patch.pin), id)
+  if (patch.pin) {
+    assertPinFree(patch.pin, id)
+    db.prepare('UPDATE users SET pin_hash = ?, pin_lookup = ? WHERE id = ?').run(hashPin(patch.pin), pinLookup(patch.pin), id)
+  }
   if (patch.role) db.prepare('UPDATE users SET role = ? WHERE id = ?').run(patch.role, id)
   if (patch.language) db.prepare('UPDATE users SET language = ? WHERE id = ?').run(patch.language, id)
 }

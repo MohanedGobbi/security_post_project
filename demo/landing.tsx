@@ -156,5 +156,10 @@ function Landing(): ReactNode {
   )
 }
 
-applyBrand()
-createRoot(document.getElementById('root') as HTMLElement).render(<StrictMode><Landing /></StrictMode>)
+// an organisation build (PIN-only login) opens straight on its login page, as the client asked
+if (BRAND.loginMode === 'pin') {
+  location.replace('/app/')
+} else {
+  applyBrand()
+  createRoot(document.getElementById('root') as HTMLElement).render(<StrictMode><Landing /></StrictMode>)
+}

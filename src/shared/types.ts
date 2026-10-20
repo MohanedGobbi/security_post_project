@@ -1,5 +1,6 @@
 export type Lang = 'ar' | 'en' | 'fr'
-export type Role = 'admin' | 'guard'
+/** leader = head of a guard team (رئيس فرقة الأمن) */
+export type Role = 'admin' | 'leader' | 'guard'
 
 export interface User {
   id: number
@@ -520,6 +521,8 @@ export interface Api {
     setup(input: SetupInput): Promise<User>
     loginUsers(): Promise<{ id: number; name: string; role: Role }[]>
     login(userId: number, pin: string): Promise<User>
+    /** the PIN alone identifies the person (PINs are unique) */
+    loginPin(pin: string): Promise<User>
     logout(): Promise<void>
     setLanguage(lang: Lang): Promise<void>
   }

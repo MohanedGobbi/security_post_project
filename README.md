@@ -158,6 +158,10 @@ Without a brand, nothing changes: the generic look and data are used.
 |---|---|
 | Generic | `npm run dev`, `npm run build:demo` … (as usual) |
 | University of Ghardaia | `npm run dev:ghardaia`, `npm run dev:demo:ghardaia`, `npm run build:demo:ghardaia`, `npm run build:dashboard:ghardaia`, or set `VITE_BRAND=ghardaia` before any build |
+| Faculty of Law and Political Science, Ghardaia (برنامج إدارة الأمن بالكلية) | `npm run dev:faculty`, `npm run dev:demo:faculty`, `npm run build:demo:faculty`, `npm run build:dashboard:faculty`, or `VITE_BRAND=ghardaia-law`. Arabic first, both logos, PIN-only login (see `PLAN_FACULTY.md`) |
+
+A brand can also change the login: `loginMode: 'pin'` drops the list of names, and the PIN alone says who is logging in
+(PINs are unique). Accounts are administrator, team leader (رئيس فرقة الأمن) or guard.
 
 Each build only contains its own brand. The branded demo keeps its data apart from the generic one in the browser.
 To add an organisation: put its logo in `src/renderer/src/assets/brands/`, add an entry in `brand.ts` and, for the demo, a flavour in `demo/flavors.ts`.

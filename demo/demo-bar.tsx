@@ -1,13 +1,15 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { resetDemo } from './store'
+import { F } from './flavors'
+import { BRAND } from '@desktop/brand'
 
 type Kind = 'app' | 'dashboard'
 
 const TEXT = {
-  en: { demo: 'Demo', app: 'Admin PIN 1234 · Sonia (guard) PIN 5678', dashboard: 'demo@security-register.app · demo1234', local: 'data stays in this browser', reset: 'Reset demo', home: 'Demo home' },
-  fr: { demo: 'Démo', app: 'Admin PIN 1234 · Sonia (agent) PIN 5678', dashboard: 'demo@security-register.app · demo1234', local: 'données dans ce navigateur', reset: 'Réinitialiser', home: 'Accueil démo' },
-  ar: { demo: 'نسخة تجريبية', app: 'المسؤول 1234 · سنية (حارسة) 5678', dashboard: 'demo@security-register.app · demo1234', local: 'البيانات في هذا المتصفح فقط', reset: 'إعادة التعيين', home: 'صفحة العرض' }
+  en: { demo: 'Demo', pin: 'PIN', dashboard: 'demo@security-register.app · demo1234', local: 'data stays in this browser', reset: 'Reset demo', home: 'Demo home' },
+  fr: { demo: 'Démo', pin: 'PIN', dashboard: 'demo@security-register.app · demo1234', local: 'données dans ce navigateur', reset: 'Réinitialiser', home: 'Accueil démo' },
+  ar: { demo: 'نسخة تجريبية', pin: 'الرقم السري', dashboard: 'demo@security-register.app · demo1234', local: 'البيانات في هذا المتصفح فقط', reset: 'إعادة التعيين', home: 'صفحة العرض' }
 }
 
 function Bar({ kind }: { kind: Kind }): ReactNode {
@@ -24,9 +26,10 @@ function Bar({ kind }: { kind: Kind }): ReactNode {
   return (
     <div className="demo-bar" role="note">
       <strong>{t.demo}</strong>
-      <span className="mono">{kind === 'app' ? t.app : t.dashboard}</span>
+      <span className="mono">{kind === 'app' ? `${t.pin}: ${F.users.map((u) => `${u.name} ${u.pin}`).join(' · ')}` : t.dashboard}</span>
       <span className="muted">{t.local}</span>
-      <a href="/">{t.home}</a>
+      {/* an organisation build opens on its login page: there is no demo home */}
+      {BRAND.loginMode === 'pick' && <a href="/">{t.home}</a>}
       <button type="button" className="link" onClick={() => { resetDemo(); location.reload() }}>{t.reset}</button>
       <button type="button" className="link" onClick={() => setOpen(false)} aria-label="×">×</button>
     </div>

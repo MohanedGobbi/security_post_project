@@ -2,7 +2,7 @@
 // backed by the demo store instead of SQLite, OCR and printers.
 import type {
   ActivityItem, AlertItem, Api, BadgeSettings, Checkpoint, DeliveryRow, ExpectedVisitor, Features, IncidentRow, KeyItem, KeyLoan, Lang,
-  PatrolRound, PatrolRoundDetail, PersonFields, RangeQuery, ScanResult, SearchQuery, ShiftRow, ShiftSummary, User, VehicleRow, VisitDetail,
+  PatrolRound, PatrolRoundDetail, PersonFields, RangeQuery, Role, ScanResult, SearchQuery, ShiftRow, ShiftSummary, User, VehicleRow, VisitDetail,
   VisitRow, WatchHit, WatchRow
 } from '@shared/types'
 import { formatDateTime, translate } from '@shared/i18n'
@@ -47,6 +47,8 @@ const need = (m: keyof Features['modules']): void => {
   if (!db().features.modules[m]) fail('error.featureOff')
 }
 const toUser = (u: DUser): User => ({ id: u.id, name: u.name, role: u.role, language: u.language, active: u.active })
+/** Roles an administrator can give; anything else becomes a guard */
+const checkRole = (r: string): Role => (r === 'admin' || r === 'leader' ? r : 'guard')
 const lang = (): Lang => (db().users.find((u) => u.id === db().currentUserId)?.language ?? 'fr')
 const done = <T>(v: T): T => {
   save()
@@ -272,6 +274,14 @@ export const demoApi: Api = {
       db().currentUserId = userId
       return done(toUser(u as DUser))
     },
+    async loginPin(pin) {
+      await wait(250)
+      refresh()
+      const u = db().users.find((x) => x.pin === String(pin) && x.active)
+      if (!u) fail('login.wrongPin')
+      db().currentUserId = (u as DUser).id
+      return done(toUser(u as DUser))
+    },
     async logout() {
       db().currentUserId = null
       done(undefined)
@@ -384,7 +394,8 @@ export const demoApi: Api = {
       admin()
       if (!name.trim()) fail('error.nameRequired')
       if (!/^\d{4,8}$/.test(pin)) fail('setup.pinShort')
-      db().users.push({ id: nextId(), name: name.trim(), role, pin, language, active: true })
+      if (db().users.some((x) => x.pin === pin)) fail('error.pinTaken')
+      db().users.push({ id: nextId(), name: name.trim(), role: checkRole(role), pin, language, active: true })
       done(undefined)
     },
     async update(id, patch) {
@@ -393,8 +404,11 @@ export const demoApi: Api = {
       if (!u) fail('error.notFound')
       const target = u as DUser
       const admins = db().users.filter((x) => x.role === 'admin' && x.active).length
-      if (target.role === 'admin' && target.active && (patch.active === false || patch.role === 'guard') && admins <= 1) fail('error.lastAdmin')
+      if (patch.role !== undefined) patch.role = checkRole(patch.role)
+      const losesAdmin = patch.active === false || (patch.role !== undefined && patch.role !== 'admin')
+      if (target.role === 'admin' && target.active && losesAdmin && admins <= 1) fail('error.lastAdmin')
       if (patch.pin !== undefined && !/^\d{4,8}$/.test(patch.pin)) fail('setup.pinShort')
+      if (patch.pin !== undefined && db().users.some((x) => x.pin === patch.pin && x.id !== id)) fail('error.pinTaken')
       Object.assign(target, Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)))
       done(undefined)
     }

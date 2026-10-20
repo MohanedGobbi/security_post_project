@@ -9,6 +9,7 @@ const api: Api = {
     setup: call('auth:setup'),
     loginUsers: call('auth:loginUsers'),
     login: call('auth:login'),
+    loginPin: call('auth:loginPin'),
     logout: call('auth:logout'),
     setLanguage: call('auth:setLanguage')
   },

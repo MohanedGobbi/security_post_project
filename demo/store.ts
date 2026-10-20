@@ -93,12 +93,15 @@ const dayStr = (offsetDays = 0): string => {
 }
 
 function seed(): DemoStore {
+  // names of the administrator and of the guard who wrote the handover
+  const A = F.users[0].name
+  const G = F.users[1].name
   const v = (id: number, inAgo: number, outAgo: number | null): DVisit => {
     const f = F.visits[id - 1]
     return {
       id, fullName: f.name, fullNameAlt: f.alt ?? '', idType: 'national_id', idNumber: sampleId(id), nationality: F.nationality, birthDate: '', sex: '', phone: '',
       company: f.company, host: f.host, purpose: f.purpose, badgeNo: `V-${id}`, vehiclePlate: f.plate ?? '', notes: '', timeIn: iso(inAgo), timeOut: outAgo === null ? null : iso(outAgo),
-      guardIn: id % 2 ? 'Sonia' : 'Admin', guardOut: outAgo === null ? null : 'Sonia', custom: {}, hasPhoto: false
+      guardIn: id % 2 ? G : A, guardOut: outAgo === null ? null : G, custom: {}, hasPhoto: false
     }
   }
   const other = (): DOtherRecord[] => {
@@ -129,43 +132,40 @@ function seed(): DemoStore {
     settings: { siteName: F.siteName, postName: F.postName, retentionDays: 365, overstayHours: 8, closingTime: '', vehicleOverstayHours: 0, patrolIntervalHours: 4 },
     features: PROFILES.large,
     badge: { printer: '', size: 'cr80', autoPrint: false, showPhoto: true },
-    users: [
-      { id: 1, name: 'Admin', role: 'admin', pin: '1234', language: 'fr', active: true },
-      { id: 2, name: 'Sonia', role: 'guard', pin: '5678', language: 'ar', active: true }
-    ],
+    users: F.users.map((u, i) => ({ id: i + 1, ...u, active: true })),
     currentUserId: null,
     visits: [v(1, 9.5 * H, null), v(2, 70 * M, null), v(3, 25 * M, null), v(4, 5 * H, 4.6 * H), v(5, 4 * H, 3.2 * H), v(6, 3 * H, 2.1 * H), v(7, 26 * H, 24 * H)],
     notes: [
-      { id: 1, time: iso(3.5 * H), category: 'patrol', text: F.notes[0], guard: 'Sonia' },
-      { id: 2, time: iso(2.2 * H), category: 'maintenance', text: F.notes[1], guard: 'Sonia' },
-      { id: 3, time: iso(40 * M), category: 'general', text: F.notes[2], guard: 'Admin' }
+      { id: 1, time: iso(3.5 * H), category: 'patrol', text: F.notes[0], guard: G },
+      { id: 2, time: iso(2.2 * H), category: 'maintenance', text: F.notes[1], guard: G },
+      { id: 3, time: iso(40 * M), category: 'general', text: F.notes[2], guard: A }
     ],
     vehicles: [
       { id: 1, plate: v1.plate ?? '', vehicleType: 'car', color: 'Gris', driverName: v1.name, company: v1.company, passengers: 0, cargo: '', notes: '', visitId: 1,
-        timeIn: iso(9.5 * H), timeOut: null, guardIn: 'Sonia', guardOut: null, custom: {}, hasPhoto: false },
+        timeIn: iso(9.5 * H), timeOut: null, guardIn: G, guardOut: null, custom: {}, hasPhoto: false },
       { id: 2, plate: F.van.plate, vehicleType: 'van', color: 'Blanc', driverName: F.van.driver, company: F.van.company, passengers: 1, cargo: 'Colis', notes: '', visitId: null,
-        timeIn: iso(15 * M), timeOut: null, guardIn: 'Admin', guardOut: null, custom: {}, hasPhoto: false }
+        timeIn: iso(15 * M), timeOut: null, guardIn: A, guardOut: null, custom: {}, hasPhoto: false }
     ],
     deliveries: [
-      { id: 1, time: iso(2 * H), carrier: d1.carrier, courierName: F.van.driver, recipient: d1.recipient, parcels: 3, tracking: d1.tracking, notes: '', guard: 'Sonia',
+      { id: 1, time: iso(2 * H), carrier: d1.carrier, courierName: F.van.driver, recipient: d1.recipient, parcels: 3, tracking: d1.tracking, notes: '', guard: G,
         pickedUpAt: null, pickedUpBy: '', guardPickup: null, custom: {}, hasPhoto: false },
-      { id: 2, time: iso(50 * M), carrier: d2.carrier, courierName: '', recipient: d2.recipient, parcels: 1, tracking: '', notes: '', guard: 'Admin',
+      { id: 2, time: iso(50 * M), carrier: d2.carrier, courierName: '', recipient: d2.recipient, parcels: 1, tracking: '', notes: '', guard: A,
         pickedUpAt: null, pickedUpBy: '', guardPickup: null, custom: {}, hasPhoto: false },
-      { id: 3, time: iso(6 * H), carrier: d3.carrier, courierName: '', recipient: d3.recipient, parcels: 1, tracking: d3.tracking, notes: '', guard: 'Sonia',
-        pickedUpAt: iso(5 * H), pickedUpBy: d3.pickedUpBy, guardPickup: 'Sonia', custom: {}, hasPhoto: false }
+      { id: 3, time: iso(6 * H), carrier: d3.carrier, courierName: '', recipient: d3.recipient, parcels: 1, tracking: d3.tracking, notes: '', guard: G,
+        pickedUpAt: iso(5 * H), pickedUpBy: d3.pickedUpBy, guardPickup: G, custom: {}, hasPhoto: false }
     ],
     incidents: [
       { id: 1, type: 'suspicious', severity: 'medium', occurredAt: iso(80 * M), createdAt: iso(78 * M), location: F.incidentPlaces[0], description: 'Personne qui fait le tour des voitures, partie à l’arrivée de l’agent.',
-        peopleInvolved: 'Homme, veste noire', actionTaken: 'Ronde renforcée sur le parking', guard: 'Sonia', closedAt: null, closedBy: null, resolution: '', photoCount: 0 },
+        peopleInvolved: 'Homme, veste noire', actionTaken: 'Ronde renforcée sur le parking', guard: G, closedAt: null, closedBy: null, resolution: '', photoCount: 0 },
       { id: 2, type: 'lost_found', severity: 'low', occurredAt: iso(27 * H), createdAt: iso(27 * H), location: F.incidentPlaces[1], description: 'Portefeuille trouvé.',
-        peopleInvolved: '', actionTaken: 'Gardé au poste', guard: 'Admin', closedAt: iso(25 * H), closedBy: 'Admin', resolution: 'Rendu au propriétaire (étudiant)', photoCount: 0 }
+        peopleInvolved: '', actionTaken: 'Gardé au poste', guard: A, closedAt: iso(25 * H), closedBy: A, resolution: 'Rendu au propriétaire (étudiant)', photoCount: 0 }
     ],
     shifts: [
-      { id: 1, userId: 2, guard: 'Sonia', post: F.postName, startedAt: iso(12 * H), endedAt: iso(10 * M), handoverNote: F.handover, acknowledgedBy: null }
+      { id: 1, userId: 2, guard: G, post: F.postName, startedAt: iso(12 * H), endedAt: iso(10 * M), handoverNote: F.handover, acknowledgedBy: null }
     ],
     checkpoints: F.checkpoints.map(([name, location], i) => ({ id: i + 1, name, location, code: ['A1B2C3D4', 'E5F6G7H8', 'J9K2L3M4', 'N5P6Q7R8'][i], active: true })),
     rounds: [
-      { id: 1, guardId: 2, guard: 'Sonia', startedAt: iso(5 * H), endedAt: iso(4.6 * H), note: 'RAS',
+      { id: 1, guardId: 2, guard: G, startedAt: iso(5 * H), endedAt: iso(4.6 * H), note: 'RAS',
         checks: [1, 2, 3, 4].map((c, i) => ({ checkpointId: c, time: iso(5 * H - i * 5 * M), status: 'ok' as CheckStatus, note: '', method: (i % 2 ? 'qr' : 'manual') as 'qr' | 'manual' })) }
     ],
     keyItems: [
@@ -175,8 +175,8 @@ function seed(): DemoStore {
       { id: 4, label: F.keys[3], kind: 'key', code: 'K-07', location: 'Armoire 2', active: true }
     ],
     loans: [
-      { id: 1, itemId: 1, borrower: F.loans[0].borrower, borrowerInfo: F.loans[0].info, outAt: iso(20 * M), dueAt: iso(-60 * M), returnedAt: null, guardOut: 'Admin', guardIn: null, notes: '' },
-      { id: 2, itemId: 4, borrower: F.loans[1].borrower, borrowerInfo: F.loans[1].info, outAt: iso(3 * H), dueAt: iso(30 * M), returnedAt: null, guardOut: 'Sonia', guardIn: null, notes: '' }
+      { id: 1, itemId: 1, borrower: F.loans[0].borrower, borrowerInfo: F.loans[0].info, outAt: iso(20 * M), dueAt: iso(-60 * M), returnedAt: null, guardOut: A, guardIn: null, notes: '' },
+      { id: 2, itemId: 4, borrower: F.loans[1].borrower, borrowerInfo: F.loans[1].info, outAt: iso(3 * H), dueAt: iso(30 * M), returnedAt: null, guardOut: G, guardIn: null, notes: '' }
     ],
     watch: [
       { id: 1, name: F.watch.name, idNumber: F.watch.idNumber, plate: '', reason: F.watch.reason, level: 'deny', active: true, addedBy: 'Direction', createdAt: iso(30 * 24 * H), org: true }
@@ -188,7 +188,7 @@ function seed(): DemoStore {
       { id: 1, refCode: 'ZX2SP6', fullName: e1.name, company: e1.company, host: e1.host, purpose: e1.purpose, phone: '', validFrom: dayStr(), validTo: dayStr(),
         notes: '', status: 'pending', source: 'server', arrivedAt: null, visitId: null, siteId: 1, createdBy: F.owner, email: '', createdAt: iso(26 * H) },
       { id: 2, refCode: 'QM7TA4', fullName: e2.name, company: e2.company, host: e2.host, purpose: e2.purpose, phone: '', validFrom: dayStr(), validTo: dayStr(1),
-        notes: e2.notes, status: 'pending', source: 'local', arrivedAt: null, visitId: null, siteId: 1, createdBy: 'Admin', email: '', createdAt: iso(3 * H) },
+        notes: e2.notes, status: 'pending', source: 'local', arrivedAt: null, visitId: null, siteId: 1, createdBy: A, email: '', createdAt: iso(3 * H) },
       { id: 3, refCode: 'HT3PB9', fullName: e3.name, company: e3.company, host: e3.host, purpose: e3.purpose, phone: '', validFrom: dayStr(1), validTo: dayStr(1),
         notes: '', status: 'pending', source: 'server', arrivedAt: null, visitId: null, siteId: 1, createdBy: F.owner, email: '', createdAt: iso(5 * H) }
     ],

@@ -214,6 +214,7 @@
     "role": "Rôle",
     "roles": {
       "admin": "Administrateur",
+      "leader": "Chef d’équipe",
       "guard": "Agent"
     },
     "pin": "Code PIN",
@@ -268,7 +269,8 @@
     "syncRevoked": "Ce poste a été délié dans le tableau de bord",
     "syncBadCode": "Code de liaison non valide ou expiré",
     "syncServer": "Erreur du serveur",
-    "printFailed": "Échec de l’impression : vérifiez l’imprimante"
+    "printFailed": "Échec de l’impression : vérifiez l’imprimante",
+    "pinTaken": "Ce code PIN est déjà utilisé par quelqu’un d’autre : choisissez-en un autre"
   },
   "photo": {
     "take": "Prendre une photo",

@@ -58,6 +58,11 @@ export function idHash(idNumber: string): string {
   return createHmac('sha256', key()).update(normalizeId(idNumber)).digest('hex')
 }
 
+/** Keyed hash of a PIN, so the PIN alone finds its owner (PINs are unique). Checked against the scrypt hash too. */
+export function pinLookup(pin: string): string {
+  return createHmac('sha256', key()).update('pin:' + pin).digest('hex')
+}
+
 export function normalizeId(idNumber: string): string {
   return idNumber.toUpperCase().replace(/[\s\-.<\/]/g, '')
 }

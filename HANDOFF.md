@@ -94,6 +94,11 @@ Environment variables:
 - Not branded yet: printed badges and reports of the desktop app (main process).
   - Next step: a logo upload in Settings, so each organisation can brand its own install without a special build.
 - On Vercel there are two projects from the same repository. The second one sets the environment variable `VITE_BRAND=ghardaia`.
+- The third brand, `ghardaia-law`, is the Faculty of Law and Political Science (the first paying client in discussion).
+  - Its plan and status live in `PLAN_FACULTY.md`.
+  - Brands can also set `appName`, `logo2`, `loginMode` (`'pick'` | `'pin'`) and `defaultLang`.
+  - PIN-only login uses `users.pin_lookup`, a keyed hash of the PIN, so PINs must be unique.
+  - Roles are now `admin`, `leader` and `guard`. Existing desktop databases are migrated in `migrate()` in `src/main/db.ts`.
 
 ## What was tested
 - Server API script: 25/25 checks passed.

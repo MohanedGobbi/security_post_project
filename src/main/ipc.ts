@@ -57,6 +57,21 @@ function handle<A extends unknown[], R>(channel: string, access: Access, fn: (us
 }
 
 const validPin = (pin: string): boolean => /^\d{4,8}$/.test(pin)
+/** Roles an administrator can give; anything else becomes a guard */
+const checkRole = (r: string): Role => (r === 'admin' || r === 'leader' ? r : 'guard')
+/** PIN-only login has no user id: its failed attempts share one counter */
+const PIN_ONLY = 0
+
+function checkLock(key: number): void {
+  const lock = failedLogins.get(key)
+  if (lock && lock.until > Date.now()) throw new Error(`login.locked:${Math.ceil((lock.until - Date.now()) / 1000)}`)
+}
+
+function failLogin(key: number): never {
+  const count = (failedLogins.get(key)?.count ?? 0) + 1
+  failedLogins.set(key, { count: count >= MAX_ATTEMPTS ? 0 : count, until: count >= MAX_ATTEMPTS ? Date.now() + LOCK_MS : 0 })
+  throw new Error('login.wrongPin')
+}
 
 /** Every watchlist hit at an entry is recorded, and so is a supervisor override. */
 function auditWatch(userId: number, entity: string, entityId: number, hits: WatchHit[], overrideBy: number | null): void {
@@ -88,18 +103,29 @@ export function registerIpc(): void {
   handle('auth:loginUsers', 'public', () => db.listUsers(true).map((u) => ({ id: u.id, name: u.name, role: u.role })))
 
   handle('auth:login', 'public', (_u, userId: number, pin: string) => {
-    const lock = failedLogins.get(userId)
-    if (lock && lock.until > Date.now()) throw new Error(`login.locked:${Math.ceil((lock.until - Date.now()) / 1000)}`)
+    checkLock(userId)
     const row = db.getUserRow(userId)
     if (!row || row.active !== 1 || !verifyPin(String(pin), row.pin_hash)) {
-      const count = (lock?.count ?? 0) + 1
-      failedLogins.set(userId, { count: count >= MAX_ATTEMPTS ? 0 : count, until: count >= MAX_ATTEMPTS ? Date.now() + LOCK_MS : 0 })
       db.audit(userId, 'login_failed')
-      throw new Error('login.wrongPin')
+      failLogin(userId)
     }
     failedLogins.delete(userId)
     currentUser = db.getUser(userId)
     db.audit(userId, 'login')
+    return currentUser
+  })
+
+  // the PIN alone says who is logging in (PINs are unique)
+  handle('auth:loginPin', 'public', (_u, pin: string) => {
+    checkLock(PIN_ONLY)
+    const row = validPin(String(pin)) ? db.findUserByPin(String(pin)) : undefined
+    if (!row || row.active !== 1) {
+      db.audit(row?.id ?? null, 'login_failed', '', null, 'pin')
+      failLogin(PIN_ONLY)
+    }
+    failedLogins.delete(PIN_ONLY)
+    currentUser = db.getUser(row.id)
+    db.audit(row.id, 'login', '', null, 'pin')
     return currentUser
   })
 
@@ -153,13 +179,14 @@ export function registerIpc(): void {
   handle('users:create', 'admin', (u, name: string, role: Role, pin: string, language: Lang) => {
     if (!String(name).trim()) throw new Error('error.nameRequired')
     if (!validPin(pin)) throw new Error('setup.pinShort')
-    const id = db.createUser(name, role === 'admin' ? 'admin' : 'guard', pin, checkLang(language))
+    const id = db.createUser(name, checkRole(role), pin, checkLang(language))
     db.audit(u.id, 'user_create', 'user', id)
   })
   handle('users:update', 'admin', (u, id: number, patch: { active?: boolean; pin?: string; role?: Role }) => {
     const target = db.getUser(id)
     if (!target) throw new Error('error.notFound')
-    const losesAdmin = target.role === 'admin' && target.active && (patch.active === false || patch.role === 'guard')
+    if (patch.role !== undefined) patch.role = checkRole(patch.role)
+    const losesAdmin = target.role === 'admin' && target.active && (patch.active === false || (patch.role !== undefined && patch.role !== 'admin'))
     if (losesAdmin && db.activeAdminCount() <= 1) throw new Error('error.lastAdmin')
     if (patch.pin !== undefined && !validPin(patch.pin)) throw new Error('setup.pinShort')
     db.updateUser(id, patch)

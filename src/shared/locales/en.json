@@ -214,6 +214,7 @@
     "role": "Role",
     "roles": {
       "admin": "Administrator",
+      "leader": "Team leader",
       "guard": "Guard"
     },
     "pin": "PIN",
@@ -268,7 +269,8 @@
     "syncRevoked": "This post was unlinked in the dashboard",
     "syncBadCode": "Link code not valid or expired",
     "syncServer": "Server error",
-    "printFailed": "Printing failed: check the printer"
+    "printFailed": "Printing failed: check the printer",
+    "pinTaken": "This PIN is already used by someone else: choose another one"
   },
   "photo": {
     "take": "Take photo",

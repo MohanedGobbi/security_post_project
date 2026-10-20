@@ -109,6 +109,12 @@ textarea { resize: vertical; }
 .auth-card > .lang-switch { align-self: flex-end; margin-bottom: 12px; }
 .login-head { display: flex; gap: 14px; align-items: center; margin-bottom: 16px; }
 .login-head h1 { margin: 0; }
+/* organisation login (PIN only): logos side by side, centred name */
+.org-login { text-align: center; }
+.org-logos { display: flex; justify-content: center; align-items: center; gap: 28px; margin-bottom: 14px; }
+.org-logos img { height: 104px; width: auto; max-width: 42%; object-fit: contain; }
+.org-login h1 { font-size: 1.6rem; margin-bottom: 4px; }
+.org-login > p.muted { margin-bottom: 18px; }
 .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
 .user-tile { flex-direction: column; padding: 16px 10px; gap: 4px; }
 .user-tile small { color: var(--ink-2); font-weight: 400; }
