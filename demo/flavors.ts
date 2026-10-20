@@ -9,6 +9,8 @@ export interface DemoUser { name: string; role: Role; pin: string; language: Lan
 
 export interface Flavor {
   users: DemoUser[]
+  /** sample entry of the lost-and-found register */
+  lostSample: { item: string; place: string; finder: string }
   nationality: string
   /** ID numbers of the sample visitors: idBase + id * 7919 */
   idBase: number
@@ -41,6 +43,7 @@ export interface Flavor {
 }
 
 const TUNIS: Flavor = {
+  lostSample: { item: 'Portefeuille noir avec une carte d’étudiant', place: 'Amphi B', finder: 'Nadia Karoui' },
   users: [
     { name: 'Admin', role: 'admin', pin: '1234', language: 'fr' },
     { name: 'Sonia', role: 'guard', pin: '5678', language: 'ar' }
@@ -84,6 +87,7 @@ const TUNIS: Flavor = {
 
 // University of Ghardaia: Algerian names, companies and plates (serial, type + year, wilaya 47)
 const GHARDAIA: Flavor = {
+  lostSample: { item: 'Portefeuille noir avec une carte d’étudiant', place: 'Amphi 3', finder: 'Rachid Bahaz' },
   users: [
     { name: 'Admin', role: 'admin', pin: '1234', language: 'fr' },
     { name: 'Sonia', role: 'guard', pin: '5678', language: 'ar' }
@@ -133,6 +137,7 @@ const GHARDAIA_LAW: Flavor = {
     { name: 'يوسف (رئيس الفرقة)', role: 'leader', pin: '2580', language: 'ar' },
     { name: 'محمد (عون أمن)', role: 'guard', pin: '5678', language: 'ar' }
   ],
+  lostSample: { item: 'محفظة سوداء بها بطاقة طالب', place: 'المدرج 3', finder: 'أمينة حاج سعيد' },
   siteName: 'كلية الحقوق والعلوم السياسية',
   postName: 'مكتب الأمن الرئيسي',
   sites: [['كلية الحقوق والعلوم السياسية', 'جامعة غرداية'], ...GHARDAIA.sites.slice(1)],

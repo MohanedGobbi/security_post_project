@@ -1,7 +1,8 @@
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import type {
   BadgeSettings, CheckInInput, CheckStatus, CustomFieldInput, ExpectedInput, DeliveryInput, ExportRange, IncidentInput, KeyItemInput, Lang, LendInput, NoteCategory,
-  Features, Module, RangeQuery, Role, SearchQuery, SetupInput, Settings, User, VehicleInInput, WatchHit, WatchInput
+  Features, Module, RangeQuery, Role, SearchQuery, SetupInput, Settings, User, VehicleInInput, WatchHit, WatchInput,
+  EntryInputValues, EntryQuery, FieldInput, RegisterDefInput
 } from '@shared/types'
 import { ALL_ON, PROFILES } from '@shared/features'
 import { LANGS } from '@shared/i18n'
@@ -17,6 +18,7 @@ import * as watch from './watchlist'
 import * as custom from './customFields'
 import * as patrols from './patrols'
 import * as keys from './keys'
+import * as registers from './registers'
 import { currentAlerts } from './alerts'
 import * as expected from './expected'
 import * as sync from './sync'
@@ -173,6 +175,35 @@ export function registerIpc(): void {
     db.audit(u.id, 'note', 'note', id)
   })
   handle('notes:list', 'user', (_u, from: string, to: string) => db.listNotes(from, to))
+
+  // ---------- registers (generic engine) ----------
+  handle('registers:list', 'user', (u) => registers.listRegisters(u))
+  handle('registers:save', 'admin', (u, def: RegisterDefInput) => {
+    const id = registers.saveRegister(def, u.id)
+    db.audit(u.id, def.id ? 'register_update' : 'register_open', 'register', id)
+    return id
+  })
+  handle('registers:entries', 'user', (u, q: EntryQuery) => {
+    const rows = registers.listEntries(q, u)
+    // browsing a register's history is logged, like asking the dean's permission to read the book
+    if (u.role === 'admin' && q.from) db.audit(u.id, 'view', 'register', q.registerId, `${q.from}..${q.to}`)
+    return rows
+  })
+  handle('registers:add', 'user', (u, registerId: number, values: EntryInputValues) => {
+    const r = registers.addEntry(registerId, values, u, postName())
+    db.audit(u.id, 'entry_add', 'register_entry', r.id, String(registerId))
+    return r
+  })
+  handle('registers:close', 'user', (u, entryId: number, values: EntryInputValues) => {
+    const registerId = registers.closeEntry(entryId, values, u)
+    db.audit(u.id, 'entry_close', 'register_entry', entryId, String(registerId))
+  })
+  handle('registers:correct', 'user', (u, entryId: number, fieldKey: string, value: FieldInput, reason: string) => {
+    registers.correctEntry(entryId, String(fieldKey), value, String(reason ?? ''), u)
+    db.audit(u.id, 'entry_correct', 'register_entry', entryId, String(fieldKey))
+  })
+  handle('registers:corrections', 'user', (_u, entryId: number) => registers.entryCorrections(entryId))
+  handle('registers:accounts', 'user', () => registers.accountsForFields())
 
   // ---------- users ----------
   handle('users:list', 'admin', () => db.listUsers(false))

@@ -3,7 +3,8 @@ import type { TFunction } from 'i18next'
 /** Turns an IPC error ("Error invoking remote method …: Error: error.notFound") into a translated message. */
 export function errorText(e: unknown, t: TFunction): string {
   const msg = e instanceof Error ? e.message : String(e)
-  const m = msg.match(/((?:error|login|setup)\.\w+)(?::(\d+))?/)
+  // "error.key:arg": a number of seconds, or the key of a register field
+  const m = msg.match(/((?:error|login|setup)\.\w+)(?::([\w-]+))?/)
   if (m) return t(m[1], { s: m[2] })
   return t('error.generic', { msg: msg.replace(/^Error invoking remote method '[^']+': (Error: )?/, '') })
 }

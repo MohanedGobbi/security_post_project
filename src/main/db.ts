@@ -246,6 +246,56 @@ CREATE TABLE IF NOT EXISTS sync_state (
   hash TEXT NOT NULL,
   PRIMARY KEY (entity, local_id)
 );
+CREATE TABLE IF NOT EXISTS registers (
+  id INTEGER PRIMARY KEY,
+  key TEXT NOT NULL UNIQUE,
+  labels_json TEXT NOT NULL,
+  icon TEXT NOT NULL DEFAULT 'book',
+  fill_roles TEXT NOT NULL,
+  close_roles TEXT NOT NULL DEFAULT '',
+  close_labels_json TEXT,
+  sort INTEGER NOT NULL DEFAULT 0,
+  active INTEGER NOT NULL DEFAULT 1,
+  opened_at TEXT NOT NULL,
+  opened_by INTEGER REFERENCES users(id)
+);
+CREATE TABLE IF NOT EXISTS register_fields (
+  id INTEGER PRIMARY KEY,
+  register_id INTEGER NOT NULL REFERENCES registers(id),
+  key TEXT NOT NULL,
+  labels_json TEXT NOT NULL,
+  type TEXT NOT NULL,
+  options_json TEXT NOT NULL DEFAULT '[]',
+  required INTEGER NOT NULL DEFAULT 0,
+  sensitive INTEGER NOT NULL DEFAULT 0,
+  step TEXT NOT NULL DEFAULT 'open',
+  sort INTEGER NOT NULL DEFAULT 0,
+  active INTEGER NOT NULL DEFAULT 1,
+  UNIQUE (register_id, key)
+);
+CREATE TABLE IF NOT EXISTS register_entries (
+  id INTEGER PRIMARY KEY,
+  register_id INTEGER NOT NULL REFERENCES registers(id),
+  number INTEGER NOT NULL,
+  data_json TEXT NOT NULL,
+  data_enc BLOB,
+  created_by INTEGER NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  post TEXT NOT NULL DEFAULT '',
+  closed_by INTEGER REFERENCES users(id),
+  closed_at TEXT,
+  UNIQUE (register_id, number)
+);
+CREATE INDEX IF NOT EXISTS register_entries_time ON register_entries (register_id, created_at);
+CREATE TABLE IF NOT EXISTS register_corrections (
+  id INTEGER PRIMARY KEY,
+  entry_id INTEGER NOT NULL REFERENCES register_entries(id),
+  field_key TEXT NOT NULL,
+  change_enc BLOB NOT NULL,
+  reason TEXT NOT NULL,
+  by_user INTEGER NOT NULL REFERENCES users(id),
+  at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS audit (
   id INTEGER PRIMARY KEY,
   time TEXT NOT NULL,

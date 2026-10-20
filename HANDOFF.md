@@ -100,6 +100,21 @@ Environment variables:
   - PIN-only login uses `users.pin_lookup`, a keyed hash of the PIN, so PINs must be unique.
   - Roles are now `admin`, `leader` and `guard`. Existing desktop databases are migrated in `migrate()` in `src/main/db.ts`.
 
+## Register engine (generic registers)
+- **What it is:** a register is a definition (name in three languages, icon, fields, who may fill it, optional closing step) plus numbered entries. It is the base for the faculty's paper books (`PLAN_FACULTY.md` §4).
+- **Code:**
+  - shared rules: `src/shared/registers.ts`;
+  - desktop storage: `src/main/registers.ts` (tables `registers`, `register_fields`, `register_entries`, `register_corrections`);
+  - page: `RegistersPage.tsx`;
+  - inputs: `components/RegisterFields.tsx`;
+  - demo: `registers` in `demo/reception-api.ts`.
+- **Rules:**
+  - An entry is never erased. A correction keeps the old and new values, encrypted, with the reason and who made it.
+  - Sensitive fields (always `person`) are stored encrypted and left out of search.
+  - A `signature` field asks for a PIN and stores who confirmed, never the PIN.
+  - Non-admins see the last 24 hours plus open entries; admins see the full history, and that viewing is logged.
+- **Tested on the real desktop app** through the Chrome debugging port, with a throw-away data folder (`SECREG_DATA_DIR`).
+
 ## What was tested
 - Server API script: 25/25 checks passed.
 - End to end on one PC:

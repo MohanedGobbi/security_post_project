@@ -27,6 +27,16 @@ const api: Api = {
     add: call('notes:add'),
     list: call('notes:list')
   },
+  registers: {
+    list: call('registers:list'),
+    save: call('registers:save'),
+    entries: call('registers:entries'),
+    add: call('registers:add'),
+    close: call('registers:close'),
+    correct: call('registers:correct'),
+    corrections: call('registers:corrections'),
+    accounts: call('registers:accounts')
+  },
   users: {
     list: call('users:list'),
     create: call('users:create'),

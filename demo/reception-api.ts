@@ -2,7 +2,7 @@
 // backed by the demo store instead of SQLite, OCR and printers.
 import type {
   ActivityItem, AlertItem, Api, BadgeSettings, Checkpoint, DeliveryRow, ExpectedVisitor, Features, IncidentRow, KeyItem, KeyLoan, Lang,
-  PatrolRound, PatrolRoundDetail, PersonFields, RangeQuery, Role, ScanResult, SearchQuery, ShiftRow, ShiftSummary, User, VehicleRow, VisitDetail,
+  PatrolRound, PatrolRoundDetail, PersonFields, RangeQuery, RegisterDef, RegisterEntry, Role, ScanResult, SearchQuery, ShiftRow, ShiftSummary, User, VehicleRow, VisitDetail,
   VisitRow, WatchHit, WatchRow
 } from '@shared/types'
 import { formatDateTime, translate } from '@shared/i18n'
@@ -10,8 +10,9 @@ import { normalizeFeatures, PROFILES, summaryKeyOn } from '@shared/features'
 import { QR_BADGE, QR_PREREG } from '@shared/sync'
 import {
   db, dayBounds, fail, nextId, nowIso, photos, refresh, save, today, wait,
-  type DExpected, type DLoan, type DRound, type DShift, type DUser, type DVisit
+  type DEntry, type DExpected, type DLoan, type DRound, type DShift, type DUser, type DVisit
 } from './store'
+import { cleanDefinition, cleanStep, cleanValue, type ValueResolvers } from '@shared/registers'
 import { qrDataUrl, qrSvg, readQr } from './qr'
 import { downloadCsv, openReport } from './report'
 import { F, sampleId } from './flavors'
@@ -47,6 +48,38 @@ const need = (m: keyof Features['modules']): void => {
   if (!db().features.modules[m]) fail('error.featureOff')
 }
 const toUser = (u: DUser): User => ({ id: u.id, name: u.name, role: u.role, language: u.language, active: u.active })
+// ---------- register engine (same rules as src/main/registers.ts, shared in @shared/registers) ----------
+function regOf(id: number): RegisterDef {
+  const r = db().registers.find((x) => x.id === id)
+  if (!r) fail('error.notFound')
+  return r as RegisterDef
+}
+function entryOf(id: number): DEntry {
+  const e = db().entries.find((x) => x.id === id)
+  if (!e) fail('error.notFound')
+  return e as DEntry
+}
+function usableReg(id: number, u: DUser, action: 'fill' | 'close'): RegisterDef {
+  const reg = regOf(id)
+  if (!reg.active) fail('error.featureOff')
+  if (u.role !== 'admin' && !(action === 'fill' ? reg.fillRoles : reg.closeRoles).includes(u.role)) fail('error.forbidden')
+  return reg
+}
+const resolvers = (): ValueResolvers => ({
+  account: (userId) => {
+    const x = db().users.find((y) => y.id === userId && y.active)
+    return x ? { userId: x.id, name: x.name } : null
+  },
+  signature: (pin) => {
+    const x = db().users.find((y) => y.pin === pin && y.active)
+    return x ? { userId: x.id, name: x.name } : null
+  }
+})
+const toEntry = (e: DEntry): RegisterEntry => ({
+  id: e.id, registerId: e.registerId, number: e.number, values: e.values, createdBy: e.createdBy, createdAt: e.createdAt, post: e.post,
+  closedBy: e.closedBy, closedAt: e.closedAt, corrected: [...new Set(db().corrections.filter((c) => c.entryId === e.id).map((c) => c.fieldKey))]
+})
+
 /** Roles an administrator can give; anything else becomes a guard */
 const checkRole = (r: string): Role => (r === 'admin' || r === 'leader' ? r : 'guard')
 const lang = (): Lang => (db().users.find((u) => u.id === db().currentUserId)?.language ?? 'fr')
@@ -382,6 +415,96 @@ export const demoApi: Api = {
     },
     async list(from, to) {
       return db().notes.filter((n) => inRange(n.time, from, to)).sort((a, b) => (a.time < b.time ? 1 : -1)).map((n) => ({ ...n }))
+    }
+  },
+
+  registers: {
+    async list() {
+      const u = me()
+      const all = [...db().registers].sort((a, b) => a.sort - b.sort || a.id - b.id)
+      return u.role === 'admin' ? all : all.filter((r) => r.active && (r.fillRoles.includes(u.role) || r.closeRoles.includes(u.role)))
+    },
+    async save(input) {
+      const u = admin()
+      const def = cleanDefinition(input)
+      const regs = db().registers
+      if (regs.some((r) => r.key === def.key && r.id !== def.id)) fail('error.keyTaken')
+      const old = def.id ? regs.find((r) => r.id === def.id) : undefined
+      if (def.id && !old) fail('error.notFound')
+      // a field is never removed: one left out is switched off, and an existing field keeps its type
+      const fields = def.fields.map((f) => {
+        const was = old?.fields.find((x) => x.key === f.key)
+        return was ? { ...f, type: was.type, sensitive: was.sensitive } : f
+      })
+      for (const f of old?.fields ?? []) if (!fields.some((x) => x.key === f.key)) fields.push({ ...f, active: false })
+      const reg: RegisterDef = { ...def, id: old?.id ?? nextId(), fields, openedAt: old?.openedAt ?? nowIso(), openedBy: old?.openedBy ?? u.name }
+      db().registers = old ? regs.map((r) => (r.id === reg.id ? reg : r)) : [...regs, reg]
+      return done(reg.id)
+    },
+    async entries(q) {
+      const u = me()
+      const reg = regOf(q.registerId)
+      if (u.role !== 'admin' && !reg.fillRoles.includes(u.role) && !reg.closeRoles.includes(u.role)) fail('error.forbidden')
+      let rows = db().entries.filter((e) => e.registerId === reg.id)
+      if (q.openOnly) rows = rows.filter((e) => !e.closedAt)
+      if (u.role === 'admin') {
+        if (q.from && q.to) {
+          const [from, to] = dayBounds(q.from, q.to)
+          rows = rows.filter((e) => (e.createdAt >= from && e.createdAt <= to) || (q.openOnly && !e.closedAt))
+        }
+      } else {
+        // the register stays in the security office: the last 24 hours and what is still open
+        const since = new Date(Date.now() - 24 * 3600000).toISOString()
+        rows = rows.filter((e) => e.createdAt > since || !e.closedAt)
+      }
+      const text = q.text.trim().toLowerCase()
+      if (text) {
+        const plainKeys = reg.fields.filter((f) => !f.sensitive).map((f) => f.key)
+        rows = rows.filter((e) => JSON.stringify(plainKeys.map((k) => e.values[k] ?? '')).toLowerCase().includes(text))
+      }
+      return rows.sort((a, b) => b.number - a.number).map(toEntry)
+    },
+    async add(registerId, input) {
+      const u = me()
+      const reg = usableReg(registerId, u, 'fill')
+      const values = cleanStep(reg.fields, 'open', input, resolvers())
+      const number = Math.max(0, ...db().entries.filter((e) => e.registerId === reg.id).map((e) => e.number)) + 1
+      const id = nextId()
+      db().entries.push({ id, registerId: reg.id, number, values, createdById: u.id, createdBy: u.name, createdAt: nowIso(), post: db().settings.postName, closedBy: null, closedAt: null })
+      return done({ id, number })
+    },
+    async close(entryId, input) {
+      const u = me()
+      const e = entryOf(entryId)
+      const reg = usableReg(e.registerId, u, 'close')
+      if (!reg.closeLabels) fail('error.noCloseStep')
+      if (e.closedAt) fail('error.entryClosed')
+      e.values = { ...e.values, ...cleanStep(reg.fields, 'close', input, resolvers()) }
+      e.closedBy = u.name
+      e.closedAt = nowIso()
+      done(undefined)
+    },
+    async correct(entryId, fieldKey, input, reason) {
+      const u = me()
+      const e = entryOf(entryId)
+      const field = regOf(e.registerId).fields.find((f) => f.key === fieldKey)
+      if (!field) fail('error.notFound')
+      if (u.role === 'guard' && e.createdById !== u.id) fail('error.forbidden')
+      if (!String(reason ?? '').trim()) fail('error.reasonRequired')
+      const value = cleanValue(field as RegisterDef['fields'][number], input, resolvers())
+      if (value === null && field?.required) fail(`error.fieldRequired:${fieldKey}`)
+      db().corrections.push({ id: nextId(), entryId, fieldKey, oldValue: e.values[fieldKey] ?? null, newValue: value, reason: String(reason).trim(), by: u.name, at: nowIso() })
+      if (value === null) delete e.values[fieldKey]
+      else e.values[fieldKey] = value
+      done(undefined)
+    },
+    async corrections(entryId) {
+      me()
+      return db().corrections.filter((c) => c.entryId === entryId).map(({ fieldKey, oldValue, newValue, reason, by, at }) => ({ fieldKey, oldValue, newValue, reason, by, at }))
+    },
+    async accounts() {
+      me()
+      return db().users.filter((x) => x.active).map((x) => ({ id: x.id, name: x.name, role: x.role }))
     }
   },
 

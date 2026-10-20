@@ -7,7 +7,12 @@
 - Eight Word templates of their paper registers (`D:\Temppp\سجل … .docx`).
 - The two logos.
 
-**Status:** phase A is built and tested in the web demo (20 Oct 2026); phases B–G are not started.
+**Status (20 Oct 2026):** phases A and B are built and tested; phases C–G are not started.
+- **Phase B, the register engine:**
+  - Code: `src/main/registers.ts`, the shared rules in `src/shared/registers.ts`, and the page `RegistersPage.tsx`.
+  - Every field type works, with closing steps, corrections that are kept, PIN confirmations, the role limits, and the 24-hour view for non-admins.
+  - The first two templates (lost and found, custody) are in `src/shared/registerTemplates.ts`. They are used by the demo; installing them in the desktop app is phase C.
+- **Phase A status:**
 - **Brand `ghardaia-law`:** both logos, the Arabic program name, Arabic by default.
 - **PIN-only login:** both logos on the page; administrators go straight to administration (the Settings page until phase D).
 - **Accounts:** team leader role (`leader`); unique PINs; administrators create admin, team leader and guard accounts.

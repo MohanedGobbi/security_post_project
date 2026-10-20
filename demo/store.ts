@@ -2,8 +2,9 @@
 // Everything lives in this browser (localStorage); photos only in memory.
 import type {
   BadgeSettings, Checkpoint, CheckStatus, CustomField, CustomValues, ExpectedVisitor, Features, IdType, IncidentType, KeyKind,
-  Lang, NoteCategory, Role, Settings, Severity, VehicleType, WatchLevel
+  EntryValues, Lang, NoteCategory, RegisterDef, Role, Settings, Severity, VehicleType, WatchLevel
 } from '@shared/types'
+import { REGISTER_TEMPLATES } from '@shared/registerTemplates'
 import { PROFILES } from '@shared/features'
 import { BRAND } from '@desktop/brand'
 import { F, sampleId } from './flavors'
@@ -49,6 +50,13 @@ export interface DDevice { id: number; siteId: number; name: string; lastSeen: s
 /** visit / vehicle / incident… of the other demo sites, already in the shape the dashboard expects */
 export interface DOtherRecord { entity: string; localId: number; siteId: number; device: string; time: string; data: Record<string, unknown> }
 
+/** register engine: an entry keeps the names as they were, like the main process */
+export interface DEntry {
+  id: number; registerId: number; number: number; values: EntryValues; createdById: number; createdBy: string; createdAt: string
+  post: string; closedBy: string | null; closedAt: string | null
+}
+export interface DCorrection { id: number; entryId: number; fieldKey: string; oldValue: EntryValues[string] | null; newValue: EntryValues[string] | null; reason: string; by: string; at: string }
+
 export interface DemoStore {
   version: number
   settings: Settings
@@ -69,6 +77,9 @@ export interface DemoStore {
   watch: DWatch[]
   customFields: CustomField[]
   expected: DExpected[]
+  registers: RegisterDef[]
+  entries: DEntry[]
+  corrections: DCorrection[]
   sync: { configured: boolean; deviceName: string; lastSync: string | null }
   // dashboard side
   dashUsers: DDashUser[]
@@ -82,7 +93,8 @@ export interface DemoStore {
 
 // one store per brand, so the generic and the branded demo never mix their data
 const KEY = BRAND.id === 'default' ? 'secreg-demo-v1' : `secreg-demo-v1-${BRAND.id}`
-const VERSION = 1
+// 2: registers (generic engine)
+const VERSION = 2
 
 const iso = (msAgo: number): string => new Date(Date.now() - msAgo).toISOString()
 const H = 3600000
@@ -192,6 +204,15 @@ function seed(): DemoStore {
       { id: 3, refCode: 'HT3PB9', fullName: e3.name, company: e3.company, host: e3.host, purpose: e3.purpose, phone: '', validFrom: dayStr(1), validTo: dayStr(1),
         notes: '', status: 'pending', source: 'server', arrivedAt: null, visitId: null, siteId: 1, createdBy: F.owner, email: '', createdAt: iso(5 * H) }
     ],
+    registers: REGISTER_TEMPLATES.map((r, i) => ({ ...r, id: i + 1, openedAt: iso(40 * 24 * H), openedBy: A })),
+    entries: [
+      { id: 1, registerId: 1, number: 1, createdById: 1, createdBy: A, createdAt: iso(26 * H), post: F.postName, closedBy: G, closedAt: iso(3 * H),
+        values: { item: F.lostSample.item, place: F.lostSample.place, found_on: dayStr(-1), finder: F.lostSample.finder, action: '',
+          owner: { name: F.visits[6].name, idType: 'CNI', idNumber: sampleId(7) } } },
+      { id: 2, registerId: 1, number: 2, createdById: 2, createdBy: G, createdAt: iso(2 * H), post: F.postName, closedBy: null, closedAt: null,
+        values: { item: F.keys[2], place: F.checkpoints[3][0], found_on: dayStr(), finder: F.visits[2].name, action: '' } }
+    ],
+    corrections: [],
     sync: { configured: true, deviceName: F.devices[0], lastSync: iso(30000) },
     dashUsers: [
       { id: 1, email: 'demo@security-register.app', name: F.owner, role: 'owner', password: 'demo1234', language: 'fr', active: true, siteIds: null, createdAt: iso(60 * 24 * H) },

@@ -362,6 +362,110 @@ export interface CustomField extends CustomFieldInput {
 /** values of custom fields, by field id */
 export type CustomValues = Record<string, string>
 
+// ---------- registers (generic engine: each register is a definition, the paper book becomes a list of entries) ----------
+export type Labels = { ar: string; en: string; fr: string }
+
+export type RegisterFieldType =
+  | 'text' | 'longtext' | 'number' | 'date' | 'time' | 'datetime'
+  /** yes / no */
+  | 'yesno'
+  /** yes / no, with a note that is required on "no" ("good / other: specify") */
+  | 'yesno_note'
+  | 'select'
+  /** a person outside the system: name, ID type and number */
+  | 'person'
+  /** one of the app's accounts (a guard, a team leader…) */
+  | 'account'
+  /** someone confirms with their own PIN: replaces the signature on paper */
+  | 'signature'
+
+export const REGISTER_FIELD_TYPES: RegisterFieldType[] = [
+  'text', 'longtext', 'number', 'date', 'time', 'datetime', 'yesno', 'yesno_note', 'select', 'person', 'account', 'signature'
+]
+
+export interface RegisterField {
+  /** stable id inside the register: lower-case letters, digits, _ */
+  key: string
+  labels: Labels
+  type: RegisterFieldType
+  /** choices of a 'select' field */
+  options: string[]
+  required: boolean
+  /** stored encrypted and left out of text search (ID numbers, addresses…) */
+  sensitive: boolean
+  /** 'open' = filled when the entry is recorded, 'close' = filled at the closing step */
+  step: 'open' | 'close'
+  /** a field is never removed once entries exist: it is hidden */
+  active: boolean
+}
+
+export interface RegisterDef {
+  id: number
+  /** stable id ('lost_found', 'custom_3'…) */
+  key: string
+  labels: Labels
+  /** an Icon name of the renderer */
+  icon: string
+  /** who may record entries */
+  fillRoles: Role[]
+  /** who may do the closing step */
+  closeRoles: Role[]
+  /** name of the closing step ("returned to its owner", "delivered"…); null = entries have no closing step */
+  closeLabels: Labels | null
+  sort: number
+  active: boolean
+  /** like the dean's "this register was opened on …" */
+  openedAt: string
+  openedBy: string
+  fields: RegisterField[]
+}
+
+export type RegisterDefInput = Omit<RegisterDef, 'id' | 'openedAt' | 'openedBy'> & { id?: number }
+
+export type YesNoNote = { answer: 'yes' | 'no'; note: string }
+export type PersonValue = { name: string; idType: string; idNumber: string }
+/** an account picked or confirmed: the name is kept as it was at that moment */
+export type AccountValue = { userId: number; name: string }
+export type FieldValue = string | YesNoNote | PersonValue | AccountValue
+/** sent by the form: a 'signature' field carries the PIN, an 'account' field the user id */
+export type FieldInput = string | YesNoNote | PersonValue | { pin: string } | { userId: number }
+export type EntryValues = Record<string, FieldValue>
+export type EntryInputValues = Record<string, FieldInput>
+
+export interface RegisterEntry {
+  id: number
+  registerId: number
+  /** running number in its register, like the numbered lines of the paper book */
+  number: number
+  values: EntryValues
+  createdBy: string
+  createdAt: string
+  post: string
+  closedBy: string | null
+  closedAt: string | null
+  /** keys of the fields that were corrected at least once */
+  corrected: string[]
+}
+
+export interface EntryCorrection {
+  fieldKey: string
+  oldValue: FieldValue | null
+  newValue: FieldValue | null
+  reason: string
+  by: string
+  at: string
+}
+
+export interface EntryQuery {
+  registerId: number
+  /** YYYY-MM-DD; administrators only (others see the last 24 hours and open entries) */
+  from: string
+  to: string
+  text: string
+  /** only entries still waiting for their closing step */
+  openOnly: boolean
+}
+
 // ---------- patrols ----------
 export interface Checkpoint {
   id: number
@@ -539,6 +643,20 @@ export interface Api {
   notes: {
     add(category: NoteCategory, text: string): Promise<void>
     list(from: string, to: string): Promise<NoteRow[]>
+  }
+  registers: {
+    /** registers this user may fill or close (administrators: all, switched-off ones too) */
+    list(): Promise<RegisterDef[]>
+    /** administrators: create or change a register definition */
+    save(def: RegisterDefInput): Promise<number>
+    entries(q: EntryQuery): Promise<RegisterEntry[]>
+    add(registerId: number, values: EntryInputValues): Promise<{ id: number; number: number }>
+    close(entryId: number, values: EntryInputValues): Promise<void>
+    /** entries are never erased: a wrong value is corrected and the correction is kept */
+    correct(entryId: number, fieldKey: string, value: FieldInput, reason: string): Promise<void>
+    corrections(entryId: number): Promise<EntryCorrection[]>
+    /** accounts for 'account' fields */
+    accounts(): Promise<{ id: number; name: string; role: Role }[]>
   }
   users: {
     list(): Promise<User[]>

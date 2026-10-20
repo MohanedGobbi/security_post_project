@@ -39,7 +39,8 @@
     "endShift": "End shift",
     "patrols": "Patrols",
     "keys": "Keys & equipment",
-    "expected": "Expected visitors"
+    "expected": "Expected visitors",
+    "registers": "Registers"
   },
   "lang": {
     "ar": "العربية",
@@ -270,7 +271,18 @@
     "syncBadCode": "Link code not valid or expired",
     "syncServer": "Server error",
     "printFailed": "Printing failed: check the printer",
-    "pinTaken": "This PIN is already used by someone else: choose another one"
+    "pinTaken": "This PIN is already used by someone else: choose another one",
+    "badKey": "Invalid identifier ({{s}})",
+    "keyTaken": "This identifier is already used",
+    "rolesRequired": "Choose who can fill this register",
+    "badType": "Unknown field type ({{s}})",
+    "noCloseStep": "This register has no closing step",
+    "fieldsRequired": "A register needs at least one field",
+    "badValue": "Invalid value ({{s}})",
+    "noteRequired": "Please specify what is wrong ({{s}})",
+    "signaturePin": "Wrong PIN for the confirmation",
+    "fieldRequired": "A required field is empty ({{s}})",
+    "entryClosed": "This entry is already closed"
   },
   "photo": {
     "take": "Take photo",
@@ -865,5 +877,39 @@
       "bad_value": "Value not valid",
       "too_large": "Too much data"
     }
+  },
+  "registers": {
+    "title": "Registers",
+    "choose": "Choose a register",
+    "noneOpen": "No register is open yet.",
+    "newEntry": "New entry",
+    "record": "Record",
+    "recorded": "Entry no. {{n}} recorded",
+    "entries": "Entries",
+    "none": "No entries",
+    "recent": "Last 24 hours and open entries",
+    "open": "Open",
+    "closed": "Closed",
+    "openOnly": "Open only",
+    "number": "No.",
+    "recordedBy": "Recorded by {{name}}",
+    "closedBy": "{{step}}: {{name}}, {{time}}",
+    "details": "Entry no. {{n}}",
+    "correct": "Correct",
+    "correctTitle": "Correct entry no. {{n}}",
+    "correctField": "Field to correct",
+    "correctValue": "Correct value",
+    "correctReason": "Reason for the correction",
+    "correctDone": "Correction recorded",
+    "corrected": "corrected",
+    "corrections": "Corrections",
+    "noErase": "Entries cannot be erased: a mistake is corrected, and the correction stays visible.",
+    "specify": "Specify",
+    "pinPlaceholder": "PIN",
+    "pick": "— choose —",
+    "openedOn": "Opened on {{date}} by {{name}}",
+    "empty": "(empty)",
+    "time": "Date",
+    "status": "Status"
   }
 }

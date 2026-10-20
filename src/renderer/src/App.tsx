@@ -16,6 +16,7 @@ import VehiclesPage from './pages/VehiclesPage'
 import DeliveriesPage from './pages/DeliveriesPage'
 import IncidentsPage from './pages/IncidentsPage'
 import NotesPage from './pages/NotesPage'
+import RegistersPage from './pages/RegistersPage'
 import LogPage from './pages/LogPage'
 import WatchlistPage from './pages/WatchlistPage'
 import PatrolsPage from './pages/PatrolsPage'
@@ -26,7 +27,7 @@ import EndShiftDialog from './components/EndShiftDialog'
 import Icon, { type IconName } from './components/Icon'
 import BrandMark from './components/BrandMark'
 
-export type Page = 'home' | 'in' | 'out' | 'expected' | 'vehicles' | 'deliveries' | 'incidents' | 'patrols' | 'keys' | 'notes' | 'log' | 'watchlist' | 'settings'
+export type Page = 'home' | 'in' | 'out' | 'expected' | 'vehicles' | 'deliveries' | 'incidents' | 'patrols' | 'keys' | 'notes' | 'registers' | 'log' | 'watchlist' | 'settings'
 
 interface Toast { id: number; text: string; kind: 'ok' | 'error' }
 
@@ -43,6 +44,10 @@ interface AppCtx {
   checkInExpected(e: ExpectedVisitor): void
   /** read once by Visitor IN */
   takeExpected(): ExpectedVisitor | null
+  /** register shown on the Registers page */
+  registerId: number | null
+  /** opens one register (null = the list of registers) */
+  openRegister(id: number | null): void
 }
 
 const Ctx = createContext<AppCtx | null>(null)
@@ -70,6 +75,7 @@ const NAV: { page: Page; key: string; icon: IconName; shortcut?: string }[] = [
   { page: 'patrols', key: 'nav.patrols', icon: 'shield', shortcut: 'F10' },
   { page: 'keys', key: 'nav.keys', icon: 'key', shortcut: 'F11' },
   { page: 'notes', key: 'nav.notes', icon: 'note', shortcut: 'F7' },
+  { page: 'registers', key: 'nav.registers', icon: 'book' },
   { page: 'log', key: 'nav.log', icon: 'list', shortcut: 'F8' },
   { page: 'watchlist', key: 'nav.watchlist', icon: 'eye' },
   { page: 'settings', key: 'nav.settings', icon: 'gear', shortcut: 'F9' }
@@ -111,6 +117,8 @@ export default function App(): ReactNode {
   const [user, setUser] = useState<User | null>(null)
   const [siteName, setSiteName] = useState('')
   const [page, setPage] = useState<Page>('home')
+  /** the register open on the Registers page (null = its list of tiles) */
+  const [registerId, setRegisterId] = useState<number | null>(null)
   const [toasts, setToasts] = useState<Toast[]>([])
   const [ending, setEnding] = useState(false)
   const [alerts, setAlerts] = useState<AlertItem[]>([])
@@ -227,7 +235,8 @@ export default function App(): ReactNode {
   }
 
   const ctx: AppCtx = {
-    user, siteName, features, refreshFeatures, alerts, refreshAlerts, go: setPage, toast,
+    user, siteName, features, refreshFeatures, alerts, refreshAlerts, go: (p: Page) => { if (p === 'registers') setRegisterId(null); setPage(p) }, toast,
+    registerId, openRegister: (id: number | null) => { setRegisterId(id); setPage('registers') },
     checkInExpected: (e) => { pendingExpected.current = e; setPage('in') },
     takeExpected: () => { const e = pendingExpected.current; pendingExpected.current = null; return e }
   }
@@ -269,7 +278,7 @@ export default function App(): ReactNode {
           <nav className="sidebar">
             {nav.map((n) => (
               <button key={n.page} type="button" className={`${page === n.page ? 'active' : ''} ${n.page === bottomPage ? 'nav-bottom' : ''}`}
-                onClick={() => setPage(n.page)}>
+                onClick={() => { if (n.page === 'registers') setRegisterId(null); setPage(n.page) }}>
                 <Icon name={n.icon} /> <span>{t(n.key)}</span> {n.shortcut && <kbd>{n.shortcut}</kbd>}
               </button>
             ))}
@@ -285,6 +294,7 @@ export default function App(): ReactNode {
             {page === 'patrols' && <PatrolsPage />}
             {page === 'keys' && <KeysPage />}
             {page === 'notes' && <NotesPage />}
+            {page === 'registers' && <RegistersPage />}
             {page === 'log' && <LogPage />}
             {page === 'watchlist' && <WatchlistPage />}
             {page === 'settings' && <SettingsPage />}

@@ -39,7 +39,8 @@
     "endShift": "Fin de service",
     "patrols": "Rondes",
     "keys": "Clés et matériel",
-    "expected": "Visiteurs attendus"
+    "expected": "Visiteurs attendus",
+    "registers": "Registres"
   },
   "lang": {
     "ar": "العربية",
@@ -270,7 +271,18 @@
     "syncBadCode": "Code de liaison non valide ou expiré",
     "syncServer": "Erreur du serveur",
     "printFailed": "Échec de l’impression : vérifiez l’imprimante",
-    "pinTaken": "Ce code PIN est déjà utilisé par quelqu’un d’autre : choisissez-en un autre"
+    "pinTaken": "Ce code PIN est déjà utilisé par quelqu’un d’autre : choisissez-en un autre",
+    "badKey": "Identifiant invalide ({{s}})",
+    "keyTaken": "Cet identifiant est déjà utilisé",
+    "rolesRequired": "Choisissez qui peut remplir ce registre",
+    "badType": "Type de champ inconnu ({{s}})",
+    "noCloseStep": "Ce registre n’a pas d’étape de clôture",
+    "fieldsRequired": "Un registre demande au moins un champ",
+    "badValue": "Valeur invalide ({{s}})",
+    "noteRequired": "Précisez ce qui ne va pas ({{s}})",
+    "signaturePin": "Code PIN de confirmation incorrect",
+    "fieldRequired": "Un champ obligatoire est vide ({{s}})",
+    "entryClosed": "Cette inscription est déjà clôturée"
   },
   "photo": {
     "take": "Prendre une photo",
@@ -865,5 +877,39 @@
       "bad_value": "Valeur non valide",
       "too_large": "Trop de données"
     }
+  },
+  "registers": {
+    "title": "Registres",
+    "choose": "Choisissez un registre",
+    "noneOpen": "Aucun registre n’est encore ouvert.",
+    "newEntry": "Nouvelle inscription",
+    "record": "Enregistrer",
+    "recorded": "Inscription n° {{n}} enregistrée",
+    "entries": "Inscriptions",
+    "none": "Aucune inscription",
+    "recent": "24 dernières heures et inscriptions en cours",
+    "open": "En cours",
+    "closed": "Clôturée",
+    "openOnly": "En cours seulement",
+    "number": "N°",
+    "recordedBy": "Inscrit par {{name}}",
+    "closedBy": "{{step}} : {{name}}, {{time}}",
+    "details": "Inscription n° {{n}}",
+    "correct": "Corriger",
+    "correctTitle": "Corriger l’inscription n° {{n}}",
+    "correctField": "Champ à corriger",
+    "correctValue": "Valeur correcte",
+    "correctReason": "Motif de la correction",
+    "correctDone": "Correction enregistrée",
+    "corrected": "corrigé",
+    "corrections": "Corrections",
+    "noErase": "Une inscription ne s’efface pas : une erreur se corrige, et la correction reste visible.",
+    "specify": "Préciser",
+    "pinPlaceholder": "Code PIN",
+    "pick": "— choisir —",
+    "openedOn": "Ouvert le {{date}} par {{name}}",
+    "empty": "(vide)",
+    "time": "Date",
+    "status": "Statut"
   }
 }
