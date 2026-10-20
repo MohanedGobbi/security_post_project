@@ -43,9 +43,16 @@ npm run dev
 Other scripts: `npm run build` (production build), `npm start` (run the built app), `npm run typecheck`,
 `npm run dist` (Windows installer; not tested yet).
 
-On first start the program asks for the administrator's name and PIN, then opens the faculty's registers.
-Set `SECREG_DATA_DIR` to use another data folder, for example for tests. Data folder by default:
-`%APPDATA%\FacultySecurity`.
+There is no setup screen. On its first start the program creates the faculty's settings, its registers and two accounts:
+
+| Account | Role | Starting PIN |
+|---|---|---|
+| مسؤول الأمن | administrator | `246810` |
+| رئيس فرقة الأمن | team leader | `135790` |
+
+The administrator logs in, changes both PINs and adds the guards in **Administration → Accounts** (a warning stays there
+until the starting PINs are changed). The starting PINs and names are in `src/shared/faculty.ts`.
+Set `SECREG_DATA_DIR` to use another data folder, for example for tests. Data folder by default: `%APPDATA%\FacultySecurity`.
 
 ## Web demo (Vercel)
 A browser-only demo (the same screens, sample data in Arabic, nothing sent anywhere) lives in `demo/`.

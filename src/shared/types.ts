@@ -8,6 +8,8 @@ export interface User {
   role: Role
   language: Lang
   active: boolean
+  /** only in the accounts list of an administrator: the account still has the PIN it was created with */
+  defaultPin?: boolean
 }
 
 /** Optional parts of the program, switched on per site in Settings → Features */
@@ -25,19 +27,9 @@ export interface Features {
 export type ProfileId = 'small' | 'company' | 'large'
 
 export interface AuthStatus {
-  needsSetup: boolean
   user: User | null
   siteName: string
   features: Features
-}
-
-export interface SetupInput {
-  siteName: string
-  postName: string
-  adminName: string
-  pin: string
-  language: Lang
-  profile: ProfileId
 }
 
 export type IdType = 'national_id' | 'passport' | 'residence' | 'driver_license' | 'student' | 'employee' | 'other'
@@ -651,7 +643,6 @@ export interface RangeQuery {
 export interface Api {
   auth: {
     status(): Promise<AuthStatus>
-    setup(input: SetupInput): Promise<User>
     loginUsers(): Promise<{ id: number; name: string; role: Role }[]>
     login(userId: number, pin: string): Promise<User>
     /** the PIN alone identifies the person (PINs are unique) */

@@ -1,8 +1,9 @@
 import { join } from 'node:path'
-import { app, BrowserWindow, Menu, session, shell } from 'electron'
-import { initKey } from './crypto'
-import { applyRetention, audit, openDb } from './db'
+import { app, BrowserWindow, dialog, Menu, session, shell } from 'electron'
+import { initKey, replaceKey } from './crypto'
+import { applyRetention, audit, isFreshInstall, openDb, resetDatabase } from './db'
 import { registerIpc } from './ipc'
+import { seedFaculty } from './seed'
 import { shutdownScanner, warmUpScanner } from './scan'
 import { startSyncLoop, stopSyncLoop } from './sync'
 
@@ -63,8 +64,27 @@ if (!app.requestSingleInstanceLock()) {
     session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === 'media'))
     session.defaultSession.setPermissionCheckHandler((_wc, permission) => permission === 'media')
 
-    initKey()
+    const keyState = initKey()
     openDb()
+    if (keyState === 'lost') {
+      if (isFreshInstall()) {
+        // killed during the very first seconds: nothing of value was stored yet, so start over
+        resetDatabase()
+        replaceKey()
+        openDb()
+      } else {
+        dialog.showErrorBox(
+          'برنامج إدارة الأمن بالكلية',
+          'تعذر فتح مفتاح تشفير البيانات: هذه البيانات أُنشئت بحساب ويندوز آخر أو على جهاز آخر.\n' +
+          'افتح البرنامج بحساب ويندوز الذي أُنشئت به البيانات، أو استرجع نسخة احتياطية.\n\n' +
+          'The data encryption key cannot be opened: these data were created by another Windows account or on another PC.\n' +
+          'Open the program with the Windows account that created them, or restore a backup.'
+        )
+        app.quit()
+        return
+      }
+    }
+    seedFaculty()
     const purged = applyRetention()
     if (Object.values(purged).some(Boolean)) audit(null, 'retention_purge', '', null, JSON.stringify(purged))
     registerIpc()

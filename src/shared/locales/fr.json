@@ -976,7 +976,9 @@
     "registers": "Registres",
     "audit": "Journal d’audit",
     "settings": "Paramètres",
-    "accountsIntro": "Agents et chefs d’équipe se connectent avec leur seul code PIN : chaque code appartient à une personne."
+    "accountsIntro": "Agents et chefs d’équipe se connectent avec leur seul code PIN : chaque code appartient à une personne.",
+    "defaultPinTitle": "Changez les codes PIN de départ.",
+    "defaultPinText": "Ces comptes ont encore le code PIN de départ : {{names}}. Utilisez « Changer le code » ci-dessous."
   },
   "audit": {
     "intro": "Chaque connexion, inscription, consultation, export et modification, avec son auteur.",

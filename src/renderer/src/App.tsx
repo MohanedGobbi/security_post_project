@@ -6,7 +6,6 @@ import { formatDateTime } from '@shared/i18n'
 import { ALL_ON } from '@shared/features'
 import i18n from './i18n'
 import { appTitle, BRAND } from './brand'
-import SetupPage from './pages/SetupPage'
 import LoginPage from './pages/LoginPage'
 import ShiftStartPage from './pages/ShiftStartPage'
 import HomePage from './pages/HomePage'
@@ -115,7 +114,7 @@ export function LangSwitch({ onChange }: { onChange?: (l: Lang) => void }): Reac
 
 export default function App(): ReactNode {
   const { t } = useTranslation()
-  const [state, setState] = useState<'loading' | 'setup' | 'login' | 'shift' | 'ready'>('loading')
+  const [state, setState] = useState<'loading' | 'login' | 'shift' | 'ready'>('loading')
   const [user, setUser] = useState<User | null>(null)
   const [siteName, setSiteName] = useState('')
   const [page, setPage] = useState<Page>('home')
@@ -162,10 +161,6 @@ export default function App(): ReactNode {
   /** After login: a guard without an open shift first reads the handover and starts one (when shifts are used). */
   const enter = useCallback(async (u: User) => {
     setUser(u)
-    // an organisation's registers are opened the first time an administrator logs in (existing ones are left as they are)
-    if (u.role === 'admin' && BRAND.registerTemplates.length) {
-      await window.api.registers.installTemplates(BRAND.registerTemplates).catch(() => 0)
-    }
     const f = await window.api.settings.getFeatures()
     setFeatures(f)
     setPage('home')
@@ -183,8 +178,7 @@ export default function App(): ReactNode {
     window.api.auth.status().then((s) => {
       setSiteName(s.siteName)
       setFeatures(s.features)
-      if (s.needsSetup) setState('setup')
-      else if (s.user) enter(s.user)
+      if (s.user) enter(s.user)
       else setState('login')
     })
   }, [enter])
@@ -235,7 +229,6 @@ export default function App(): ReactNode {
   )
 
   if (state === 'loading') return <div className="center-screen">{t('common.loading')}</div>
-  if (state === 'setup') return <><SetupPage onDone={onLoggedIn} toast={toast} />{toastLayer}</>
   if (state === 'login' || !user) return <><LoginPage siteName={siteName} onDone={onLoggedIn} toast={toast} />{toastLayer}</>
   if (state === 'shift') {
     return <><ShiftStartPage user={user} onStarted={() => setState('ready')} onLogout={logout} toast={toast} />{toastLayer}</>

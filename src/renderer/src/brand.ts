@@ -1,6 +1,7 @@
 // The program is built for one organisation: the Faculty of Law and Political Science, University of Ghardaia.
 // Its name, logos, colours and settings live here.
 import type { Features, Lang } from '@shared/types'
+import { FACULTY } from '@shared/faculty'
 import ghardaiaLogo from './assets/brands/ghardaia-university.png'
 import lawFacultyLogo from './assets/brands/ghardaia-law-faculty.png'
 
@@ -22,8 +23,6 @@ export interface Brand {
   defaultLang: Lang
   /** feature switches applied at first setup (the administrator can change them later) */
   features: Features
-  /** register templates (src/shared/registerTemplates.ts) opened at the first administrator login when missing */
-  registerTemplates: string[]
   /** home screen with the tiles only (no counters, no list of people on site) */
   homeTilesOnly: boolean
   /** registers a team leader fills, in this order, before starting a shift (the paper handover) */
@@ -58,15 +57,7 @@ export const BRAND: Brand = {
   badgeColor: '#0f4426',
   logo2: ghardaiaLogo,
   defaultLang: 'ar',
-  // their paper books become registers; incidents, parcels (letters) and keys are registers too
-  features: {
-    modules: {
-      vehicles: false, deliveries: false, incidents: false, patrols: false, keys: false, notes: false,
-      watchlist: true, shifts: true, preregistration: false, badges: false
-    },
-    idScan: true, visitorPhoto: false, requireIdNumber: true, badgeNumbers: false
-  },
-  registerTemplates: ['shift', 'custody', 'incidents', 'lost_found', 'letters', 'events', 'reports', 'maintenance', 'official_visits', 'evacuation', 'alarms'],
+  features: FACULTY.features,
   homeTilesOnly: true,
   leaderStartRegisters: ['shift', 'custody']
 }

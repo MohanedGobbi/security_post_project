@@ -118,6 +118,11 @@ export function UserSettings(): ReactNode {
   return (
     <section className="card users-card">
       <h2>{t('settings.users')}</h2>
+      {users.some((u) => u.defaultPin && u.active) && (
+        <div className="banner warn" role="alert">
+          <strong>{t('admin.defaultPinTitle')}</strong> {t('admin.defaultPinText', { names: users.filter((u) => u.defaultPin && u.active).map((u) => u.name).join('، ') })}
+        </div>
+      )}
       <table className="log-table">
         <thead><tr><th>{t('settings.name')}</th><th>{t('settings.role')}</th><th>{t('settings.active')}</th><th /></tr></thead>
         <tbody>

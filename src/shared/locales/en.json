@@ -976,7 +976,9 @@
     "registers": "Registers",
     "audit": "Audit trail",
     "settings": "Settings",
-    "accountsIntro": "Guards and team leaders log in with their own PIN only: each PIN belongs to one person."
+    "accountsIntro": "Guards and team leaders log in with their own PIN only: each PIN belongs to one person.",
+    "defaultPinTitle": "Change the starting PINs.",
+    "defaultPinText": "These accounts still have the PIN they were created with: {{names}}. Use “Change PIN” below."
   },
   "audit": {
     "intro": "Every login, entry, view, export and change, with who did it.",

@@ -6,7 +6,6 @@ const call = (channel: string) => (...args: unknown[]) => ipcRenderer.invoke(cha
 const api: Api = {
   auth: {
     status: call('auth:status'),
-    setup: call('auth:setup'),
     loginUsers: call('auth:loginUsers'),
     login: call('auth:login'),
     loginPin: call('auth:loginPin'),

@@ -292,17 +292,7 @@ export const demoApi: Api = {
       refresh()
       const s = db()
       const u = s.users.find((x) => x.id === s.currentUserId && x.active)
-      return { needsSetup: false, user: u ? toUser(u) : null, siteName: s.settings.siteName, features: normalizeFeatures(s.features) }
-    },
-    async setup(input) {
-      const s = db()
-      s.settings.siteName = input.siteName
-      s.settings.postName = input.postName
-      s.features = PROFILES[input.profile]
-      const id = nextId()
-      s.users = [{ id, name: input.adminName, role: 'admin', pin: input.pin, language: input.language, active: true }]
-      s.currentUserId = id
-      return done(toUser(s.users[0]))
+      return { user: u ? toUser(u) : null, siteName: s.settings.siteName, features: normalizeFeatures(s.features) }
     },
     async loginUsers() {
       refresh()

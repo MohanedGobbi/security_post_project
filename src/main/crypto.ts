@@ -10,21 +10,42 @@ let dataKey: Buffer | null = null
  * The key file itself is protected by Windows DPAPI through Electron safeStorage,
  * so a copied database is unreadable on another PC / Windows account.
  */
-export function initKey(): void {
-  const file = join(app.getPath('userData'), 'data.key')
-  const canProtect = safeStorage.isEncryptionAvailable()
-  if (existsSync(file)) {
-    const stored = readFileSync(file)
-    if (stored.subarray(0, 4).toString() === 'RAW:') {
-      dataKey = Buffer.from(stored.subarray(4).toString(), 'base64')
-    } else {
-      dataKey = Buffer.from(safeStorage.decryptString(stored), 'base64')
-    }
-    return
-  }
+export type KeyState = 'ok' | 'lost'
+
+const keyFile = (): string => join(app.getPath('userData'), 'data.key')
+
+function writeNewKey(): void {
   dataKey = randomBytes(32)
   const encoded = dataKey.toString('base64')
-  writeFileSync(file, canProtect ? safeStorage.encryptString(encoded) : Buffer.from('RAW:' + encoded))
+  writeFileSync(keyFile(), safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(encoded) : Buffer.from('RAW:' + encoded))
+}
+
+/**
+ * 'lost': the key file exists but Windows can no longer decrypt it. This happens when the program is killed (power cut,
+ * crash) within the first seconds of its very first start, before Windows' own key was saved. The caller decides
+ * (see index.ts): on a fresh install it starts over, otherwise it stops with a message. Nothing is overwritten here.
+ */
+export function initKey(): KeyState {
+  const file = keyFile()
+  if (existsSync(file)) {
+    const stored = readFileSync(file)
+    try {
+      dataKey = stored.subarray(0, 4).toString() === 'RAW:'
+        ? Buffer.from(stored.subarray(4).toString(), 'base64')
+        : Buffer.from(safeStorage.decryptString(stored), 'base64')
+      return 'ok'
+    } catch {
+      dataKey = randomBytes(32) // placeholder so the database can be opened and inspected; never written
+      return 'lost'
+    }
+  }
+  writeNewKey()
+  return 'ok'
+}
+
+/** Starts over with a new key (only for a fresh install whose key was lost) */
+export function replaceKey(): void {
+  writeNewKey()
 }
 
 function key(): Buffer {

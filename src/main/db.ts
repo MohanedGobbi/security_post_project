@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { DatabaseSync } from 'node:sqlite'
+import { rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { app } from 'electron'
 import type {
@@ -350,6 +351,28 @@ export const parseCustom = (json: string | null | undefined): Record<string, str
   }
 }
 
+/**
+ * True while the database holds nothing but what the program created at its first start:
+ * no visitors, no register entries, no incidents, and no accounts beyond the first two.
+ */
+export function isFreshInstall(): boolean {
+  const n = (table: string): number => {
+    try {
+      return (db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number }).n
+    } catch {
+      return 0
+    }
+  }
+  const data = ['persons', 'visits', 'vehicle_logs', 'deliveries', 'incidents', 'register_entries', 'watchlist', 'expected_visits', 'notes', 'shifts']
+  return data.every((t) => n(t) === 0) && n('users') <= 2
+}
+
+/** Closes the database and deletes its files (a fresh install whose key was lost starts over) */
+export function resetDatabase(): void {
+  db.close()
+  for (const ext of ['', '-wal', '-shm']) rmSync(join(app.getPath('userData'), 'register.db' + ext), { force: true })
+}
+
 export function openDb(): void {
   db = new DatabaseSync(join(app.getPath('userData'), 'register.db'))
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;')
@@ -487,6 +510,13 @@ export function getUserRow(id: number): UserDb | undefined {
 export function getUser(id: number): User | null {
   const r = getUserRow(id)
   return r ? toUser(r) : null
+}
+
+/** Accounts that still have one of the starting PINs (compared by the PIN fingerprint: cheap, no hashing of each account) */
+export function usersWithDefaultPin(pins: readonly string[]): Set<number> {
+  const lookups = pins.map((p) => pinLookup(p))
+  const rows = db.prepare('SELECT id, pin_lookup FROM users').all() as { id: number; pin_lookup: string | null }[]
+  return new Set(rows.filter((r) => r.pin_lookup && lookups.includes(r.pin_lookup)).map((r) => r.id))
 }
 
 export function listUsers(activeOnly: boolean): User[] {

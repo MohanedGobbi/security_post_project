@@ -53,6 +53,10 @@ Environment: `SECREG_DATA_DIR` (data folder of the app), `SECREG_EXPORT_DIR` (ex
 ## The faculty's program
 - `src/renderer/src/brand.ts` holds everything specific to the faculty: the name in three languages, both logos, colours, the feature switches applied
   at first setup, the registers opened at the first administrator login, the tiles-only home screen, and which registers a team leader fills before a shift.
+- **No setup screen.** `src/shared/faculty.ts` holds the settings and the first two accounts (administrator, team leader, with starting PINs); `src/main/seed.ts` creates them at the first start
+  and opens the registers (also completed at later starts). A warning on the accounts page stays until the starting PINs are changed.
+  If the program is killed within the first seconds of its very first start, Windows can lose the key protecting the data key: `initKey()` reports it, and `index.ts`
+  starts over when nothing but the seeded data exists, or shows an error (tested).
 - **Login is PIN only.** Roles: `admin`, `leader` (رئيس فرقة الأمن), `guard`. Administrators land on the Administration page and never start a guard shift.
   Databases from older versions are migrated in `migrate()` in `src/main/db.ts`.
 - Plan, phases and decisions to confirm with the client: `PLAN_FACULTY.md`.

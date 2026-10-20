@@ -1,12 +1,13 @@
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import type {
   BadgeSettings, CheckInInput, CheckStatus, CustomFieldInput, ExpectedInput, DeliveryInput, ExportRange, IncidentInput, KeyItemInput, Lang, LendInput, NoteCategory,
-  Features, Module, RangeQuery, Role, SearchQuery, SetupInput, Settings, User, VehicleInInput, WatchHit, WatchInput,
+  Features, Module, RangeQuery, Role, SearchQuery, Settings, User, VehicleInInput, WatchHit, WatchInput,
   AuditQuery, ScanOptions, EntryInputValues, EntryQuery, FieldInput, RegisterDefInput
 } from '@shared/types'
 import { ALL_ON, PROFILES } from '@shared/features'
 import { LANGS } from '@shared/i18n'
 import * as db from './db'
+import { DEFAULT_PINS } from '@shared/faculty'
 import { verifyPin } from './crypto'
 import { analyzeImage, barcodeTexts, readText } from './scan'
 import { exportCheckpointLabels, exportEvacuation, exportExcel, exportPdf, exportShiftReport } from './export'
@@ -88,19 +89,8 @@ const watchOn = (): boolean => db.getFeatures().modules.watchlist
 export function registerIpc(): void {
   // ---------- auth ----------
   handle('auth:status', 'public', () => ({
-    needsSetup: db.userCount() === 0, user: currentUser, siteName: db.getSettings().siteName, features: db.getFeatures()
+    user: currentUser, siteName: db.getSettings().siteName, features: db.getFeatures()
   }))
-
-  handle('auth:setup', 'public', (_u, input: SetupInput) => {
-    if (db.userCount() > 0) throw new Error('error.forbidden')
-    if (!validPin(input.pin)) throw new Error('setup.pinShort')
-    db.setSettings({ ...db.getSettings(), siteName: input.siteName, postName: input.postName })
-    db.setFeatures(PROFILES[input.profile] ?? ALL_ON)
-    const id = db.createUser(input.adminName || 'Admin', 'admin', input.pin, checkLang(input.language))
-    currentUser = db.getUser(id)
-    db.audit(id, 'setup')
-    return currentUser
-  })
 
   handle('auth:loginUsers', 'public', () => db.listUsers(true).map((u) => ({ id: u.id, name: u.name, role: u.role })))
 
@@ -214,7 +204,10 @@ export function registerIpc(): void {
   handle('audit:list', 'admin', (_u, q: AuditQuery) => db.listAudit(q))
 
   // ---------- users ----------
-  handle('users:list', 'admin', () => db.listUsers(false))
+  handle('users:list', 'admin', () => {
+    const stillDefault = db.usersWithDefaultPin(DEFAULT_PINS)
+    return db.listUsers(false).map((u) => ({ ...u, defaultPin: stillDefault.has(u.id) }))
+  })
   handle('users:create', 'admin', (u, name: string, role: Role, pin: string, language: Lang) => {
     if (!String(name).trim()) throw new Error('error.nameRequired')
     if (!validPin(pin)) throw new Error('setup.pinShort')
