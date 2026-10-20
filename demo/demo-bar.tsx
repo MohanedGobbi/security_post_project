@@ -2,7 +2,6 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { resetDemo } from './store'
 import { F } from './flavors'
-import { BRAND } from '@desktop/brand'
 
 type Kind = 'app' | 'dashboard'
 
@@ -28,8 +27,6 @@ function Bar({ kind }: { kind: Kind }): ReactNode {
       <strong>{t.demo}</strong>
       <span className="mono">{kind === 'app' ? `${t.pin}: ${F.users.map((u) => `${u.name} ${u.pin}`).join(' · ')}` : t.dashboard}</span>
       <span className="muted">{t.local}</span>
-      {/* an organisation build opens on its login page: there is no demo home */}
-      {BRAND.loginMode === 'pick' && <a href="/">{t.home}</a>}
       <button type="button" className="link" onClick={() => { resetDemo(); location.reload() }}>{t.reset}</button>
       <button type="button" className="link" onClick={() => setOpen(false)} aria-label="×">×</button>
     </div>

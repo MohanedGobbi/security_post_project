@@ -2,7 +2,7 @@ import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import type {
   BadgeSettings, CheckInInput, CheckStatus, CustomFieldInput, ExpectedInput, DeliveryInput, ExportRange, IncidentInput, KeyItemInput, Lang, LendInput, NoteCategory,
   Features, Module, RangeQuery, Role, SearchQuery, SetupInput, Settings, User, VehicleInInput, WatchHit, WatchInput,
-  AuditQuery, EntryInputValues, EntryQuery, FieldInput, RegisterDefInput
+  AuditQuery, ScanOptions, EntryInputValues, EntryQuery, FieldInput, RegisterDefInput
 } from '@shared/types'
 import { ALL_ON, PROFILES } from '@shared/features'
 import { LANGS } from '@shared/i18n'
@@ -245,7 +245,7 @@ export function registerIpc(): void {
   })
 
   // ---------- scanning ----------
-  handle('scan:analyze', 'user', (_u, image: Uint8Array) => analyzeImage(image))
+  handle('scan:analyze', 'user', (_u, image: Uint8Array, opts?: ScanOptions) => analyzeImage(image, opts ?? {}))
   handle('scan:readText', 'user', (_u, image: Uint8Array) => readText(image))
   handle('scan:barcodes', 'user', (_u, image: Uint8Array) => barcodeTexts(image))
 

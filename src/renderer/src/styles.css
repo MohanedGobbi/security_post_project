@@ -554,3 +554,15 @@ h2.spaced { margin-top: 18px; }
 .builder-preview { position: sticky; top: 0; }
 .builder-preview .register-head h3 { margin: 0; }
 .warn-row td { background: var(--warn-soft); }
+
+/* ---------- automatic card reading ---------- */
+.camera-view { position: relative; }
+.auto-badge {
+  position: absolute; inset-inline: 12px; bottom: 12px; padding: 6px 12px; border-radius: 10px; font-size: 0.9rem; font-weight: 600;
+  background: rgb(15 23 32 / 72%); color: #fff; text-align: center; pointer-events: none;
+}
+.auto-badge.reading { background: rgb(22 112 58 / 88%); }
+.auto-badge.trouble { background: rgb(178 106 0 / 90%); }
+.auto-badge.done { background: rgb(13 138 78 / 92%); }
+.auto-toggle { margin: 6px 0 0; }
+.camera-busy small { margin-inline-start: 8px; opacity: 0.8; }

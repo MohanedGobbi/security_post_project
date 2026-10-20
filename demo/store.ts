@@ -5,7 +5,6 @@ import type {
   EntryValues, Lang, NoteCategory, RegisterDef, Role, Settings, Severity, VehicleType, WatchLevel
 } from '@shared/types'
 import { templatesFor } from '@shared/registerTemplates'
-import { PROFILES } from '@shared/features'
 import { BRAND } from '@desktop/brand'
 import { F, sampleId, type SampleEntry } from './flavors'
 
@@ -97,7 +96,7 @@ export interface DemoStore {
 }
 
 // one store per brand, so the generic and the branded demo never mix their data
-const KEY = BRAND.id === 'default' ? 'secreg-demo-v1' : `secreg-demo-v1-${BRAND.id}`
+const KEY = 'secreg-demo-faculty'
 // 2: registers (generic engine) · 3: faculty registers and sample entries
 const VERSION = 3
 
@@ -177,7 +176,7 @@ function seed(): DemoStore {
   return {
     version: VERSION,
     settings: { siteName: F.siteName, postName: F.postName, retentionDays: 365, overstayHours: 8, closingTime: '', vehicleOverstayHours: 0, patrolIntervalHours: 4 },
-    features: BRAND.features ?? PROFILES.large,
+    features: BRAND.features,
     badge: { printer: '', size: 'cr80', autoPrint: false, showPhoto: true },
     users: F.users.map((u, i) => ({ id: i + 1, ...u, active: true })),
     currentUserId: null,

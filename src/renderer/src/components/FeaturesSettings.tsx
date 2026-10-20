@@ -52,19 +52,6 @@ export default function FeaturesSettings(): ReactNode {
       <h2>{t('features.title')}</h2>
       <p className="hint">{t('features.intro')}</p>
 
-      <h3>{t('features.profile')}</h3>
-      <p className="hint">{t('features.profileHint')}</p>
-      <div className="profile-grid">
-        {PROFILE_IDS.map((id) => (
-          <button key={id} type="button" className={`profile-card ${profile === id ? 'on' : ''}`} onClick={() => setF(PROFILES[id])}>
-            <strong>{t(`features.profiles.${id}.name`)}</strong>
-            <span className="muted">{t(`features.profiles.${id}.desc`)}</span>
-            {profile === id && <span className="tag inside">{t('features.current')}</span>}
-          </button>
-        ))}
-      </div>
-      {!profile && <p className="hint">{t('features.custom')}</p>}
-
       <div className="features-cols">
         <div>
           <h3>{t('features.modules')}</h3>

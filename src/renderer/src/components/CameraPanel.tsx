@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { ScanResult } from '@shared/types'
 import Icon from './Icon'
 import { savedCameraId } from '../util'
+import { isDone, looksLikeCardText, scanFrame, type Region } from '../scanPipeline'
 
 const CARD_RATIO = 85.6 / 53.98 // ID-1 card format
 const GUIDE_WIDTH = 0.82 // share of the video width covered by the guide frame
@@ -10,6 +11,16 @@ const GUIDE_WIDTH = 0.82 // share of the video width covered by the guide frame
 const DEMO = (window as { __SECREG_DEMO__?: boolean }).__SECREG_DEMO__ === true
 
 type Busy = null | 'scan' | 'text'
+
+/** manual reading tries every version of the frame; the live camera tries a few and then looks at a new frame */
+const MANUAL_VARIANTS = 9
+const AUTO_VARIANTS = 3
+/** pause between two automatic attempts, and how many failed attempts before the guard is advised what to do */
+const AUTO_EVERY_MS = 400
+const AUTO_TROUBLE_AFTER = 6
+
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
+const analyze = (image: Uint8Array, opts: { barcodes?: boolean; text?: boolean }): Promise<ScanResult> => window.api.scan.analyze(image, opts)
 
 interface Props {
   onScan(result: ScanResult): void
@@ -72,6 +83,13 @@ export default function CameraPanel({ onScan, onPhoto, onTextLines, onError, has
   const [ready, setReady] = useState(false)
   const [noCamera, setNoCamera] = useState(false)
   const [busy, setBusy] = useState<Busy>(null)
+  const [progress, setProgress] = useState<[number, number] | null>(null)
+  /** automatic reading from the live camera: on until a card has been read (the page is left for each new visitor) */
+  const [auto, setAuto] = useState(true)
+  const [found, setFound] = useState(false)
+  const [autoState, setAutoState] = useState<'idle' | 'reading' | 'trouble'>('idle')
+  const busyRef = useRef<Busy>(null)
+  busyRef.current = busy
 
   useEffect(() => {
     let stream: MediaStream | null = null
@@ -112,6 +130,7 @@ export default function CameraPanel({ onScan, onPhoto, onTextLines, onError, has
     return [(v.videoWidth - w) / 2, (v.videoHeight - h) / 2, w, h]
   }
 
+  /** the demo has no reader: it answers a sample card whatever the image */
   const run = async (kind: Exclude<Busy, null>, image: Uint8Array): Promise<void> => {
     setBusy(kind)
     try {
@@ -124,9 +143,26 @@ export default function CameraPanel({ onScan, onPhoto, onTextLines, onError, has
     }
   }
 
+  /** Manual reading of one source (a camera frame or a photo): all the versions of it, until a document validates. */
+  const scanSource = async (src: CanvasImageSource, region: Region): Promise<void> => {
+    setBusy('scan')
+    setProgress([0, MANUAL_VARIANTS])
+    try {
+      const r = await scanFrame(src, region, analyze, { variants: MANUAL_VARIANTS, onProgress: (d, n) => setProgress([d, n]) })
+      onScan(r)
+      if (isDone(r)) setFound(true)
+    } catch (e) {
+      onError(String(e))
+    } finally {
+      setBusy(null)
+      setProgress(null)
+    }
+  }
+
   const fromCamera = async (kind: Exclude<Busy, null>): Promise<void> => {
     const v = videoRef.current
     if (!v || !ready) return
+    if (kind === 'scan') return scanSource(v, guideRegion(v))
     run(kind, await prepareForOcr(v, ...guideRegion(v)))
   }
 
@@ -135,8 +171,44 @@ export default function CameraPanel({ onScan, onPhoto, onTextLines, onError, has
     if (!file) return
     const bmp = await createImageBitmap(file)
     lastImport.current = bmp
-    run('scan', await prepareForOcr(bmp, 0, 0, bmp.width, bmp.height))
+    // a photo of a card: the whole picture is the region, the machine-readable zone is in its lower part
+    scanSource(bmp, [0, 0, bmp.width, bmp.height])
   }
+
+  // Automatic reading: while the camera is on and no card has been read yet, look at the guide all the time,
+  // and read it as soon as printed text is in it. Nothing to press, no exact alignment needed.
+  useEffect(() => {
+    if (!scan || !ready || !auto || found) { setAutoState('idle'); return }
+    const signal = { cancelled: false }
+    let failures = 0
+    const loop = async (): Promise<void> => {
+      while (!signal.cancelled) {
+        await sleep(AUTO_EVERY_MS)
+        const v = videoRef.current
+        if (signal.cancelled || !v || busyRef.current || v.videoWidth === 0) continue
+        const region = guideRegion(v)
+        if (!looksLikeCardText(v, region)) { failures = 0; setAutoState('idle'); continue }
+        setAutoState(failures >= AUTO_TROUBLE_AFTER ? 'trouble' : 'reading')
+        try {
+          const r = await scanFrame(v, region, analyze, { variants: AUTO_VARIANTS, signal })
+          if (signal.cancelled) return
+          if (isDone(r)) {
+            setFound(true)
+            setAutoState('idle')
+            onScan(r)
+            return
+          }
+          failures++
+        } catch {
+          failures++
+        }
+      }
+    }
+    loop()
+    return () => { signal.cancelled = true }
+    // onScan is a new closure on every render of the page: the loop must not restart because of it
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scan, ready, auto, found])
 
   const readText = async (): Promise<void> => {
     // after an import, read the imported image; otherwise the live camera
@@ -184,9 +256,24 @@ export default function CameraPanel({ onScan, onPhoto, onTextLines, onError, has
             )}
           </>
         )}
-        {busy && <div className="camera-busy"><span className="spinner" />{t(busy === 'scan' ? 'visitor.scanning' : 'visitor.readingText')}</div>}
+        {busy && (
+          <div className="camera-busy">
+            <span className="spinner" />{t(busy === 'scan' ? 'visitor.scanning' : 'visitor.readingText')}
+            {busy === 'scan' && progress && progress[0] > 0 && <small> {progress[0]}/{progress[1]}</small>}
+          </div>
+        )}
+        {!busy && scan && auto && !noCamera && (
+          <div className={`auto-badge ${found ? 'done' : autoState}`} role="status">
+            {found ? t('visitor.autoDone') : autoState === 'reading' ? t('visitor.autoReading') : autoState === 'trouble' ? t('visitor.autoTrouble') : t('visitor.autoWatching')}
+          </div>
+        )}
       </div>
       {scan && <p className="hint">{t('visitor.scanHelp')}</p>}
+      {scan && !noCamera && (
+        <label className="check auto-toggle">
+          <input type="checkbox" checked={auto} onChange={(e) => { setAuto(e.target.checked); setFound(false) }} /> {t('visitor.autoScan')}
+        </label>
+      )}
       <div className="camera-actions">
         {scan && (
           <button type="button" className="primary big" disabled={!ready || !!busy} onClick={() => fromCamera('scan')}>

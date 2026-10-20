@@ -1,35 +1,27 @@
 {
   "name": "security-register",
-  "productName": "Security Register",
+  "productName": "FacultySecurity",
   "version": "0.1.0",
-  "description": "Digital logbook for security guard posts (AR / EN / FR)",
+  "description": "Faculty security management program (Faculty of Law and Political Science, University of Ghardaia)",
   "main": "./out/main/index.js",
   "author": "Mouhaned Gobbi",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
     "dev": "electron-vite dev",
-    "dev:ghardaia": "electron-vite dev --mode ghardaia",
-    "dev:faculty": "electron-vite dev --mode ghardaia-law",
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json && tsc -p tsconfig.server.json && tsc --noEmit -p dashboard/tsconfig.json && tsc --noEmit -p demo/tsconfig.json",
     "dist": "electron-vite build && electron-builder --win",
     "server": "node server/index.ts",
     "build:dashboard": "vite build --config dashboard/vite.config.ts",
-    "build:dashboard:ghardaia": "vite build --config dashboard/vite.config.ts --mode ghardaia",
-    "build:dashboard:faculty": "vite build --config dashboard/vite.config.ts --mode ghardaia-law",
     "dev:dashboard": "vite --config dashboard/vite.config.ts",
     "build:demo": "vite build --config demo/vite.config.ts",
-    "build:demo:ghardaia": "vite build --config demo/vite.config.ts --mode ghardaia",
-    "build:demo:faculty": "vite build --config demo/vite.config.ts --mode ghardaia-law",
-    "dev:demo": "vite --config demo/vite.config.ts",
-    "dev:demo:ghardaia": "vite --config demo/vite.config.ts --mode ghardaia",
-    "dev:demo:faculty": "vite --config demo/vite.config.ts --mode ghardaia-law"
+    "dev:demo": "vite --config demo/vite.config.ts"
   },
   "build": {
     "appId": "com.securityregister.app",
-    "productName": "Security Register",
+    "productName": "FacultySecurity",
     "directories": {
       "output": "release"
     },

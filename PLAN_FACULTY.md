@@ -42,7 +42,7 @@
 - **PIN-only login:** both logos on the page; administrators go straight to administration (the Settings page until phase D).
 - **Accounts:** team leader role (`leader`); unique PINs; administrators create admin, team leader and guard accounts.
 - **Database:** existing desktop databases are migrated automatically (the users table is rebuilt to allow the new role; the rebuild was tested on a copy).
-- **Faculty demo:** `npm run build:demo:faculty`; `/` opens the login page. Sample PINs: administrator 1234, team leader 2580, guard 5678.
+- **Faculty demo:** `npm run build:demo`; `/` opens the login page. Sample PINs: administrator 1234, team leader 2580, guard 5678.
 
 ---
 

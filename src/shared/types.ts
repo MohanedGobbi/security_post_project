@@ -571,6 +571,14 @@ export interface AlertItem {
   since: string | null
 }
 
+/** What one reading attempt does (the scan pipeline retries a frame in several versions) */
+export interface ScanOptions {
+  /** look for QR / barcodes first (default true) */
+  barcodes?: boolean
+  /** when no document validates, also run the multilingual text read for lines to pick from (default true) */
+  text?: boolean
+}
+
 export interface ScanResult {
   source: 'mrz' | 'barcode' | 'none'
   fields: Partial<PersonFields>
@@ -697,7 +705,7 @@ export interface Api {
     setFeatures(f: Features): Promise<void>
   }
   scan: {
-    analyze(image: Uint8Array): Promise<ScanResult>
+    analyze(image: Uint8Array, opts?: ScanOptions): Promise<ScanResult>
     readText(image: Uint8Array): Promise<string[]>
     barcodes(image: Uint8Array): Promise<string[]>
   }

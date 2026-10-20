@@ -4,13 +4,11 @@ import react from '@vitejs/plugin-react'
 
 // Web demo for Vercel: landing page + reception app + dashboard, all running in the browser on sample data.
 const r = (p: string): string => resolve(import.meta.dirname, p)
-
-// organisation branding: VITE_BRAND=ghardaia or --mode ghardaia (src/renderer/src/brand.ts)
-export default defineConfig(({ mode }) => ({
+export default defineConfig(() => ({
   root: r('.'),
   base: '/',
   plugins: [react()],
-  define: { 'import.meta.env.VITE_DEMO': JSON.stringify('1'), __BRAND__: JSON.stringify(process.env.VITE_BRAND || (mode === 'development' || mode === 'production' ? 'default' : mode)) },
+  define: { 'import.meta.env.VITE_DEMO': JSON.stringify('1') },
   resolve: {
     alias: {
       '@shared': r('../src/shared'),

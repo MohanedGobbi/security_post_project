@@ -170,7 +170,7 @@ export default function App(): ReactNode {
     setFeatures(f)
     setPage('home')
     // organisation builds (PIN-only login): administrators go straight to administration, without a guard shift
-    if (BRAND.loginMode === 'pin' && u.role === 'admin') {
+    if (u.role === 'admin') {
       setPage('admin')
       return setState('ready')
     }
@@ -254,7 +254,7 @@ export default function App(): ReactNode {
           <div className="brand">
             <BrandMark />
             <div>
-              <strong>{appTitle(i18n.language, t)}</strong>
+              <strong>{appTitle(i18n.language)}</strong>
               {siteName && <span>{siteName}</span>}
             </div>
           </div>
@@ -277,7 +277,7 @@ export default function App(): ReactNode {
               <button type="button" className="link" onClick={logout}>{t('nav.logout')}</button>
             </div>
             {/* administrators of a PIN-only build skip the guard shift, so they have none to end */}
-            {features.modules.shifts && !(BRAND.loginMode === 'pin' && user.role === 'admin') && (
+            {features.modules.shifts && user.role !== 'admin' && (
               <button type="button" className="end-shift" onClick={() => setEnding(true)}><Icon name="clock" size={18} /> {t('nav.endShift')}</button>
             )}
           </div>

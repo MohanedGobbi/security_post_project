@@ -1,12 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Role, User } from '@shared/types'
+import type { User } from '@shared/types'
 import { LangSwitch } from '../App'
 import { errorText } from '../util'
-import BrandMark from '../components/BrandMark'
 import { appTitle, BRAND, orgName } from '../brand'
-
-interface LoginUser { id: number; name: string; role: Role }
 
 interface Props {
   siteName: string
@@ -14,9 +11,9 @@ interface Props {
   toast(t: string, k?: 'ok' | 'error'): void
 }
 
-/** The brand decides the login: pick your name then type the PIN, or the PIN alone (it says who you are). */
+/** The PIN alone says who is logging in (PINs are unique): no list of names, no username. */
 export default function LoginPage(props: Props): ReactNode {
-  return BRAND.loginMode === 'pin' ? <PinOnlyLogin {...props} /> : <PickUserLogin {...props} />
+  return <PinOnlyLogin {...props} />
 }
 
 /** Digits, Backspace and Enter from the physical keyboard work with the on-screen pad. */
@@ -59,66 +56,6 @@ function PinPad({ pin, setPin, busy, onOk }: {
   )
 }
 
-function PickUserLogin({ siteName, onDone, toast }: Props): ReactNode {
-  const { t, i18n } = useTranslation()
-  const [users, setUsers] = useState<LoginUser[]>([])
-  const [selected, setSelected] = useState<LoginUser | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [pin, setPin] = usePin(!!selected, () => { setSelected(null); setPin('') })
-
-  useEffect(() => {
-    window.api.auth.loginUsers().then((us) => {
-      setUsers(us)
-      if (us.length === 1) setSelected(us[0])
-    })
-  }, [])
-
-  const submit = async (): Promise<void> => {
-    if (!selected || pin.length < 4 || busy) return
-    setBusy(true)
-    try {
-      onDone(await window.api.auth.login(selected.id, pin))
-    } catch (e) {
-      toast(errorText(e, t), 'error')
-      setPin('')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <div className="center-screen login">
-      <div className="card auth-card">
-        <LangSwitch />
-        <div className="login-head">
-          <BrandMark big />
-          <div><h1>{appTitle(i18n.language, t)}</h1>{siteName && <p className="muted">{siteName}</p>}</div>
-        </div>
-        {!selected ? (
-          <>
-            <h2>{t('login.title')}</h2>
-            <div className="user-grid">
-              {users.map((u) => (
-                <button key={u.id} type="button" className="user-tile" onClick={() => setSelected(u)}>
-                  <span className="avatar">{u.name.trim().charAt(0).toUpperCase()}</span>
-                  <span>{u.name}</span>
-                  <small>{t(`settings.roles.${u.role}`)}</small>
-                </button>
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            <button type="button" className="link" onClick={() => { setSelected(null); setPin('') }}>← {selected.name}</button>
-            <h2>{t('login.enterPin')}</h2>
-            <PinPad pin={pin} setPin={setPin} busy={busy} onOk={submit} />
-          </>
-        )}
-      </div>
-    </div>
-  )
-}
-
 /** Organisation login: its logos and program name, then only the PIN pad. */
 function PinOnlyLogin({ onDone, toast }: Props): ReactNode {
   const { t, i18n } = useTranslation()
@@ -143,11 +80,11 @@ function PinOnlyLogin({ onDone, toast }: Props): ReactNode {
       <div className="card auth-card org-login">
         <LangSwitch />
         <div className="org-logos">
-          {BRAND.logo && <img src={BRAND.logo} alt="" />}
-          {BRAND.logo2 && <img src={BRAND.logo2} alt="" />}
+          <img src={BRAND.logo} alt="" />
+          <img src={BRAND.logo2} alt="" />
         </div>
-        <h1>{appTitle(i18n.language, t)}</h1>
-        {orgName(i18n.language) && <p className="muted">{orgName(i18n.language)}</p>}
+        <h1>{appTitle(i18n.language)}</h1>
+        <p className="muted">{orgName(i18n.language)}</p>
         <h2>{t('login.enterPin')}</h2>
         <PinPad pin={pin} setPin={setPin} busy={busy} onOk={submit} />
       </div>

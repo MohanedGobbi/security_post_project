@@ -14,7 +14,7 @@ function createWindow(): void {
     minHeight: 680,
     show: false,
     backgroundColor: '#0f1720',
-    title: 'Security Register',
+    title: 'برنامج إدارة الأمن بالكلية',
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

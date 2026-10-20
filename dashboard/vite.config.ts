@@ -3,12 +3,10 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // The dashboard is a static single-page app served by the server (server/public).
-export default defineConfig(({ mode }) => ({
+export default defineConfig(() => ({
   root: resolve(import.meta.dirname),
   base: '/',
   plugins: [react()],
-  // organisation branding: VITE_BRAND=ghardaia or --mode ghardaia (src/renderer/src/brand.ts)
-  define: { __BRAND__: JSON.stringify(process.env.VITE_BRAND || (mode === 'development' || mode === 'production' ? 'default' : mode)) },
   resolve: {
     alias: {
       '@shared': resolve(import.meta.dirname, '../src/shared'),

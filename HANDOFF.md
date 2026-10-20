@@ -1,155 +1,104 @@
-# Handoff: Security Register
+# Handoff: برنامج إدارة الأمن بالكلية (faculty security program)
 
-Status on 17 October 2026. Read this first, then `README.md` (features and how to run) and `PLAN.md` (research and roadmap).
+Status on 20 October 2026. Read this first, then `README.md` (features, how to run) and `PLAN_FACULTY.md` (what the client asked for, phases and status).
 
 ## What it is
-A digital logbook for security guard posts (companies, universities, any guard post) that replaces the paper register.
-It is trilingual Arabic / English / French, with right-to-left layout for Arabic. It has three parts:
+The security office program of the **Faculty of Law and Political Science, University of Ghardaia**. It replaces the paper registers
+of the office. Arabic first (right to left), French and English. Parts:
 
 | Part | Folder | Runs on | Purpose |
 |---|---|---|---|
-| Reception app | `src/` | Windows PC at the desk (Electron) | Guards log visitors, vehicles, parcels, incidents, patrols, keys and shifts. Scans ID cards offline. |
-| Organisation server | `server/` | Any PC / VPS with Node.js 22.5+ | Optional. Syncs several posts and serves the web dashboard. |
-| Supervisor dashboard | `dashboard/` | Browser (served by the server) | Managers see every site live, search records, invite visitors, manage watchlist and users. |
-| Web demo | `demo/` | Vercel (static) | Showcase: the real app UI and dashboard UI, running in the browser on sample data. |
+| Reception app | `src/` | Windows PC at the security office (Electron) | Registers, visitors with ID scanning, shifts. Works offline. |
+| Organisation server | `server/` | Any PC with Node.js 22.5+ | Optional. Links several posts, serves the dashboard. |
+| Supervisor dashboard | `dashboard/` | Browser (served by the server) | Records search, invitations, shared watchlist, users. |
+| Web demo | `demo/` | Vercel (static) | The real app screens with their API answered in the browser, on Arabic sample data. |
 
-Each reception PC works fully offline on its own. The server is optional.
+The earlier generic and University-of-Ghardaia versions were removed on 20 Oct 2026: there is one program, no brand switch, no build modes.
 
 ## Tech stack
 - Electron 44, electron-vite, Vite 8, React 19, TypeScript 5.9, i18next.
 - Local database: `node:sqlite` (`DatabaseSync`).
-  - Sensitive fields are encrypted with AES-256-GCM. The key is protected by Electron `safeStorage` (Windows DPAPI).
-  - ID numbers are looked up with an HMAC hash, so the clear number is never stored.
-  - PINs are hashed with scrypt.
-  - Every sensitive action is written to the audit table. Old records are purged according to the retention setting.
-- Scanning is fully offline:
-  - `tesseract.js` reads text, with the models in `resources/tessdata` (ara, fra, eng and `mrz`).
-  - The `mrz` package parses passport and ID card machine-readable zones.
-  - `zxing-wasm` reads and writes barcodes and QR codes. QR prefixes: `SECREG-CP:` (checkpoint), `SECREG-P:` (pass), `SECREG-V:` (badge).
-- Server: plain `node:http` with a small router. It runs `.ts` files directly through Node type stripping, so `server/` and `src/shared/` contain a `package.json` with `"type":"module"`.
-- Shared code in `src/shared/`:
-  - `types.ts` holds the `Api` interface between the UI and the main process.
-  - `sync.ts` holds the post ↔ server sync contract.
-  - `features.ts` holds the feature switches and the small / company / large profiles.
-  - `locales/{en,fr,ar}.json` holds the translations.
+  - Sensitive fields are AES-256-GCM encrypted; the key is protected by Electron `safeStorage` (Windows DPAPI).
+  - ID numbers are looked up through an HMAC hash, so the clear number is never stored.
+  - PINs are scrypt hashes. `users.pin_lookup` is a keyed hash of the PIN so the PIN alone finds its owner (PINs are unique).
+  - Every sensitive action goes to the `audit` table; old records are purged by the retention setting.
+- Scanning (offline): `tesseract.js` (models in `resources/tessdata`: ara, fra, eng, `mrz`), the `mrz` package, `zxing-wasm` for QR / barcodes.
+- Server: plain `node:http`; runs `.ts` directly (Node type stripping), hence `package.json` with `"type":"module"` in `server/` and `src/shared/`.
 
 ## Folder map
 ```
-src/main/         Electron main process: one file per domain (visits in db.ts, vehicles.ts, keys.ts, patrols.ts, sync.ts, badges.ts ...), ipc.ts wires them
-src/preload/      exposes window.api (typed by Api in src/shared/types.ts)
-src/renderer/src/ React UI: pages/, components/ (CameraPanel, QrScanner, BrandMark ...), styles.css, brand.ts (organisation branding)
-src/shared/       types, sync contract, feature switches, AR/EN/FR locales
+src/main/         Electron main process: db.ts, registers.ts, scan.ts, export.ts, ipc.ts (wires everything) ...
+src/preload/      window.api (typed by Api in src/shared/types.ts)
+src/renderer/src/ React UI: pages/, components/, styles.css, brand.ts (the faculty's name, logos, colours, settings), scanPipeline.ts
+src/shared/       types, AR/EN/FR locales, register rules (registers.ts) and templates (registerTemplates.ts), sync contract, feature switches
 resources/tessdata/  OCR models (licences in NOTICE.md)
-server/           index.ts (start), routes-device.ts (sync API for posts), routes-dashboard.ts, auth.ts, db.ts, crypto.ts
-dashboard/src/    dashboard SPA; api.ts talks to /api/* (or to the demo mock when VITE_DEMO=1)
-demo/             web demo: landing page, mock window.api (reception-api.ts), mock /api/* (dashboard-api.ts), shared localStorage store (store.ts), demo data per brand (flavors.ts)
+server/, dashboard/  optional multi-site server and its web dashboard
+demo/             web demo: mock window.api (reception-api.ts), mock /api/* (dashboard-api.ts), store.ts, sample data (flavors.ts)
 vercel.json       Vercel build settings for the demo
 ```
 
 ## Commands
 | Command | What it does |
 |---|---|
-| `npm install` | Install dependencies. Electron downloads its binary here; set `ELECTRON_SKIP_BINARY_DOWNLOAD=1` if you only need the demo. |
-| `npm run dev` | Reception app in development mode. |
-| `npm run build` / `npm start` | Build the app / run the built app. |
-| `npm run dist` | Windows installer (electron-builder, NSIS). **Not tested yet.** |
-| `npm run build:dashboard` then `npm run server` | Build the dashboard into `server/public`, then start the server on port 8787. The console prints a one-time setup code for the owner account. |
-| `npm run dev:demo` / `npm run build:demo` | Web demo in development mode / build it into `demo-dist/`. |
-| `npm run typecheck` | Type-check the app, server, dashboard and demo. |
+| `npm install` | Install dependencies (set `ELECTRON_SKIP_BINARY_DOWNLOAD=1` if you only need the demo). |
+| `npm run dev` | The app in development mode. |
+| `npm run build` / `npm start` | Build / run the built app. |
+| `npm run dist` | Windows installer (electron-builder). **Not tested yet.** |
+| `npm run build:dashboard` then `npm run server` | Dashboard into `server/public`, then the server on port 8787 (prints a one-time setup code). |
+| `npm run dev:demo` / `npm run build:demo` | Web demo in development / build into `demo-dist/`. |
+| `npm run typecheck` | Type-check app, server, dashboard and demo. |
 
-Environment variables:
-- App: `SECREG_DATA_DIR` sets the data folder; `SECREG_EXPORT_DIR` saves exports without a dialog.
-- Server: `SECREG_PORT`, `SECREG_HOST`, `SECREG_DATA`, `SECREG_TLS_CERT` and `SECREG_TLS_KEY`. The README has the table.
+Environment: `SECREG_DATA_DIR` (data folder of the app), `SECREG_EXPORT_DIR` (exports without a dialog); server: `SECREG_PORT`, `SECREG_HOST`, `SECREG_DATA`, `SECREG_TLS_CERT`, `SECREG_TLS_KEY`.
 
-## Web demo (Vercel)
-- `vercel.json` installs with `ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install`, builds with `npm run build:demo` and publishes `demo-dist/`.
-  - There is no server side: everything runs in the visitor's browser.
-- Pages:
-  - `/` is the trilingual landing page.
-  - `/app/` is the reception app. Log in as **Admin**, PIN **1234**, or as Sonia (guard), PIN 5678.
-  - `/dashboard/` is the dashboard. Log in with **demo@security-register.app** / **demo1234**.
-- How it works:
-  - `demo/app/main.ts` sets `window.api = demoApi` before importing the real renderer.
-  - The dashboard's `api.ts` switches to `demo/dashboard-api.ts` when `import.meta.env.VITE_DEMO === '1'`.
-  - Both read and write one localStorage store (`secreg-demo-v1`), so an invitation created in the dashboard appears in the app.
-  - The orange demo bar has a reset button.
-- Differences from the real product:
-  - OCR is replaced by sample cards. One of them, Karim Ben Youssef, is on the watchlist to show the refusal.
-  - The "Scan a sample card (demo)" button appears only when no webcam is available (flag `window.__SECREG_DEMO__`).
-  - QR codes on imported images or from a webcam are read for real.
-  - Exports open a printable page or download a CSV.
-  - Sync is simulated.
-- To add a new `Api` method, implement it in `demo/reception-api.ts` too, or the demo type-check fails.
-  To add a new dashboard route, add it to `demo/dashboard-api.ts`.
-
-## Branding (white-label builds)
-- `src/renderer/src/brand.ts` defines the brands; each one has a name in three languages, a logo, colour overrides of the CSS tokens in `styles.css`, and a badge colour.
-  - Today there are two: generic (default) and `ghardaia` (University of Ghardaia, green and red from its logo).
-- The brand is chosen at build time: `VITE_BRAND=ghardaia` or `--mode ghardaia`.
-  - The three vite configs (`electron.vite.config.ts`, `dashboard/vite.config.ts`, `demo/vite.config.ts`) turn it into the `__BRAND__` constant.
-  - `__BRAND__` is compared with string literals so the bundler drops the other brands' code and data.
-- `BrandMark` shows the logo instead of the shield. `applyBrand()` sets the colours and the favicon.
-- Demo data per brand is in `demo/flavors.ts`: names, places, companies, licence plates, ID number format and card text.
-  - Each brand has its own localStorage key.
-- Not branded yet: printed badges and reports of the desktop app (main process).
-  - Next step: a logo upload in Settings, so each organisation can brand its own install without a special build.
-- On Vercel there are two projects from the same repository. The second one sets the environment variable `VITE_BRAND=ghardaia`.
-- The third brand, `ghardaia-law`, is the Faculty of Law and Political Science (the first paying client in discussion).
-  - Its plan and status live in `PLAN_FACULTY.md`.
-  - Brands can also set `appName`, `logo2`, `loginMode` (`'pick'` | `'pin'`) and `defaultLang`.
-  - PIN-only login uses `users.pin_lookup`, a keyed hash of the PIN, so PINs must be unique.
-  - Roles are now `admin`, `leader` and `guard`. Existing desktop databases are migrated in `migrate()` in `src/main/db.ts`.
+## The faculty's program
+- `src/renderer/src/brand.ts` holds everything specific to the faculty: the name in three languages, both logos, colours, the feature switches applied
+  at first setup, the registers opened at the first administrator login, the tiles-only home screen, and which registers a team leader fills before a shift.
+- **Login is PIN only.** Roles: `admin`, `leader` (رئيس فرقة الأمن), `guard`. Administrators land on the Administration page and never start a guard shift.
+  Databases from older versions are migrated in `migrate()` in `src/main/db.ts`.
+- Plan, phases and decisions to confirm with the client: `PLAN_FACULTY.md`.
 
 ## Register engine (generic registers)
-- **What it is:** a register is a definition (name in three languages, icon, fields, who may fill it, optional closing step) plus numbered entries. It is the base for the faculty's paper books (`PLAN_FACULTY.md` §4).
-- **Code:**
-  - shared rules: `src/shared/registers.ts`;
-  - desktop storage: `src/main/registers.ts` (tables `registers`, `register_fields`, `register_entries`, `register_corrections`);
-  - page: `RegistersPage.tsx`;
-  - inputs: `components/RegisterFields.tsx`;
-  - demo: `registers` in `demo/reception-api.ts`.
+- A register is a definition (name in three languages, icon, fields, who may fill and close it, optional closing step) plus numbered entries.
+  The faculty's paper books are templates of it (`src/shared/registerTemplates.ts`).
+- **Code:** shared rules `src/shared/registers.ts`; storage `src/main/registers.ts` (tables `registers`, `register_fields`, `register_entries`,
+  `register_corrections`); page `pages/RegistersPage.tsx`; inputs `components/RegisterFields.tsx`, `RegisterEntryForm.tsx`; demo: `registers` in `demo/reception-api.ts`.
 - **Rules:**
-  - An entry is never erased. A correction keeps the old and new values, encrypted, with the reason and who made it.
-  - Sensitive fields (always `person`) are stored encrypted and left out of search.
+  - An entry is never erased. A correction keeps the old and new values (encrypted), the reason and the author.
+  - Confidential fields (always `person`) are stored encrypted and left out of search.
   - A `signature` field asks for a PIN and stores who confirmed, never the PIN.
-  - Non-admins see the last 24 hours plus open entries; admins see the full history, and that viewing is logged.
-- **Tested on the real desktop app** through the Chrome debugging port, with a throw-away data folder (`SECREG_DATA_DIR`).
-- **Administration page** (`pages/AdminPage.tsx`, administrators only; where PIN-only builds send them):
-  - accounts (`UserSettings` from `SettingsPage.tsx`);
-  - the register builder (`components/RegisterBuilder.tsx`);
-  - the audit trail (`components/AuditLog.tsx`, API `audit.list`, labels in `audit.actions.*`).
-- **Audit trail in the demo:** the demo keeps its own copy in `demo/store.ts` (`audit`), filled by `log()` in `demo/reception-api.ts`.
+  - Guards see the last 24 hours plus open entries; administrators see everything, and that viewing is logged.
+- Team leaders fill the shift and custody registers at the start of every shift (`pages/ShiftStartPage.tsx`).
+
+## Administration page (administrators only)
+`pages/AdminPage.tsx`: accounts (`UserSettings` in `SettingsPage.tsx`), the **register builder** (`components/RegisterBuilder.tsx`: create or change a register, fields of
+12 types, live preview, order, on/off; saved fields keep their type and encryption and are only hidden), and the **audit trail** (`components/AuditLog.tsx`,
+API `audit.list`, action names in `audit.actions.*`). The demo keeps its own audit trail in `demo/store.ts`.
+
+## ID card scanning
+- `src/main/scan.ts` reads the MRZ (TD1 ID cards, TD3 passports, TD2) with check-digit validation, QR / barcodes, and has a text fallback (Arabic, French, English).
+- `src/renderer/src/scanPipeline.ts` tries several enhanced versions of one frame (MRZ strip, adaptive threshold, sharpening, small rotations) until the document validates.
+  `components/CameraPanel.tsx` runs it automatically on the live camera, and on the Scan button and imported photos.
+- Tested on synthetic Algerian-style cards (TD1 and a passport, with glare, tilt and soft focus) through the real app. **Not tested on real Algerian cards.**
+
+## Web demo (Vercel)
+- `vercel.json` installs with `ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install`, builds with `npm run build:demo`, publishes `demo-dist/`. No server side.
+- `/` redirects to `/app/` (the login page); `/dashboard/` is the dashboard demo (`demo@security-register.app` / `demo1234`). Sample PINs are shown in the bar at the bottom.
+- `demo/app/main.ts` sets `window.api = demoApi` before importing the real renderer. Everything is stored in localStorage (`secreg-demo-faculty`); the bar has a reset button.
+- To add an `Api` method, implement it in `demo/reception-api.ts` too, or the demo type-check fails.
 
 ## What was tested
-- Server API script: 25/25 checks passed.
-- End to end on one PC:
-  1. Dashboard invitation, then the pass QR scanned at the webcam, then check-in.
-  2. Badge preview, then the badge QR scanned at exit.
-  3. Sync: the dashboard shows the arrival, the masked ID and the post online.
-  4. An organisation watchlist entry blocks entry on the PC.
-- Web demo, built and served locally:
-  - Landing page on desktop and at phone width, with no horizontal scroll.
-  - App login, shift handover and home screen with alerts.
-  - Visitor IN: sample card fill and the watchlist refusal.
-  - Dashboard login, overview, and an invitation with its QR pass that then appears in the app.
+- Server API script: 25/25. End to end on one PC: dashboard invitation, pass QR at the webcam, badge, exit, sync, watchlist.
+- Registers, the team leader handover, the administration page and the audit trail: in the demo and on the real desktop app, through its debugging port, on a fresh data folder.
+- Database migration of the users table on an old-style database (accounts and links kept).
 
 ## Not tested / known gaps
-- Real badge printers, HTTPS on the server, several physical PCs, the server running on another machine, and the Windows installer (`npm run dist`).
-- Scanning real Tunisian, Algerian and Moroccan ID cards. MRZ passports work; the front side of Arabic cards relies on generic OCR and needs per-country templates.
-- Code signing and auto-update of the desktop app.
-- No automated UI test suite. Checks so far are type-checks, the server API script and manual runs.
+- Real Algerian ID cards, real badge printers, HTTPS, several PCs, the Windows installer, code signing, auto-update.
+- Cards without a machine-readable zone (older ID cards) only have the text fallback.
+- Phase E (statistics and printed reports), team assignment (waits for the client's answer), photos on incidents.
+- No automated UI test suite.
 
-## Suggested next steps
-1. Build and test the Windows installer on a clean PC, then add code signing.
-2. Test with real ID cards from the target countries and add front-side templates (name and number zones) for national IDs.
-3. Notify the host when a visitor arrives (e-mail or WhatsApp link from the server).
-4. Server deployment guide (Caddy reverse proxy with HTTPS, backups of `server.db` + `server.key`).
-5. Automated tests: unit tests for `src/main/*` domains and Playwright runs against the web demo.
-
-## Security notes for whoever continues
-- Never send photos or full ID numbers to the server. The sync contract in `src/shared/sync.ts` masks them on purpose.
-- The local encryption key is tied to the Windows account through DPAPI.
-  - Backups are exports, not copies of the data folder.
-- Dashboard API requests must send `X-Requested-With: secreg` (the CSRF check). Cookies are HttpOnly and SameSite=Strict.
-- Server secrets: `server-data/server.key` encrypts watchlist ID numbers. Losing it makes them unreadable.
-  - `server-data/` is gitignored; keep it that way.
+## Security notes
+- Photos and full ID numbers never leave the post PC: `src/shared/sync.ts` masks them on purpose.
+- The encryption key is tied to the Windows account through DPAPI: back up by exports, not by copying the data folder.
+- Dashboard API calls send `X-Requested-With: secreg` (CSRF check); cookies are HttpOnly and SameSite=Strict.
+- `server-data/server.key` encrypts the watchlist ID numbers; losing it makes them unreadable. Keep `server-data/` out of git.

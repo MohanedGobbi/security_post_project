@@ -59,49 +59,6 @@ export interface Flavor {
   cardText: string[]
 }
 
-const TUNIS: Flavor = {
-  lostSample: { item: 'Portefeuille noir avec une carte d’étudiant', place: 'Amphi B', finder: 'Nadia Karoui' },
-  users: [
-    { name: 'Admin', role: 'admin', pin: '1234', language: 'fr' },
-    { name: 'Sonia', role: 'guard', pin: '5678', language: 'ar' }
-  ],
-  nationality: 'TUN',
-  idBase: 10000000,
-  siteName: 'Université de Tunis — démo',
-  postName: 'Entrée principale',
-  sites: [['Université de Tunis — démo', 'Campus universitaire'], ['Usine Sfax', 'Route de Gabès'], ['Siège Tunis', 'Les Berges du Lac']],
-  devices: ['Entrée principale', 'Portail usine', 'Accueil siège'],
-  visits: [
-    { name: 'Leila Mansour', company: 'ACME Tunisie', host: 'Labo de chimie', purpose: 'Réunion', alt: 'ليلى منصور', plate: '245 TU 1888' },
-    { name: 'Youssef Hammami', company: 'Ooredoo', host: 'Service Achats', purpose: 'Réunion fournisseur' },
-    { name: 'Nadia Karoui', company: 'Orange', host: 'Service IT', purpose: 'Maintenance réseau' },
-    { name: 'Mehdi Bouazizi', company: 'Poste Tunisienne', host: 'Courrier', purpose: 'Livraison' },
-    { name: 'Amel Sassi', company: '', host: 'Scolarité', purpose: 'Inscription' },
-    { name: 'Fares Dridi', company: 'Cabinet Dridi', host: 'Direction', purpose: 'Rendez-vous' },
-    { name: 'Olfa Ben Amor', company: '', host: 'Bibliothèque', purpose: 'Visite' }
-  ],
-  otherPeople: [['Amine Jaziri', 'Tunisie Telecom', 'Production'], ['Rania Ben Salem', 'Bureau Veritas', 'Qualité'], ['Hichem Trabelsi', 'STEG', 'Maintenance'],
-    ['Ines Mabrouk', '', 'RH'], ['Walid Chaabane', 'DHL', 'Logistique'], ['Sarra Gharbi', 'Deloitte', 'Direction'], ['Nizar Ayari', '', 'Comptabilité']],
-  otherVehicle: { plate: '182 TU 4471', driver: 'Lassaad', company: 'Transport Sahel', cargo: 'Matières premières' },
-  otherIncidentPlace: 'Étage 3',
-  notes: ['Ronde de 8h : parking et bâtiment C vérifiés, RAS.', 'Éclairage du parking sud en panne, signalé au service technique.', 'Livraison de matériel informatique attendue cet après-midi.'],
-  van: { plate: '118 TU 5555', driver: 'Sami', company: 'Aramex' },
-  deliveries: [{ carrier: 'Aramex', recipient: 'Service informatique', tracking: 'ARX-55102' }, { carrier: 'Rapid Poste', recipient: 'قسم المحاسبة' },
-    { carrier: 'DHL', recipient: 'Direction', tracking: 'DHL-889', pickedUpBy: 'Mme Gharbi' }],
-  incidentPlaces: ['Parking nord', 'Amphi B'],
-  handover: 'Leila Mansour (ACME) est encore au labo de chimie depuis ce matin. 3 colis pour le service informatique en attente. Personne suspecte vue au parking nord : incident ouvert.',
-  checkpoints: [['Bâtiment A', 'Porte principale'], ['Parking nord', 'Barrière'], ['Laboratoire', '2e étage, couloir B'], ['Bibliothèque', 'Issue de secours']],
-  keys: ['Clé salle serveurs', 'Talkie-walkie 1', 'Badge visiteur VIP', 'Clé amphi B'],
-  loans: [{ borrower: 'Technicien Orange', info: 'Nadia Karoui' }, { borrower: 'Pr. Ben Ali', info: 'Département physique' }],
-  watch: { name: 'Karim Ben Youssef', idNumber: '09876543', reason: 'Vol de matériel informatique en mars' },
-  expected: [{ name: 'Karima Jlassi', company: 'Ernst & Young', host: 'Direction', purpose: 'Audit' },
-    { name: 'Slim Haddad', company: 'Huawei', host: 'Service IT', purpose: 'Installation', notes: 'Apporte du matériel' },
-    { name: 'Dr. Samia Ferchichi', company: 'Ministère', host: 'Présidence', purpose: 'Visite officielle' }],
-  owner: 'Mouna (Direction)',
-  hostUser: 'Ahmed (IT)',
-  cardText: ['CARTE NATIONALE D’IDENTITÉ', 'بطاقة التعريف الوطنية', 'Nom : BEN AMOR', 'Prénom : Olfa', 'الاسم : ألفة بن عمر', 'Né(e) le 14/06/1996 à Sousse']
-}
-
 // University of Ghardaia: Algerian names, companies and plates (serial, type + year, wilaya 47)
 const GHARDAIA: Flavor = {
   lostSample: { item: 'Portefeuille noir avec une carte d’étudiant', place: 'Amphi 3', finder: 'Rachid Bahaz' },
@@ -211,8 +168,7 @@ const GHARDAIA_LAW: Flavor = {
   ]
 }
 
-declare const __BRAND__: string
-export const F: Flavor = __BRAND__ === 'ghardaia-law' ? GHARDAIA_LAW : __BRAND__ === 'ghardaia' ? GHARDAIA : TUNIS
+export const F: Flavor = GHARDAIA_LAW
 
 /** ID number of sample visit `id` */
 export const sampleId = (id: number): string => String(F.idBase + id * 7919)

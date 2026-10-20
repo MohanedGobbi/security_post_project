@@ -127,7 +127,12 @@
     "timeOut": "Time out",
     "duration": "Duration",
     "guardIn": "Checked in by",
-    "guardOut": "Checked out by"
+    "guardOut": "Checked out by",
+    "autoScan": "Read the card automatically",
+    "autoWatching": "Hold the card flat in the frame: it is read by itself",
+    "autoReading": "Reading the card…",
+    "autoDone": "Card read. Press Scan to read another.",
+    "autoTrouble": "Hard to read: hold the card flatter and steady, reduce glare, or press Scan."
   },
   "idType": {
     "national_id": "National ID card",

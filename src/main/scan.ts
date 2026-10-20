@@ -4,7 +4,7 @@ import { app } from 'electron'
 import { createWorker, OEM, PSM, type Worker } from 'tesseract.js'
 import { prepareZXingModule, readBarcodes } from 'zxing-wasm/reader'
 import { parse as parseMrz, type ParseResult } from 'mrz'
-import type { IdType, PersonFields, ScanResult } from '@shared/types'
+import type { IdType, PersonFields, ScanOptions, ScanResult } from '@shared/types'
 
 const resourcesDir = (): string => (app.isPackaged ? process.resourcesPath : join(app.getAppPath(), 'resources'))
 
@@ -181,11 +181,15 @@ const titleCase = (s: string): string => s.toLowerCase().replace(/(^|[\s'-])\p{L
  * Name zone is SURNAME<<GIVEN<NAMES<<<<… : anything after the next '<<' is filler (and OCR noise).
  * Single letters stuck to the filler (a misread '<') are dropped.
  */
+const NAME_DIGITS: Record<string, string> = { '0': 'O', '1': 'I', '2': 'Z', '5': 'S', '6': 'G', '8': 'B', '9': 'G' }
+
 function nameFromMrz(r: ParseResult, lines: string[]): string | null {
   let zone: string | undefined
   if (r.format === 'TD1') zone = lines[2]
   else if (r.format === 'TD2' || r.format === 'TD3') zone = lines[0]?.slice(5)
   if (!zone) return null
+  // a name has no digits: they are letters the OCR took for look-alikes (K→4 is not one, but O→0, I→1, S→5, B→8, G→6 are)
+  zone = zone.replace(/[0125689]/g, (d) => NAME_DIGITS[d])
   const [surname = '', given = ''] = zone.split('<<')
   const words = (s: string): string[] => s.split('<').map((w) => w.replace(/[^A-Z]/g, '')).filter((w) => w.length > 1)
   const name = [...words(given), ...words(surname)].join(' ')
@@ -252,9 +256,9 @@ export async function barcodeTexts(image: Uint8Array): Promise<string[]> {
   return (await scanBarcodes(image).catch(() => [])).map((b) => b.text)
 }
 
-export async function analyzeImage(image: Uint8Array): Promise<ScanResult> {
+export async function analyzeImage(image: Uint8Array, opts: ScanOptions = {}): Promise<ScanResult> {
   const empty: ScanResult = { source: 'none', fields: {}, valid: false, rawMrz: [], barcodes: [], lines: [] }
-  const barcodes = await scanBarcodes(image).catch(() => [])
+  const barcodes = opts.barcodes === false ? [] : await scanBarcodes(image).catch(() => [])
   empty.barcodes = barcodes
 
   if (barcodes.some((b) => b.text.startsWith('SECREG-'))) return empty
@@ -274,7 +278,8 @@ export async function analyzeImage(image: Uint8Array): Promise<ScanResult> {
   let mrz = parseMrzLines(mrzCandidateLines(data.text))
   let lines: string[] = []
   // 2nd pass: the multilingual model reads differently, and also gives the guard text lines to pick from
-  if (!mrz || !checkDigitsOk(mrz.result) || nameLooksNoisy(mrz)) {
+  // (skipped when the caller retries other versions of the frame and only wants a quick MRZ attempt)
+  if (opts.text !== false && (!mrz || !checkDigitsOk(mrz.result) || nameLooksNoisy(mrz))) {
     const text = await recognizeText(image)
     lines = cleanLines(text)
     const second = parseMrzLines(mrzCandidateLines(text))

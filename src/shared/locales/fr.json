@@ -127,7 +127,12 @@
     "timeOut": "Sortie",
     "duration": "Durée",
     "guardIn": "Entrée par",
-    "guardOut": "Sortie par"
+    "guardOut": "Sortie par",
+    "autoScan": "Lire la carte automatiquement",
+    "autoWatching": "Tenez la carte à plat dans le cadre : elle se lit toute seule",
+    "autoReading": "Lecture de la carte…",
+    "autoDone": "Carte lue. Appuyez sur Scanner pour en lire une autre.",
+    "autoTrouble": "Lecture difficile : tenez la carte plus à plat et immobile, évitez les reflets, ou appuyez sur Scanner."
   },
   "idType": {
     "national_id": "Carte d’identité nationale",

@@ -72,7 +72,7 @@ function AuthScreen({ setup, onDone, toast }: { setup: boolean; onDone(me: Me): 
         <LangSwitch />
         <div className="login-head">
           <BrandMark big />
-          <div><h1>{appTitle(i18n.language, t)}</h1><p className="muted">{orgName(i18n.language) ?? t('dash.subtitle')}</p></div>
+          <div><h1>{appTitle(i18n.language)}</h1><p className="muted">{orgName(i18n.language)}</p></div>
         </div>
         {setup && (
           <>
@@ -137,7 +137,7 @@ export default function App(): ReactNode {
         <header className="topbar">
           <div className="brand">
             <BrandMark />
-            <div><strong>{appTitle(i18n.language, t)}</strong><span>{orgName(i18n.language) ?? t('dash.subtitle')}</span></div>
+            <div><strong>{appTitle(i18n.language)}</strong><span>{orgName(i18n.language)}</span></div>
           </div>
           <div className="topbar-end">
             <LangSwitch onChange={(l) => { void patch('/api/me', { language: l }) }} />

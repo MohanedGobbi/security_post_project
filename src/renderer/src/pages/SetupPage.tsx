@@ -1,17 +1,14 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ProfileId, User } from '@shared/types'
+import type { User } from '@shared/types'
 import { LangSwitch } from '../App'
 import { currentLang } from '../i18n'
 import { errorText } from '../util'
 import { BRAND } from '../brand'
 
-const PROFILE_IDS: ProfileId[] = ['small', 'company', 'large']
-
 export default function SetupPage({ onDone, toast }: { onDone(u: User): void; toast(t: string, k?: 'ok' | 'error'): void }): ReactNode {
   const { t } = useTranslation()
   const [f, setF] = useState({ siteName: '', postName: '', adminName: '', pin: '', pin2: '' })
-  const [profile, setProfile] = useState<ProfileId>('company')
   const [busy, setBusy] = useState(false)
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value })
 
@@ -22,10 +19,10 @@ export default function SetupPage({ onDone, toast }: { onDone(u: User): void; to
     setBusy(true)
     try {
       const u = await window.api.auth.setup({
-        siteName: f.siteName, postName: f.postName, adminName: f.adminName, pin: f.pin, language: currentLang(), profile
+        siteName: f.siteName, postName: f.postName, adminName: f.adminName, pin: f.pin, language: currentLang(), profile: 'large'
       })
       // an organisation's build comes with its own switches instead of a profile (the administrator can change them later)
-      if (BRAND.features) await window.api.settings.setFeatures(BRAND.features)
+      await window.api.settings.setFeatures(BRAND.features)
       onDone(u)
     } catch (err) {
       toast(errorText(err, t), 'error')
@@ -42,22 +39,6 @@ export default function SetupPage({ onDone, toast }: { onDone(u: User): void; to
         <p className="muted">{t('setup.intro')}</p>
         <label>{t('setup.siteName')}<input value={f.siteName} onChange={set('siteName')} required autoFocus /></label>
         <label>{t('setup.postName')}<input value={f.postName} onChange={set('postName')} /></label>
-
-        {!BRAND.features && (
-        <fieldset className="profile-pick">
-          <legend>{t('setup.profile')}</legend>
-          <div className="profile-grid">
-            {PROFILE_IDS.map((id) => (
-              <label key={id} className={`profile-card ${profile === id ? 'on' : ''}`}>
-                <input type="radio" name="profile" value={id} checked={profile === id} onChange={() => setProfile(id)} />
-                <strong>{t(`features.profiles.${id}.name`)}</strong>
-                <span className="muted">{t(`features.profiles.${id}.desc`)}</span>
-              </label>
-            ))}
-          </div>
-          <p className="hint">{t('setup.profileHint')}</p>
-        </fieldset>
-        )}
 
         <label>{t('setup.adminName')}<input value={f.adminName} onChange={set('adminName')} required /></label>
         <div className="row2">

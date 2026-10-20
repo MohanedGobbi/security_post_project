@@ -285,7 +285,7 @@ export async function exportShiftReport(parent: BrowserWindow | null, shiftId: n
 
 export async function exportExcel(parent: BrowserWindow | null, r: ExportRange): Promise<string | null> {
   const wb = new ExcelJS.Workbook()
-  wb.creator = 'Security Register'
+  wb.creator = 'برنامج إدارة الأمن بالكلية'
   const views = [{ state: 'frozen' as const, ySplit: 1, rightToLeft: isRtl(r.lang) }]
   for (const sec of registerSections(r)) {
     // sheet names: max 31 chars, no []:*?/\
