@@ -132,7 +132,8 @@
     "autoWatching": "Tenez la carte à plat dans le cadre : elle se lit toute seule",
     "autoReading": "Lecture de la carte…",
     "autoDone": "Carte lue. Appuyez sur Scanner pour en lire une autre.",
-    "autoTrouble": "Lecture difficile : tenez la carte plus à plat et immobile, évitez les reflets, ou appuyez sur Scanner."
+    "autoTrouble": "Lecture difficile : tenez la carte plus à plat et immobile, évitez les reflets, ou appuyez sur Scanner.",
+    "scanOkText": "Texte lu sur la carte. Aucune vérification n’est possible : comparez chaque champ avec la carte."
   },
   "idType": {
     "national_id": "Carte d’identité nationale",

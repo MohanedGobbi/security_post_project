@@ -22,3 +22,14 @@ Needs Python with `numpy`, `opencv-python`, `Pillow` and `playwright`. Windows o
 **Results on 20 Oct 2026:** Consolas set 17/18 (13/18 before the multi-version pipeline) and the passport read; OCR-A set 4/18.
 Synthetic cards prove the pipeline, not the result on real cards: real cards are OCR-B printed, but also worn, laminated
 and shiny. Test with real cards before relying on it.
+
+## Card fronts and the choice of OCR engine (20 Oct 2026)
+The back of a card has the machine-readable zone; the front (and cards without one) only has printed text, Arabic and Latin.
+- `make_fronts.py <folder>`: 48 synthetic fronts (4 people, 3 Arabic fonts, 4 conditions) and `expect.json`. Needs `arabic-reshaper`.
+- `ocr_tesseract.mjs`, `ocr_windows.ps1`, `ocr_easyocr.py <folder> <out.json>`: read every picture with one engine. `score_ocr.py <folder> <out.json>...`
+  prints, per field, how many pictures show it (a lenient "can the engine see it" score). `extract_bench.ts` scores `src/main/front.ts` on stored Windows OCR output.
+- `run_fronts.py <folder> <scratch> <out.json>`: the same through the real app (import a photo). With no `expect.json` in the folder (real photos) it only prints the form values.
+- `front_only.py <folder> <scratch>`: calls `scan.readFront` alone and prints source, flags and time per picture.
+
+Results (synthetic, so they compare engines, not real cards): Windows OCR reads the national number, date and Latin names almost always (0.2 s);
+Tesseract 89-95% (0.9 s); Arabic names: EasyOCR 81-83% (9.5 s, heavy), Windows OCR 68-75%, Tesseract 66-68%. Through the app the Arabic name is read for 18/48.

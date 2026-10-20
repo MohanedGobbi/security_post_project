@@ -5,6 +5,8 @@ import { createWorker, OEM, PSM, type Worker } from 'tesseract.js'
 import { prepareZXingModule, readBarcodes } from 'zxing-wasm/reader'
 import { parse as parseMrz, type ParseResult } from 'mrz'
 import type { IdType, PersonFields, ScanOptions, ScanResult } from '@shared/types'
+import { extractFront, frontComplete, windowsLines } from './front'
+import { shutdownWindowsOcr, windowsOcr, windowsOcrLanguages } from './winocr'
 
 const resourcesDir = (): string => (app.isPackaged ? process.resourcesPath : join(app.getAppPath(), 'resources'))
 
@@ -45,9 +47,11 @@ function getTextWorker(): Promise<Worker> {
 /** Starts loading OCR models in the background so the first scan is fast. */
 export function warmUpScanner(): void {
   getMrzWorker().catch(() => (mrzWorker = null))
+  void windowsOcrLanguages()
 }
 
 export async function shutdownScanner(): Promise<void> {
+  shutdownWindowsOcr()
   for (const w of [mrzWorker, textWorker]) {
     if (w) await (await w).terminate().catch(() => undefined)
   }
@@ -64,7 +68,7 @@ const MRZ_LAYOUTS: { lines: number; width: number }[] = [
 export function mrzCandidateLines(text: string): string[] {
   return text
     .split(/\r?\n/)
-    .map((l) => l.toUpperCase().replace(/[«‹]/g, '<').replace(/\s+/g, '').replace(/[^A-Z0-9<]/g, ''))
+    .map((l) => l.toUpperCase().replace(/[«‹»›]/g, '<').replace(/\s+/g, '').replace(/[^A-Z0-9<]/g, ''))
     .filter((l) => l.length >= 26 && (l.match(/</g)?.length ?? 0) >= 2)
 }
 
@@ -297,9 +301,32 @@ async function recognizeText(image: Uint8Array): Promise<string> {
   return data.text
 }
 
+/**
+ * The printed text of a card picture: Windows OCR when this PC has it (faster, better on Latin text and numbers), else Tesseract.
+ * The lines are in reading order, for people and for the field extraction.
+ */
+async function readCard(image: Uint8Array): Promise<{ lines: string[] }> {
+  const w = await windowsOcr(image).catch(() => null)
+  const lines = w ? windowsLines(w) : []
+  return { lines: lines.length ? lines : cleanLines(await recognizeText(image)) }
+}
+
 /** Free OCR of the card (Arabic, French, English). Returns readable lines for the guard to pick from. */
 export async function readText(image: Uint8Array): Promise<string[]> {
-  return cleanLines(await recognizeText(image))
+  return (await readCard(image)).lines
+}
+
+/**
+ * One look at a picture of a card with the printed-text reader: the fields come from the labels and values of the card front,
+ * for cards without a machine-readable zone (older ID cards, licences, student cards, the front of the biometric card).
+ * The machine-readable zone is NOT taken from this reader: Windows OCR validates its check digits as well as Tesseract does,
+ * but it drops the '<' between the words of a name (Hadjsaid for Hadj Said), which the check digits cannot catch.
+ */
+export async function readFront(image: Uint8Array): Promise<ScanResult> {
+  const { lines } = await readCard(image)
+  const fields = extractFront(lines)
+  const found = !!(fields.fullName || fields.idNumber)
+  return { source: found ? 'ocr' : 'none', complete: found && frontComplete(fields, lines), fields, valid: false, rawMrz: [], barcodes: [], lines }
 }
 
 function cleanLines(text: string): string[] {

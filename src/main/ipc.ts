@@ -9,7 +9,7 @@ import { LANGS } from '@shared/i18n'
 import * as db from './db'
 import { DEFAULT_PINS } from '@shared/faculty'
 import { verifyPin } from './crypto'
-import { analyzeImage, barcodeTexts, readText } from './scan'
+import { analyzeImage, barcodeTexts, readFront, readText } from './scan'
 import { exportCheckpointLabels, exportEvacuation, exportExcel, exportPdf, exportShiftReport } from './export'
 import * as vehicles from './vehicles'
 import * as deliveries from './deliveries'
@@ -240,6 +240,7 @@ export function registerIpc(): void {
   // ---------- scanning ----------
   handle('scan:analyze', 'user', (_u, image: Uint8Array, opts?: ScanOptions) => analyzeImage(image, opts ?? {}))
   handle('scan:readText', 'user', (_u, image: Uint8Array) => readText(image))
+  handle('scan:readFront', 'user', (_u, image: Uint8Array) => readFront(image))
   handle('scan:barcodes', 'user', (_u, image: Uint8Array) => barcodeTexts(image))
 
   // ---------- exports ----------

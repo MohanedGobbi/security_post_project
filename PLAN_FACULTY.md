@@ -24,7 +24,7 @@ Done beyond the plan, at the user's request:
 - **Automatic ID card scanning** from the live camera: several enhanced versions of each frame until the check digits validate (synthetic cards: 17/18, was 13/18). Not tested on real Algerian cards.
 - **Every scanned card picture is saved with its log entry**, encrypted, up to 3 per entry.
 
-Next, in order: extract information from the saved pictures (the Gemini question is open, see `HANDOFF.md` §8), finish the scanner (name confirmation, country code, live-camera test), phase E, then the client questions in §9.
+Next, in order: extract information from the saved pictures (done offline with the Windows OCR, see `HANDOFF.md` §8; no cloud AI), finish the scanner (name confirmation, country code, live-camera test), phase E, then the client questions in §9.
 
 Decisions made without the client (to confirm): the incidents register is an engine register whose closing step is the deanship visa and has no photos yet;
 the visitors register stays the visitor module (card scanning, people on site, exit) with visitor photo and badge numbers off;

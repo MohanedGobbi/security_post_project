@@ -10,7 +10,7 @@ const GUIDE_WIDTH = 0.82 // share of the video width covered by the guide frame
 /** set by the web demo (demo/app/main.ts): offers a sample card when there is no webcam */
 const DEMO = (window as { __SECREG_DEMO__?: boolean }).__SECREG_DEMO__ === true
 
-type Busy = null | 'scan' | 'text'
+type Busy = null | 'scan' | 'text' | 'ai'
 
 /** manual reading tries every version of the frame; the live camera tries a few and then looks at a new frame */
 const MANUAL_VARIANTS = 9
@@ -18,6 +18,9 @@ const AUTO_VARIANTS = 3
 /** pause between two automatic attempts, and how many failed attempts before the guard is advised what to do */
 const AUTO_EVERY_MS = 400
 const AUTO_TROUBLE_AFTER = 6
+
+/** width of the picture sent to the printed-text reader: Arabic letters are small, downscaling them costs accuracy */
+const FRONT_WIDTH = 2400
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
 const analyze = (image: Uint8Array, opts: { barcodes?: boolean; text?: boolean }): Promise<ScanResult> => window.api.scan.analyze(image, opts)
@@ -152,10 +155,25 @@ export default function CameraPanel({ onScan, onCard, onPhoto, onTextLines, onEr
     try {
       // the picture is taken first: the camera moves on while the reading goes on
       const picture = await snapshot(src, region)
-      const r = await scanFrame(src, region, analyze, { variants: MANUAL_VARIANTS, onProgress: (d, n) => setProgress([d, n]) })
+      // the printed text first (0.3 s): the front of an ID card has no machine-readable zone, and trying one costs seconds
+      const front = await window.api.scan.readFront(await snapshot(src, region, FRONT_WIDTH)).catch(() => null)
+      let r: ScanResult
+      if (front && (front.complete || isDone(front))) {
+        r = front
+      } else {
+        r = await scanFrame(src, region, analyze, { variants: MANUAL_VARIANTS, onProgress: (d, n) => setProgress([d, n]) })
+        // no valid machine-readable zone either: what the printed text gave still helps (the guard checks it)
+        if (!isDone(r) && front) {
+          if (front.source === 'ocr') {
+            r = r.source === 'none' ? { ...front, barcodes: r.barcodes } : { ...r, fields: { ...r.fields, ...front.fields }, lines: front.lines }
+          } else if (r.source === 'none') {
+            r = { ...r, lines: front.lines }
+          }
+        }
+      }
       onCard(picture)
       onScan(r)
-      if (isDone(r)) setFound(true)
+      if (isDone(r) || r.complete) setFound(true)
     } catch (e) {
       onError(String(e))
     } finally {
@@ -197,6 +215,18 @@ export default function CameraPanel({ onScan, onCard, onPhoto, onTextLines, onEr
         try {
           // the picture of the frame being read, kept only if the reading succeeds
           const picture = await snapshot(v, region)
+          // the front of an ID card has no machine-readable zone: its printed text is tried on the first look and again later
+          if (failures % 3 === 0) {
+            const front = await window.api.scan.readFront(await snapshot(v, region, FRONT_WIDTH)).catch(() => null)
+            if (signal.cancelled) return
+            if (front && (front.complete || isDone(front))) {
+              setFound(true)
+              setAutoState('idle')
+              onCard(picture)
+              onScan(front)
+              return
+            }
+          }
           const r = await scanFrame(v, region, analyze, { variants: AUTO_VARIANTS, signal })
           if (signal.cancelled) return
           if (isDone(r)) {

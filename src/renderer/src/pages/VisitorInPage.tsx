@@ -144,7 +144,8 @@ export default function VisitorInPage(): ReactNode {
       return next
     })
     if (r.fields.nationality || r.fields.birthDate || r.fields.sex) setMore(true)
-    if (!r.valid) setStatus({ kind: 'warn', text: t('visitor.scanCheckWarn') })
+    if (r.source === 'ocr') setStatus({ kind: 'warn', text: t('visitor.scanOkText') })
+    else if (!r.valid) setStatus({ kind: 'warn', text: t('visitor.scanCheckWarn') })
     else setStatus({ kind: 'ok', text: t(r.source === 'mrz' ? 'visitor.scanOkMrz' : 'visitor.scanOkBarcode') })
   }
 

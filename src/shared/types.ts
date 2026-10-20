@@ -581,7 +581,10 @@ export interface ScanOptions {
 }
 
 export interface ScanResult {
-  source: 'mrz' | 'barcode' | 'none'
+  /** 'ocr': fields taken from the printed text of the card front (no check digits exist: the guard must verify every field) */
+  source: 'mrz' | 'barcode' | 'ocr' | 'none'
+  /** 'ocr' only: a name and a national number or birth date were read, so trying the machine-readable zone is not needed */
+  complete?: boolean
   fields: Partial<PersonFields>
   /** check digits all valid (MRZ only) */
   valid: boolean
@@ -707,6 +710,8 @@ export interface Api {
   scan: {
     analyze(image: Uint8Array, opts?: ScanOptions): Promise<ScanResult>
     readText(image: Uint8Array): Promise<string[]>
+    /** fields from the printed text of a card front (Windows OCR, else Tesseract); for cards the machine-readable zone could not read */
+    readFront(image: Uint8Array): Promise<ScanResult>
     barcodes(image: Uint8Array): Promise<string[]>
   }
   exports: {

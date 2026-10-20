@@ -618,6 +618,10 @@ export const demoApi: Api = {
       await wait(800)
       return F.cardText
     },
+    async readFront(): Promise<ScanResult> {
+      await wait(800)
+      return { source: 'none', fields: {}, valid: false, rawMrz: [], barcodes: [], lines: F.cardText }
+    },
     async barcodes(image) {
       return readQr(image)
     }

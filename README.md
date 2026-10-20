@@ -27,7 +27,10 @@ It runs on a Windows PC at the security office and works without a network.
 All reading is offline, on the PC. A webcam reads passports and ID cards through their machine-readable zone
 (MRZ), and QR codes. The camera reads **automatically** while a card is held in the frame; the Scan button and
 importing a photo work too. Each frame is tried in several enhanced versions until the check digits of the document
-validate. Cards without an MRZ fall back to a text read that lets the guard pick lines.
+validate. Cards without an MRZ (the front of an ID card, older cards, licences, student cards) are read from their printed
+text, Arabic and Latin, with the OCR built into Windows (offline; Tesseract if the Arabic OCR language is not installed): the form
+is filled from the labels (Nom, Prénom, اللقب, الاسم, …) and the 18-digit national number, and the guard checks every field.
+Nothing is sent over the internet.
 
 **Every scanned card is photographed.** The picture (color, about 100-300 KB) is kept with the visitor's entry, encrypted
 like the other personal data, up to 3 per entry (e.g. both sides of a card). The guard sees the pictures under the scanner and can

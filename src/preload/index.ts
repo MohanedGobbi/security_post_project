@@ -54,6 +54,7 @@ const api: Api = {
   scan: {
     analyze: call('scan:analyze'),
     readText: call('scan:readText'),
+    readFront: call('scan:readFront'),
     barcodes: call('scan:barcodes')
   },
   exports: {

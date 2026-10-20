@@ -40,7 +40,13 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDir": true
-    }
+    },
+    "extraResources": [
+      {
+        "from": "resources",
+        "to": "."
+      }
+    ]
   },
   "dependencies": {
     "@tesseract.js-data/ara": "^1.0.0",

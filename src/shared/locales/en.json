@@ -132,7 +132,8 @@
     "autoWatching": "Hold the card flat in the frame: it is read by itself",
     "autoReading": "Reading the card…",
     "autoDone": "Card read. Press Scan to read another.",
-    "autoTrouble": "Hard to read: hold the card flatter and steady, reduce glare, or press Scan."
+    "autoTrouble": "Hard to read: hold the card flatter and steady, reduce glare, or press Scan.",
+    "scanOkText": "Text read from the card. There is no check on it: compare every field with the card."
   },
   "idType": {
     "national_id": "National ID card",
