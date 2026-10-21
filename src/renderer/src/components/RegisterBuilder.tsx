@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  REGISTER_FIELD_TYPES, type EntryInputValues, type Labels, type RegisterDef, type RegisterDefInput, type RegisterField,
+  REGISTER_COLORS, REGISTER_FIELD_TYPES, type EntryInputValues, type Labels, type RegisterDef, type RegisterDefInput, type RegisterField,
   type RegisterFieldType, type Role
 } from '@shared/types'
 import { labelOf } from '@shared/registers'
@@ -11,8 +11,9 @@ import Icon, { REGISTER_ICONS, registerIcon } from './Icon'
 import { Switch } from './FeaturesSettings'
 import { FieldInputs, type AccountOption } from './RegisterFields'
 import { errorText } from '../util'
+import { levelName, useLevels } from '../levels'
+import SecureDialog from './SecureDialog'
 
-const ROLES: Role[] = ['guard', 'leader', 'admin']
 const LANGS: (keyof Labels)[] = ['ar', 'fr', 'en']
 const emptyLabels = (): Labels => ({ ar: '', en: '', fr: '' })
 
@@ -22,6 +23,7 @@ export default function RegisterBuilder(): ReactNode {
   const { toast } = useApp()
   const [regs, setRegs] = useState<RegisterDef[]>([])
   const [editing, setEditing] = useState<RegisterDef | 'new' | null>(null)
+  const [deleting, setDeleting] = useState<RegisterDef | null>(null)
   const lang = currentLang()
 
   const load = useCallback(() => {
@@ -66,7 +68,7 @@ export default function RegisterBuilder(): ReactNode {
       <p className="hint">{t('builder.intro')}</p>
       <ul className="builder-list">
         {regs.map((r, i) => (
-          <li key={r.id} className={r.active ? '' : 'off'}>
+          <li key={r.id} className={`${r.active ? '' : 'off'} ${r.color ? `tone-${r.color}` : ''}`}>
             <span className="tile-icon"><Icon name={registerIcon(r.icon)} size={20} /></span>
             <span className="grow">
               <strong>{labelOf(r.labels, lang)}</strong>
@@ -79,9 +81,25 @@ export default function RegisterBuilder(): ReactNode {
             <button type="button" className="icon-btn" onClick={() => move(i, 1)} disabled={i === regs.length - 1} aria-label={t('builder.moveDown')} title={t('builder.moveDown')}>▼</button>
             <Switch on={r.active} onChange={() => save([{ ...r, active: !r.active }])} name="" desc={t(r.active ? 'settings.active' : 'settings.inactive')} />
             <button type="button" onClick={() => setEditing(r)}>{t('builder.edit')}</button>
+            <button type="button" className="icon-btn" onClick={() => setDeleting(r)} aria-label={t('builder.delete')} title={t('builder.delete')}>🗑</button>
           </li>
         ))}
       </ul>
+      {deleting && (
+        <SecureDialog title={t('builder.deleteTitle', { name: labelOf(deleting.labels, lang) })} confirmLabel={t('builder.delete')} danger
+          needPin={(deleting.entryCount ?? 0) > 0} confirmWord={(deleting.entryCount ?? 0) > 0 ? t('system.word') : undefined}
+          onCancel={() => setDeleting(null)}
+          onConfirm={async ({ pin }) => {
+            await window.api.registers.delete(deleting.id, pin)
+            toast(t('builder.deleted'))
+            setDeleting(null)
+            load()
+          }}>
+          {(deleting.entryCount ?? 0) > 0
+            ? <div className="banner error">{t('builder.deleteEntries', { n: deleting.entryCount })}</div>
+            : <p>{t('builder.deleteEmpty')}</p>}
+        </SecureDialog>
+      )}
     </section>
   )
 }
@@ -114,13 +132,14 @@ function LabelInputs({ value, onChange, label }: { value: Labels; onChange(v: La
 }
 
 function RoleChecks({ value, onChange }: { value: Role[]; onChange(v: Role[]): void }): ReactNode {
-  const { t } = useTranslation()
+  const { levels } = useLevels()
+  const lang = currentLang()
   return (
     <div className="chips">
-      {ROLES.map((r) => (
-        <label key={r} className="check">
-          <input type="checkbox" checked={value.includes(r)} onChange={(e) => onChange(e.target.checked ? [...value, r] : value.filter((x) => x !== r))} />
-          {t(`settings.roles.${r}`)}
+      {levels.map((l) => (
+        <label key={l.key} className="check">
+          <input type="checkbox" checked={value.includes(l.key)} onChange={(e) => onChange(e.target.checked ? [...value, l.key] : value.filter((x) => x !== l.key))} />
+          {levelName(levels, l.key, lang)}
         </label>
       ))}
     </div>
@@ -213,6 +232,16 @@ function RegisterEditor({ initial, nextSort, onClose }: { initial: RegisterDef |
           </div>
         </div>
 
+        <div className="field-group" role="group" aria-label={t('builder.color')}>
+          <span className="field-label">{t('builder.color')}</span>
+          <div className="color-pick">
+            {REGISTER_COLORS.map((c) => (
+              <button key={c || 'default'} type="button" className={`${c ? `tone-${c}` : ''} ${(draft.color ?? '') === c ? 'on' : ''}`} aria-label={c || 'default'}
+                aria-pressed={(draft.color ?? '') === c} onClick={() => set({ color: c })}><Icon name={registerIcon(draft.icon)} size={16} /></button>
+            ))}
+          </div>
+        </div>
+
         <div className="field-group" role="group" aria-label={t('builder.fillRoles')}>
           <span className="field-label">{t('builder.fillRoles')}</span>
           <RoleChecks value={draft.fillRoles} onChange={(fillRoles) => set({ fillRoles })} />
@@ -276,6 +305,8 @@ function RegisterEditor({ initial, nextSort, onClose }: { initial: RegisterDef |
                           onBlur={(e) => setField(f.key, { options: e.target.value.split('\n').map((o) => o.trim()).filter(Boolean) })} />
                       </label>
                     )}
+                    <LabelInputs label={t('builder.hint')} value={f.hint ?? emptyLabels()} onChange={(hint) => setField(f.key, { hint })} />
+                    <label className="check"><input type="checkbox" checked={!!f.half} onChange={(e) => setField(f.key, { half: e.target.checked })} /> {t('builder.half')}</label>
                     <label className="check"><input type="checkbox" checked={f.required} onChange={(e) => setField(f.key, { required: e.target.checked })} /> {t('builder.required')}</label>
                     <label className="check">
                       <input type="checkbox" checked={f.sensitive || f.type === 'person'} disabled={saved || f.type === 'person'}
@@ -297,7 +328,7 @@ function RegisterEditor({ initial, nextSort, onClose }: { initial: RegisterDef |
 
       <section className="card builder-preview" aria-label={t('builder.preview')}>
         <h2>{t('builder.preview')}</h2>
-        <div className="register-head">
+        <div className={`register-head ${draft.color ? `tone-${draft.color}` : ''}`}>
           <span className="tile-icon"><Icon name={registerIcon(draft.icon)} size={26} /></span>
           <h3>{labelOf(draft.labels, lang) || '—'}</h3>
         </div>

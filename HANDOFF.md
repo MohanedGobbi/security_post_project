@@ -91,6 +91,34 @@ Administrators land on the Administration page and never start a guard shift. Fa
 icon, who records and closes, closing step, fields, live preview, order, on/off; saved fields keep their type and encryption and are only hidden),
 and the **audit trail** (`components/AuditLog.tsx`, API `audit.list`, readable action names in `audit.actions.*`).
 
+### Permission levels (21 Oct)
+`levels` table (key, names in 3 languages, permissions, built-in flag). `Role` is now a level key (`users.role` has no CHECK any more: an older table is rebuilt at start, ids and PIN lookups kept).
+Built-ins: `guard`, `leader`, `admin` (renamed or re-ticked freely, never deleted; `admin` always has everything and alone manages accounts, levels, registers, settings, audit).
+Permissions (`src/shared/permissions.ts`): visitors, history, cardPictures, students, studentsEdit, exports, correctAny, shiftHandover. Enforced in the main process by `PERMISSION_OF` in `ipc.ts` (plus
+`visits:get` strips photo and card pictures without cardPictures, `students:list` hides phone / national number / birth date without studentsEdit, `registers.correctEntry` needs correctAny or authorship) and mirrored in the UI by `pageAllowed` (`App.tsx`).
+Registers list level keys in `fillRoles` / `closeRoles`. UI: `components/LevelsEditor.tsx` (Administration → Accounts), `levels.ts` (hook and names). The default guard level keeps today's behaviour (history and card pictures on): untick them in Administration if the faculty wants the dean's-permission rule (open question 5 below).
+
+### Student directory (21 Oct)
+`students` table; names / level / department as text, card number, national number, birth date, phone encrypted, numbers found by the keyed hash (the same hash as visitors' ID numbers, so a visitor registered with a student's card number IS that student: presence, last seen, visit count come from that join).
+`src/main/students.ts` (search, `suggestStudents` = same number first, then alike names by `src/shared/names.ts`: accents, Arabic letter variants, word order and spaces ignored, edit distance; import of xlsx/csv by recognised column titles in Arabic, French, English; template file), `pages/StudentsPage.tsx`, and in `VisitorInPage.tsx`: a matching card or national number is applied once by itself, alike names are suggested as buttons.
+Import test file for the tests: `SECREG_IMPORT_FILE`. Students are not purged by the retention setting.
+
+### Printing (21 Oct)
+`src/main/printouts.ts` + `export.ts` (`reportHtml` now carries both logos from `resources/brand/`): register (period or recent), one entry, visit record, audit trail, student list, and the period export now also holds every register. Buttons: `components/PrintButton.tsx` on the register list and entry, visit record, audit trail, student list. What a user may print is what they may see (same functions give the rows).
+A bug fixed on the way: a register without a closing step showed guards its whole history ("open entries" are only those of a register that has a closing step).
+
+### System: backups, restore, reset, deleting registers (21 Oct)
+`src/main/backup.ts`, panel `components/SystemPanel.tsx` (Administration → System), dialogs `components/SecureDialog.tsx` (PIN again, password, typed word).
+- **Safety copies**: folder `userData/backups/<kind>-<time>/` with `register.db` (made with `VACUUM INTO`, consistent) and `data.key`; kinds auto (at start, when the last is older than 20 h; 14 kept), before-restore / -erase / -reset / -delete (10 kept). Restorable with the PIN, same Windows account only (the key file is DPAPI-bound).
+- **Backup file** `.secbak`: `SECBAK01` + scrypt(password) + AES-256-GCM over [header incl. the raw data key | database]. Restoring writes the database, re-protects the key for this PC, then `app.relaunch()`. The program cannot restore a file whose password is wrong: checked before anything is touched.
+- **Erase records** keeps settings, accounts, levels, register definitions, watchlist, checkpoints and the audit trail (`RECORD_TABLES`); **factory reset** deletes database and key. Both, and every restore, make a safety copy first. All need the administrator's PIN again (`checkAdminPin`, shares the login lock-out).
+- **Recovery mode**: `index.ts` no longer quits when the key is lost on a non-fresh install; `auth.status` says `recovery` and `RecoveryPage` offers a backup file (`system:recover`, public only in this mode).
+- **Deleting a register** (`registers:delete`): empty ones need only a confirmation, ones with entries need the PIN and a safety copy first; ready-made registers that were deleted are remembered (`settings.deletedTemplates`) so the next start does not open them again.
+- Tests use `SECREG_EXPORT_DIR` (where a backup is saved) and `SECREG_BACKUP_FILE` (the file picked for a restore).
+
+### Register appearance (21 Oct)
+Per register an accent colour (`REGISTER_COLORS`), per field help text (`hint`) and half width (`half`); builder UI and form updated. The shift and custody registers lost the registers-condition, deanship-visa and PIN-confirmation questions and got a yes/no plus a separate box for the absent or late names (`updateTemplateRegisters` hides the old fields on existing installs).
+
 ### Visitors, ID scanning, card pictures
 - `src/main/scan.ts` reads the MRZ (TD1 ID cards, TD3 passports, TD2) with check-digit validation, QR codes, and has a text fallback (Arabic, French, English) that lets the guard pick lines.
 - `src/renderer/src/scanPipeline.ts` tries up to 9 enhanced versions of a frame (MRZ strip, adaptive threshold, sharpening, small rotations) until the check digits validate.

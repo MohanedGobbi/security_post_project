@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Role, Settings, User } from '@shared/types'
+import { levelName, useLevels } from '../levels'
+import LevelsEditor from '../components/LevelsEditor'
 import { useApp } from '../App'
 import { currentLang } from '../i18n'
 import { errorText, saveCameraId, savedCameraId } from '../util'
@@ -83,10 +85,13 @@ function SiteSettings(): ReactNode {
   )
 }
 
-/** Accounts: shown on the Administration page */
+/** Accounts and their levels: shown on the Administration page */
 export function UserSettings(): ReactNode {
   const { t } = useTranslation()
   const { toast, user: me } = useApp()
+  const { levels, reload: reloadLevels } = useLevels()
+  const lang = currentLang()
+  const levelOptions = levels.map((l) => <option key={l.key} value={l.key}>{levelName(levels, l.key, lang)}</option>)
   const [users, setUsers] = useState<User[]>([])
   const [nu, setNu] = useState({ name: '', role: 'guard' as Role, pin: '' })
   const [pinFor, setPinFor] = useState<number | null>(null)
@@ -131,9 +136,7 @@ export function UserSettings(): ReactNode {
               <td><strong>{u.name}</strong>{u.id === me.id && ' ★'}</td>
               <td>
                 <select value={u.role} onChange={(e) => run(() => window.api.users.update(u.id, { role: e.target.value as Role }))}>
-                  <option value="guard">{t('settings.roles.guard')}</option>
-                  <option value="leader">{t('settings.roles.leader')}</option>
-                  <option value="admin">{t('settings.roles.admin')}</option>
+                  {levelOptions}
                 </select>
               </td>
               <td>{t(u.active ? 'settings.active' : 'settings.inactive')}</td>
@@ -163,15 +166,14 @@ export function UserSettings(): ReactNode {
           <label>{t('settings.name')}<input value={nu.name} onChange={(e) => setNu({ ...nu, name: e.target.value })} required dir="auto" /></label>
           <label>{t('settings.role')}
             <select value={nu.role} onChange={(e) => setNu({ ...nu, role: e.target.value as Role })}>
-              <option value="guard">{t('settings.roles.guard')}</option>
-              <option value="leader">{t('settings.roles.leader')}</option>
-              <option value="admin">{t('settings.roles.admin')}</option>
+              {levelOptions}
             </select>
           </label>
           <label>{t('settings.pin')}<input type="password" inputMode="numeric" maxLength={8} value={nu.pin} onChange={(e) => setNu({ ...nu, pin: e.target.value })} required /></label>
         </div>
         <div className="actions"><button className="primary">{t('settings.addUser')}</button></div>
       </form>
+      <LevelsEditor levels={levels} onChanged={() => { reloadLevels(); load() }} />
     </section>
   )
 }

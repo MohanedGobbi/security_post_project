@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LANGS } from '@shared/i18n'
-import type { AlertItem, ExpectedVisitor, Features, Lang, Module, SyncStatus, User } from '@shared/types'
+import type { AlertItem, ExpectedVisitor, Features, Lang, Module, Permission, SyncStatus, User } from '@shared/types'
+import { can } from '@shared/permissions'
 import { formatDateTime } from '@shared/i18n'
 import { ALL_ON } from '@shared/features'
 import i18n from './i18n'
@@ -23,11 +24,14 @@ import PatrolsPage from './pages/PatrolsPage'
 import KeysPage from './pages/KeysPage'
 import ExpectedPage from './pages/ExpectedPage'
 import SettingsPage from './pages/SettingsPage'
+import StudentsPage from './pages/StudentsPage'
+import RecoveryPage from './pages/RecoveryPage'
+import PrintMenu from './components/PrintMenu'
 import EndShiftDialog from './components/EndShiftDialog'
 import Icon, { type IconName } from './components/Icon'
 import BrandMark from './components/BrandMark'
 
-export type Page = 'home' | 'in' | 'out' | 'expected' | 'vehicles' | 'deliveries' | 'incidents' | 'patrols' | 'keys' | 'notes' | 'registers' | 'admin' | 'log' | 'watchlist' | 'settings'
+export type Page = 'home' | 'in' | 'out' | 'expected' | 'vehicles' | 'deliveries' | 'incidents' | 'patrols' | 'keys' | 'notes' | 'registers' | 'students' | 'admin' | 'log' | 'watchlist' | 'settings'
 
 interface Toast { id: number; text: string; kind: 'ok' | 'error' }
 
@@ -64,6 +68,17 @@ export const pageOn = (page: Page, f: Features): boolean => {
   return !m || f.modules[m]
 }
 
+/** What a level must allow to open a page (the main process checks the same on every call) */
+const PAGE_PERMISSION: Partial<Record<Page, Permission>> = { in: 'visitors', out: 'visitors', log: 'history', students: 'students' }
+
+/** A page the account may open: its module is on, its level allows it, and the Administration page is for administrators */
+export const pageAllowed = (page: Page, f: Features, user: User | null): boolean => {
+  if (!pageOn(page, f)) return false
+  if (page === 'admin') return user?.role === 'admin'
+  const p = PAGE_PERMISSION[page]
+  return !p || (!!user && can(user, p))
+}
+
 const NAV: { page: Page; key: string; icon: IconName; shortcut?: string }[] = [
   { page: 'home', key: 'nav.home', icon: 'home', shortcut: 'F1' },
   { page: 'in', key: 'nav.visitorIn', icon: 'enter', shortcut: 'F2' },
@@ -76,6 +91,7 @@ const NAV: { page: Page; key: string; icon: IconName; shortcut?: string }[] = [
   { page: 'keys', key: 'nav.keys', icon: 'key', shortcut: 'F11' },
   { page: 'notes', key: 'nav.notes', icon: 'note', shortcut: 'F7' },
   { page: 'registers', key: 'nav.registers', icon: 'book' },
+  { page: 'students', key: 'nav.students', icon: 'user' },
   { page: 'admin', key: 'nav.admin', icon: 'users' },
   { page: 'log', key: 'nav.log', icon: 'list', shortcut: 'F8' },
   { page: 'watchlist', key: 'nav.watchlist', icon: 'eye' },
@@ -114,7 +130,7 @@ export function LangSwitch({ onChange }: { onChange?: (l: Lang) => void }): Reac
 
 export default function App(): ReactNode {
   const { t } = useTranslation()
-  const [state, setState] = useState<'loading' | 'login' | 'shift' | 'ready'>('loading')
+  const [state, setState] = useState<'loading' | 'recovery' | 'login' | 'shift' | 'ready'>('loading')
   const [user, setUser] = useState<User | null>(null)
   const [siteName, setSiteName] = useState('')
   const [page, setPage] = useState<Page>('home')
@@ -122,6 +138,7 @@ export default function App(): ReactNode {
   const [registerId, setRegisterId] = useState<number | null>(null)
   const [toasts, setToasts] = useState<Toast[]>([])
   const [ending, setEnding] = useState(false)
+  const [printing, setPrinting] = useState(false)
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [features, setFeatures] = useState<Features>(ALL_ON)
   const [sync, setSync] = useState<SyncStatus | null>(null)
@@ -178,7 +195,8 @@ export default function App(): ReactNode {
     window.api.auth.status().then((s) => {
       setSiteName(s.siteName)
       setFeatures(s.features)
-      if (s.user) enter(s.user)
+      if (s.recovery) setState('recovery')
+      else if (s.user) enter(s.user)
       else setState('login')
     })
   }, [enter])
@@ -197,20 +215,20 @@ export default function App(): ReactNode {
   }
 
   // the Administration page is for administrators only
-  const nav = NAV.filter((n) => pageOn(n.page, features) && (n.page !== 'admin' || user?.role === 'admin'))
+  const nav = NAV.filter((n) => pageAllowed(n.page, features, user))
   // the first of the bottom items (watchlist, settings) is pushed to the bottom of the sidebar
   const bottomPage = nav.find((n) => n.page === 'watchlist' || n.page === 'settings')?.page
 
   // a page that was just switched off in Settings → Features
   useEffect(() => {
-    if (!pageOn(page, features)) setPage('home')
-  }, [page, features])
+    if (!pageAllowed(page, features, user)) setPage('home')
+  }, [page, features, user])
 
   // keyboard shortcuts for the desk: F1..F11, Esc goes home
   useEffect(() => {
     if (state !== 'ready') return
     const onKey = (e: KeyboardEvent): void => {
-      const hit = NAV.find((n) => n.shortcut === e.key && pageOn(n.page, features))
+      const hit = NAV.find((n) => n.shortcut === e.key && pageAllowed(n.page, features, user))
       if (hit) {
         e.preventDefault()
         setPage(hit.page)
@@ -220,7 +238,20 @@ export default function App(): ReactNode {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [state, features])
+  }, [state, features, user])
+
+  // Ctrl+P: the print menu
+  useEffect(() => {
+    if (state !== 'ready') return
+    const onKey = (e: KeyboardEvent): void => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+        e.preventDefault()
+        setPrinting(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [state])
 
   const toastLayer = (
     <div className="toasts" aria-live="polite">
@@ -229,6 +260,7 @@ export default function App(): ReactNode {
   )
 
   if (state === 'loading') return <div className="center-screen">{t('common.loading')}</div>
+  if (state === 'recovery') return <><RecoveryPage />{toastLayer}</>
   if (state === 'login' || !user) return <><LoginPage siteName={siteName} onDone={onLoggedIn} toast={toast} />{toastLayer}</>
   if (state === 'shift') {
     return <><ShiftStartPage user={user} onStarted={() => setState('ready')} onLogout={logout} toast={toast} />{toastLayer}</>
@@ -263,6 +295,7 @@ export default function App(): ReactNode {
                 <Icon name="alert" size={18} /> {alerts.length}
               </button>
             )}
+            <button type="button" className="print-btn" onClick={() => setPrinting(true)} title="Ctrl+P"><Icon name="printer" size={18} /> {t('print.button')}</button>
             <LangSwitch onChange={(l) => window.api.auth.setLanguage(l)} />
             <Clock />
             <div className="who">
@@ -296,6 +329,7 @@ export default function App(): ReactNode {
             {page === 'keys' && <KeysPage />}
             {page === 'notes' && <NotesPage />}
             {page === 'registers' && <RegistersPage />}
+            {page === 'students' && <StudentsPage />}
             {page === 'admin' && user.role === 'admin' && <AdminPage />}
             {page === 'log' && <LogPage />}
             {page === 'watchlist' && <WatchlistPage />}
@@ -303,6 +337,7 @@ export default function App(): ReactNode {
           </main>
         </div>
       </div>
+      {printing && <PrintMenu onClose={() => setPrinting(false)} />}
       {ending && <EndShiftDialog onClose={() => setEnding(false)} onEnded={logout} />}
       {toastLayer}
     </Ctx.Provider>

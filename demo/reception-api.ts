@@ -12,7 +12,8 @@ import {
   db, dayBounds, fail, nextId, nowIso, photos, refresh, save, today, wait,
   type DEntry, type DExpected, type DLoan, type DRound, type DShift, type DUser, type DVisit
 } from './store'
-import { MAX_CARD_PICTURES } from '@shared/types'
+import { MAX_CARD_PICTURES, type Student } from '@shared/types'
+import { BUILTIN_LEVELS } from '@shared/permissions'
 import { cleanDefinition, cleanStep, cleanValue, type ValueResolvers } from '@shared/registers'
 import { templatesFor } from '@shared/registerTemplates'
 import { qrDataUrl, qrSvg, readQr } from './qr'
@@ -49,7 +50,10 @@ const admin = (): DUser => {
 const need = (m: keyof Features['modules']): void => {
   if (!db().features.modules[m]) fail('error.featureOff')
 }
-const toUser = (u: DUser): User => ({ id: u.id, name: u.name, role: u.role, language: u.language, active: u.active })
+const toUser = (u: DUser): User => ({
+  id: u.id, name: u.name, role: u.role, language: u.language, active: u.active,
+  permissions: BUILTIN_LEVELS.find((l) => l.key === u.role)?.permissions ?? []
+})
 // ---------- register engine (same rules as src/main/registers.ts, shared in @shared/registers) ----------
 /** one line of the audit trail, by the current user (null = nobody logged in) */
 function log(action: string, entity = '', entityId: number | null = null, detail = ''): void {
@@ -287,6 +291,12 @@ async function badgePng(visitId: number, s: BadgeSettings): Promise<string> {
 }
 
 // ---------- the API ----------
+/** a few students for the web demo */
+const DEMO_STUDENTS: Student[] = [
+  { id: 1, studentNo: '20230001', idNumber: '', fullName: 'Khadidja Benyoucef', fullNameAlt: 'خديجة بن يوسف', birthDate: '2003-06-14', phone: '', level: 'L2', department: 'حقوق', notes: '', active: true },
+  { id: 2, studentNo: '20220417', idNumber: '', fullName: 'Rachid Bahaz', fullNameAlt: 'رشيد باحاز', birthDate: '2002-03-02', phone: '', level: 'L3', department: 'علوم سياسية', notes: '', active: true }
+]
+
 export const demoApi: Api = {
   auth: {
     async status() {
@@ -527,7 +537,9 @@ export const demoApi: Api = {
     },
     async accounts() {
       me()
-      return db().users.filter((x) => x.active).map((x) => ({ id: x.id, name: x.name, role: x.role }))
+      return db().users.filter((x) => x.active).map((x) => ({
+        id: x.id, name: x.name, role: x.role, roleLabels: BUILTIN_LEVELS.find((l) => l.key === x.role)?.labels ?? { ar: x.role, en: x.role, fr: x.role }
+      }))
     },
     async installTemplates(keys) {
       const u = admin()
@@ -535,6 +547,15 @@ export const demoApi: Api = {
       for (const t of missing) db().registers.push({ ...cleanDefinition(t), id: nextId(), openedAt: nowIso(), openedBy: u.name } as RegisterDef)
       if (missing.length) log('register_open', 'register', null, `templates:${missing.length}`)
       return done(missing.length)
+    },
+    async delete(id) {
+      admin()
+      const i = db().registers.findIndex((r) => r.id === id)
+      if (i < 0) fail('error.notFound')
+      const key = db().registers[i].key
+      db().registers.splice(i, 1)
+      log('register_delete', 'register', null, key)
+      done(undefined)
     }
   },
 
@@ -548,6 +569,27 @@ export const demoApi: Api = {
         .sort((a, b) => (a.time < b.time ? 1 : -1))
         .map((a) => ({ id: a.id, time: a.time, user: name(a.userId), action: a.action, entity: a.entity, entityId: a.entityId, detail: a.detail }))
     }
+  },
+
+  // the demo keeps its data in the browser: there is nothing to back up or restore
+  system: {
+    async info() { return { dataDir: 'browser', backupsDir: '', dbBytes: 0, copies: [], lastBackup: null } },
+    async backup() { return null },
+    async restoreFile() { return false },
+    async restoreCopy() {},
+    async erase() {},
+    async factoryReset() {},
+    async openFolder() {},
+    async restart() { location.reload() },
+    async recover() { return false }
+  },
+
+  levels: {
+    async list() {
+      return BUILTIN_LEVELS.map((l) => ({ key: l.key, labels: l.labels, permissions: l.permissions, builtin: true, users: db().users.filter((u) => u.role === l.key && u.active).length }))
+    },
+    async save() { return 'guard' },
+    async remove() {}
   },
 
   users: {
@@ -627,6 +669,27 @@ export const demoApi: Api = {
     }
   },
 
+  students: {
+    async list(q) {
+      const text = q.text.trim().toLowerCase()
+      return DEMO_STUDENTS.filter((s) => !text || `${s.fullName} ${s.fullNameAlt} ${s.studentNo}`.toLowerCase().includes(text)).map((student) => ({
+        student, score: 1, exact: false, insideVisitId: null, insideSince: null, lastSeen: null, visitsCount: 0
+      }))
+    },
+    async suggest(q) {
+      const text = q.name.trim().toLowerCase()
+      return DEMO_STUDENTS.filter((s) => s.studentNo === q.idNumber.trim() || (text.length > 2 && `${s.fullName} ${s.fullNameAlt}`.toLowerCase().includes(text)))
+        .map((student) => ({ student, score: 1, exact: student.studentNo === q.idNumber.trim(), insideVisitId: null, insideSince: null, lastSeen: null, visitsCount: 0 }))
+    },
+    async count() { return DEMO_STUDENTS.length },
+    async save() { return 0 },
+    async setActive() {},
+    async remove() {},
+    async import() { return null },
+    async template() { return null },
+    async pdf() { window.print(); return null }
+  },
+
   exports: {
     async pdf(r) {
       const t = (k: string): string => translate(r.lang, k)
@@ -647,6 +710,11 @@ export const demoApi: Api = {
         visits.reverse().map((v) => [formatDateTime(v.timeIn, r.lang), formatDateTime(v.timeOut, r.lang), v.fullName, v.idNumber, v.company, v.host, v.purpose]))
       return `register_${r.from}_${r.to}.csv`
     },
+    // the demo prints the visible page instead of building a PDF
+    async registerPdf(): Promise<string | null> { window.print(); return null },
+    async entryPdf(): Promise<string | null> { window.print(); return null },
+    async auditPdf(): Promise<string | null> { window.print(); return null },
+    async visitPdf(): Promise<string | null> { window.print(); return null },
     async evacuation(l) {
       const t = (k: string): string => translate(l, k)
       const rows = await demoApi.visits.insideNow()

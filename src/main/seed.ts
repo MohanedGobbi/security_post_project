@@ -1,6 +1,6 @@
 import { FACULTY } from '@shared/faculty'
 import * as db from './db'
-import { installTemplates } from './registers'
+import { installTemplates, updateTemplateRegisters } from './registers'
 
 /**
  * First start of the program: settings, feature switches, the first accounts and the faculty's registers.
@@ -14,5 +14,8 @@ export function seedFaculty(): void {
     db.audit(ids[0], 'setup')
   }
   const admin = db.listUsers(true).find((u) => u.role === 'admin')
-  if (admin) installTemplates(FACULTY.registerTemplates, admin.id)
+  if (admin) {
+    installTemplates(FACULTY.registerTemplates, admin.id)
+    updateTemplateRegisters(admin.id)
+  }
 }

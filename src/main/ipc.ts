@@ -1,15 +1,21 @@
-import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
+import { mkdirSync } from 'node:fs'
+import { join } from 'node:path'
+import { app, BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent } from 'electron'
 import type {
   BadgeSettings, CheckInInput, CheckStatus, CustomFieldInput, ExpectedInput, DeliveryInput, ExportRange, IncidentInput, KeyItemInput, Lang, LendInput, NoteCategory,
   Features, Module, RangeQuery, Role, SearchQuery, Settings, User, VehicleInInput, WatchHit, WatchInput,
-  AuditQuery, ScanOptions, EntryInputValues, EntryQuery, FieldInput, RegisterDefInput
+  AuditQuery, LevelInput, Permission, StudentInput, ScanOptions, EntryInputValues, EntryQuery, FieldInput, RegisterDefInput
 } from '@shared/types'
 import { ALL_ON, PROFILES } from '@shared/features'
+import { can } from '@shared/permissions'
 import { LANGS } from '@shared/i18n'
 import * as db from './db'
 import { DEFAULT_PINS } from '@shared/faculty'
 import { verifyPin } from './crypto'
 import { analyzeImage, barcodeTexts, readFront, readText } from './scan'
+import * as students from './students'
+import * as backup from './backup'
+import { exportAuditPdf, exportStudentsPdf, exportEntryPdf, exportRegisterPdf, exportVisitPdf, registersSections } from './printouts'
 import { exportCheckpointLabels, exportEvacuation, exportExcel, exportPdf, exportShiftReport } from './export'
 import * as vehicles from './vehicles'
 import * as deliveries from './deliveries'
@@ -33,6 +39,16 @@ const LOCK_MS = 30_000
 
 type Access = 'public' | 'user' | 'admin'
 
+/** What a level must allow for a call; administrators always pass. Calls not listed need only a signed-in account. */
+const PERMISSION_OF: Record<string, Permission> = {
+  'visits:lookup': 'visitors', 'visits:checkIn': 'visitors', 'visits:checkOut': 'visitors', 'visits:insideNow': 'visitors', 'visits:suggestions': 'visitors',
+  'visits:search': 'history', 'visits:get': 'history',
+  'students:list': 'students', 'students:suggest': 'students', 'students:count': 'students',
+  'students:save': 'studentsEdit', 'students:setActive': 'studentsEdit', 'students:import': 'studentsEdit', 'students:template': 'studentsEdit',
+  'students:pdf': 'exports',
+  'exports:pdf': 'exports', 'exports:excel': 'exports', 'exports:registerPdf': 'exports', 'exports:entryPdf': 'exports', 'exports:visitPdf': 'exports'
+}
+
 /** Actions of an optional module are refused while the module is switched off (history stays readable). */
 const MODULE_WRITES: Record<string, Module> = {
   'vehicles:checkIn': 'vehicles', 'vehicles:checkOut': 'vehicles',
@@ -53,6 +69,8 @@ function handle<A extends unknown[], R>(channel: string, access: Access, fn: (us
       if (!currentUser) throw new Error('error.forbidden')
       if (access === 'admin' && currentUser.role !== 'admin') throw new Error('error.forbidden')
     }
+    const perm = PERMISSION_OF[channel]
+    if (perm && access !== 'public' && !can(currentUser as User, perm)) throw new Error('error.forbidden')
     const mod = MODULE_WRITES[channel]
     if (mod && !db.getFeatures().modules[mod]) throw new Error('error.featureOff')
     return fn(currentUser as User, ...(args as A))
@@ -61,7 +79,18 @@ function handle<A extends unknown[], R>(channel: string, access: Access, fn: (us
 
 const validPin = (pin: string): boolean => /^\d{4,8}$/.test(pin)
 /** Roles an administrator can give; anything else becomes a guard */
-const checkRole = (r: string): Role => (r === 'admin' || r === 'leader' ? r : 'guard')
+const checkRole = (r: string): Role => (db.levelExists(String(r)) ? String(r) : 'guard')
+/** The administrator's own PIN again, before anything that cannot be undone */
+function checkAdminPin(u: User, pin: string): void {
+  checkLock(u.id)
+  const row = db.getUserRow(u.id)
+  if (!row || !verifyPin(String(pin ?? ''), row.pin_hash)) {
+    db.audit(u.id, 'login_failed', '', null, 'confirm')
+    failLogin(u.id)
+  }
+  failedLogins.delete(u.id)
+}
+
 /** PIN-only login has no user id: its failed attempts share one counter */
 const PIN_ONLY = 0
 
@@ -88,9 +117,9 @@ const watchOn = (): boolean => db.getFeatures().modules.watchlist
 
 export function registerIpc(): void {
   // ---------- auth ----------
-  handle('auth:status', 'public', () => ({
-    user: currentUser, siteName: db.getSettings().siteName, features: db.getFeatures()
-  }))
+  handle('auth:status', 'public', () => backup.inRecovery()
+    ? { user: null, recovery: true, siteName: '', features: ALL_ON }
+    : { user: currentUser, siteName: db.getSettings().siteName, features: db.getFeatures() })
 
   handle('auth:loginUsers', 'public', () => db.listUsers(true).map((u) => ({ id: u.id, name: u.name, role: u.role })))
 
@@ -154,7 +183,9 @@ export function registerIpc(): void {
   handle('visits:search', 'user', (_u, q: SearchQuery) => db.searchVisits(q))
   handle('visits:get', 'user', (u, id: number) => {
     db.audit(u.id, 'view', 'visit', id)
-    return db.getVisit(id)
+    const v = db.getVisit(id)
+    // the pictures of ID cards (and the visitor's photo) are for the levels allowed to see them
+    return can(u, 'cardPictures') ? v : { ...v, photo: null, cards: [] }
   })
   handle('visits:stats', 'user', () => db.todayStats())
   handle('visits:suggestions', 'user', () => db.suggestions())
@@ -194,14 +225,105 @@ export function registerIpc(): void {
   })
   handle('registers:corrections', 'user', (_u, entryId: number) => registers.entryCorrections(entryId))
   handle('registers:accounts', 'user', () => registers.accountsForFields())
+  handle('registers:delete', 'admin', (u, id: number, pin: string) => {
+    const reg = registers.getRegister(Number(id))
+    if (!reg) throw new Error('error.notFound')
+    // entries are never erased in daily use: deleting a register that holds some needs the administrator's PIN, and a safety copy first
+    if ((reg.entryCount ?? 0) > 0) {
+      checkAdminPin(u, pin)
+      backup.makeSafetyCopy('before-delete')
+    }
+    const r = registers.deleteRegister(reg.id)
+    db.audit(u.id, 'register_delete', 'register', null, `${r.key} (${r.entries})`)
+  })
   handle('registers:installTemplates', 'admin', (u, keys: string[]) => {
     const n = registers.installTemplates(Array.isArray(keys) ? keys.map(String) : [], u.id)
     if (n) db.audit(u.id, 'register_open', 'register', null, `templates:${n}`)
     return n
   })
 
+  // ---------- system: backups, restore, reset ----------
+  const askFile = async (kind: 'save' | 'open', name: string): Promise<string | null> => {
+    const fixed = process.env[kind === 'save' ? 'SECREG_EXPORT_DIR' : 'SECREG_BACKUP_FILE']
+    if (fixed) return kind === 'save' ? join(fixed, name) : fixed
+    const parent = BrowserWindow.getFocusedWindow()
+    const filters = [{ name: 'Backup', extensions: ['secbak'] }]
+    if (kind === 'save') {
+      const opts = { defaultPath: join(app.getPath('documents'), name), filters }
+      const res = parent ? await dialog.showSaveDialog(parent, opts) : await dialog.showSaveDialog(opts)
+      return res.canceled || !res.filePath ? null : res.filePath
+    }
+    const opts = { properties: ['openFile' as const], filters }
+    const res = parent ? await dialog.showOpenDialog(parent, opts) : await dialog.showOpenDialog(opts)
+    return res.canceled || !res.filePaths[0] ? null : res.filePaths[0]
+  }
+  handle('system:info', 'admin', () => backup.backupInfo())
+  handle('system:backup', 'admin', async (u, password: string) => {
+    const path = await askFile('save', `backup_${new Date().toISOString().slice(0, 10)}.secbak`)
+    if (!path) return null
+    backup.writePortableBackup(path, String(password ?? ''))
+    db.audit(u.id, 'backup_create')
+    return path
+  })
+  handle('system:restoreFile', 'admin', async (u, password: string, pin: string) => {
+    checkAdminPin(u, pin)
+    const path = await askFile('open', '')
+    if (!path) return false
+    // wrong password or not a backup: found out before anything is touched
+    backup.readPortableBackup(path, String(password ?? ''))
+    db.audit(u.id, 'backup_restore', '', null, 'file')
+    backup.makeSafetyCopy('before-restore')
+    backup.restoreFromFile(path, String(password ?? ''))
+    return true
+  })
+  handle('system:restoreCopy', 'admin', (u, name: string, pin: string) => {
+    checkAdminPin(u, pin)
+    db.audit(u.id, 'backup_restore', '', null, String(name))
+    backup.makeSafetyCopy('before-restore')
+    backup.restoreSafetyCopy(String(name))
+  })
+  handle('system:erase', 'admin', (u, pin: string, includeStudents: boolean) => {
+    checkAdminPin(u, pin)
+    backup.makeSafetyCopy('before-erase')
+    backup.eraseRecords(!!includeStudents)
+    db.audit(u.id, 'records_erase', '', null, includeStudents ? 'with students' : '')
+  })
+  handle('system:factoryReset', 'admin', (u, pin: string) => {
+    checkAdminPin(u, pin)
+    backup.makeSafetyCopy('before-reset')
+    backup.factoryReset()
+  })
+  handle('system:openFolder', 'admin', async () => {
+    mkdirSync(backup.backupsDir(), { recursive: true })
+    await shell.openPath(backup.backupsDir())
+  })
+  handle('system:restart', 'admin', (u) => {
+    db.audit(u.id, 'restart')
+    backup.restartProgram()
+  })
+  // the data key cannot be opened, nobody can log in: a backup file is the way back
+  handle('system:recover', 'public', async (_u, password: string) => {
+    if (!backup.inRecovery()) throw new Error('error.forbidden')
+    const path = await askFile('open', '')
+    if (!path) return false
+    backup.restoreFromFile(path, String(password ?? ''))
+    return true
+  })
+
   // ---------- audit trail ----------
   handle('audit:list', 'admin', (_u, q: AuditQuery) => db.listAudit(q))
+
+  // ---------- permission levels ----------
+  handle('levels:list', 'user', () => db.listLevels())
+  handle('levels:save', 'admin', (u, input: LevelInput) => {
+    const key = db.saveLevel(input)
+    db.audit(u.id, input.key ? 'level_update' : 'level_add', 'level', null, key)
+    return key
+  })
+  handle('levels:remove', 'admin', (u, key: string) => {
+    db.deleteLevel(String(key))
+    db.audit(u.id, 'level_remove', 'level', null, String(key))
+  })
 
   // ---------- users ----------
   handle('users:list', 'admin', () => {
@@ -243,16 +365,77 @@ export function registerIpc(): void {
   handle('scan:readFront', 'user', (_u, image: Uint8Array) => readFront(image))
   handle('scan:barcodes', 'user', (_u, image: Uint8Array) => barcodeTexts(image))
 
+  // ---------- students ----------
+  // guards search the directory; the phone, national number and birth date are for those who maintain it
+  handle('students:list', 'user', (u, q: { text: string; includeInactive: boolean }) =>
+    students.listStudents({ text: String(q?.text ?? ''), includeInactive: !!q?.includeInactive && can(u, 'studentsEdit') })
+      .map((m) => (can(u, 'studentsEdit') ? m : { ...m, student: { ...m.student, idNumber: '', phone: '', birthDate: '' } })))
+  handle('students:suggest', 'user', (_u, q: { name: string; idNumber: string }) => students.suggestStudents({ name: String(q?.name ?? ''), idNumber: String(q?.idNumber ?? '') }))
+  handle('students:count', 'user', () => students.studentCount())
+  handle('students:save', 'user', (u, input: StudentInput) => {
+    const id = students.saveStudent(input)
+    db.audit(u.id, input.id ? 'student_update' : 'student_add', 'student', id)
+    return id
+  })
+  handle('students:setActive', 'user', (u, id: number, active: boolean) => {
+    students.setStudentActive(Number(id), !!active)
+    db.audit(u.id, 'student_update', 'student', Number(id), active ? 'on' : 'off')
+  })
+  handle('students:remove', 'admin', (u, id: number) => {
+    students.removeStudent(Number(id))
+    db.audit(u.id, 'student_remove', 'student', Number(id))
+  })
+  handle('students:import', 'user', async (u) => {
+    const parent = BrowserWindow.getFocusedWindow()
+    const fixed = process.env['SECREG_IMPORT_FILE']
+    let file = fixed ?? ''
+    if (!file) {
+      const opts = { properties: ['openFile' as const], filters: [{ name: 'Excel / CSV', extensions: ['xlsx', 'csv'] }] }
+      const res = parent ? await dialog.showOpenDialog(parent, opts) : await dialog.showOpenDialog(opts)
+      if (res.canceled || !res.filePaths[0]) return null
+      file = res.filePaths[0]
+    }
+    const r = await students.importStudentsFile(file)
+    db.audit(u.id, 'student_import', 'student', null, `+${r.added} ~${r.updated} -${r.skipped}`)
+    return r
+  })
+  handle('students:template', 'user', (_u, lang: Lang) => students.saveTemplate(BrowserWindow.getFocusedWindow(), checkLang(lang)))
+  handle('students:pdf', 'user', async (u, q: { text: string; includeInactive: boolean }, lang: Lang) => {
+    const path = await exportStudentsPdf(BrowserWindow.getFocusedWindow(), students.listStudents({ text: String(q?.text ?? ''), includeInactive: !!q?.includeInactive }), checkLang(lang), u.name)
+    if (path) db.audit(u.id, 'export_pdf', 'student')
+    return path
+  })
+
   // ---------- exports ----------
   const win = (): BrowserWindow | null => BrowserWindow.getFocusedWindow()
   handle('exports:pdf', 'user', async (u, r: ExportRange) => {
-    const path = await exportPdf(win(), r, u.name)
+    const path = await exportPdf(win(), r, u.name, registersSections(u, r.from, r.to, r.lang))
     if (path) db.audit(u.id, 'export_pdf', '', null, `${r.from}..${r.to}`)
     return path
   })
   handle('exports:excel', 'user', async (u, r: ExportRange) => {
-    const path = await exportExcel(win(), r)
+    const path = await exportExcel(win(), r, registersSections(u, r.from, r.to, r.lang))
     if (path) db.audit(u.id, 'export_excel', '', null, `${r.from}..${r.to}`)
+    return path
+  })
+  handle('exports:registerPdf', 'user', async (u, q: EntryQuery, lang: Lang) => {
+    const path = await exportRegisterPdf(win(), u, q, checkLang(lang))
+    if (path) db.audit(u.id, 'export_pdf', 'register', q.registerId, `${q.from}..${q.to}`)
+    return path
+  })
+  handle('exports:entryPdf', 'user', async (u, entryId: number, lang: Lang) => {
+    const path = await exportEntryPdf(win(), u, entryId, checkLang(lang))
+    if (path) db.audit(u.id, 'export_pdf', 'register_entry', entryId)
+    return path
+  })
+  handle('exports:auditPdf', 'admin', async (u, q: AuditQuery, lang: Lang) => {
+    const path = await exportAuditPdf(win(), q, checkLang(lang), u.name)
+    if (path) db.audit(u.id, 'export_pdf', 'audit', null, `${q.from}..${q.to}`)
+    return path
+  })
+  handle('exports:visitPdf', 'user', async (u, visitId: number, lang: Lang) => {
+    const path = await exportVisitPdf(win(), visitId, checkLang(lang), u.name)
+    if (path) db.audit(u.id, 'export_pdf', 'visit', visitId)
     return path
   })
   handle('exports:evacuation', 'user', (u, lang: Lang) => {

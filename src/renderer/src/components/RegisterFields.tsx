@@ -1,10 +1,10 @@
 import type { Dispatch, ReactNode, SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { EntryInputValues, FieldInput, PersonValue, RegisterField, Role, YesNoNote } from '@shared/types'
+import type { EntryInputValues, FieldInput, Labels, PersonValue, RegisterField, Role, YesNoNote } from '@shared/types'
 import { labelOf } from '@shared/registers'
 import { currentLang } from '../i18n'
 
-export interface AccountOption { id: number; name: string; role: Role }
+export interface AccountOption { id: number; name: string; role: Role; roleLabels: Labels }
 
 /** Is this input empty for its field? ("no" without a note counts as empty for yes/no + note) */
 export function isEmptyInput(f: RegisterField, v: FieldInput | undefined): boolean {
@@ -99,7 +99,7 @@ export function FieldInputControl({ field, value, onChange, accounts, autoFocus 
       return (
         <select value={id || ''} onChange={(e) => onChange({ userId: Number(e.target.value) })}>
           <option value="">{t('registers.pick')}</option>
-          {accounts.map((a) => <option key={a.id} value={a.id}>{a.name} · {t(`settings.roles.${a.role}`)}</option>)}
+          {accounts.map((a) => <option key={a.id} value={a.id}>{a.name} · {labelOf(a.roleLabels, currentLang())}</option>)}
         </select>
       )
     }
@@ -131,14 +131,15 @@ export function FieldInputs({ fields, step, values, onChange, accounts, missing 
     <div className="register-fields">
       {shown.map((f, i) => {
         const label = labelOf(f.labels, lang)
-        const cls = `field${f.required ? ' req' : ''}${missing.includes(f) ? ' missing' : ''}`
+        const cls = `field${f.required ? ' req' : ''}${missing.includes(f) ? ' missing' : ''}${f.half ? ' half' : ''}`
+        const hint = f.hint ? labelOf(f.hint, lang) : ''
         const control = <FieldInputControl field={f} value={values[f.key]} accounts={accounts} autoFocus={i === 0}
           onChange={(v) => onChange((cur) => ({ ...cur, [f.key]: v }))} />
         // one input: a real label; chips or several inputs: a labelled group
         const grouped = f.type === 'yesno' || f.type === 'yesno_note' || f.type === 'person' || (f.type === 'select' && f.options.length <= 6)
         return grouped
-          ? <div key={f.key} className={cls} role="group" aria-label={label}><span className="field-label">{label}</span>{control}</div>
-          : <label key={f.key} className={cls}><span className="field-label">{label}</span>{control}</label>
+          ? <div key={f.key} className={cls} role="group" aria-label={label}><span className="field-label">{label}</span>{control}{hint && <small className="field-hint">{hint}</small>}</div>
+          : <label key={f.key} className={cls}><span className="field-label">{label}</span>{control}{hint && <small className="field-hint">{hint}</small>}</label>
       })}
     </div>
   )

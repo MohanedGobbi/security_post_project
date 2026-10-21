@@ -1,11 +1,12 @@
 // Rules of the register engine shared by the desktop app (src/main/registers.ts) and the web demo:
 // what a register definition may contain, and how a submitted value is checked and stored.
 import {
-  REGISTER_FIELD_TYPES, type AccountValue, type EntryInputValues, type EntryValues, type FieldInput, type FieldValue,
+  REGISTER_COLORS, REGISTER_FIELD_TYPES, type AccountValue, type EntryInputValues, type EntryValues, type FieldInput, type FieldValue,
   type Labels, type PersonValue, type RegisterDefInput, type RegisterField, type Role, type YesNoNote
 } from './types'
 
-const ROLES: Role[] = ['admin', 'leader', 'guard']
+/** a level key: the built-in ones or one an administrator made */
+const LEVEL_KEY = /^[a-z][a-z0-9_]{1,40}$/
 const KEY = /^[a-z][a-z0-9_]{0,39}$/
 const MAX_TEXT = 500
 const MAX_LONG = 5000
@@ -26,7 +27,7 @@ export const labelOf = (l: Labels, lang: string): string => (l as Record<string,
 /** Checks and normalises a register definition sent by an administrator. */
 export function cleanDefinition(def: RegisterDefInput): RegisterDefInput {
   if (!KEY.test(def.key)) fail('error.badKey')
-  const roles = (r: Role[]): Role[] => ROLES.filter((x) => (r ?? []).includes(x))
+  const roles = (r: Role[]): Role[] => [...new Set((r ?? []).filter((x) => typeof x === 'string' && LEVEL_KEY.test(x)))]
   const fillRoles = roles(def.fillRoles)
   if (fillRoles.length === 0) fail('error.rolesRequired')
   const seen = new Set<string>()
@@ -36,7 +37,9 @@ export function cleanDefinition(def: RegisterDefInput): RegisterDefInput {
     if (!REGISTER_FIELD_TYPES.includes(f.type)) fail('error.badType', f.key)
     const options = f.type === 'select' ? (f.options ?? []).map((o) => String(o).trim()).filter(Boolean) : []
     if (f.type === 'select' && options.length === 0) fail('error.optionsRequired', f.key)
+    const hint = { ar: String(f.hint?.ar ?? '').trim().slice(0, 200), en: String(f.hint?.en ?? '').trim().slice(0, 200), fr: String(f.hint?.fr ?? '').trim().slice(0, 200) }
     return {
+      hint, half: !!f.half,
       key: f.key, labels: cleanLabels(f.labels), type: f.type, options, required: !!f.required,
       // ID numbers of a person are always kept encrypted
       sensitive: !!f.sensitive || f.type === 'person', step: f.step === 'close' ? 'close' : 'open', active: f.active !== false
@@ -47,6 +50,7 @@ export function cleanDefinition(def: RegisterDefInput): RegisterDefInput {
   if (fields.filter((f) => f.active && f.step === 'open').length === 0) fail('error.fieldsRequired')
   return {
     id: def.id, key: def.key, labels: cleanLabels(def.labels), icon: String(def.icon || 'book').slice(0, 30),
+    color: (REGISTER_COLORS as readonly string[]).includes(def.color ?? '') ? def.color ?? '' : '',
     fillRoles, closeRoles: closeLabels ? roles(def.closeRoles).length ? roles(def.closeRoles) : fillRoles : [],
     closeLabels, sort: Math.round(Number(def.sort) || 0), active: def.active !== false, fields
   }

@@ -9,18 +9,29 @@ It runs on a Windows PC at the security office and works without a network.
 - [HANDOFF.md](HANDOFF.md): architecture, status, what is and is not tested.
 
 ## What it does
-- **PIN-only login.** Each person types their own PIN; it says who they are. Roles: administrator (المسير),
-  team leader (رئيس فرقة الأمن) and guard (عون الأمن). PINs are unique.
+- **PIN-only login.** Each person types their own PIN; it says who they are. PINs are unique. Every account has a
+  **permission level**: administrator (everything), team leader (رئيس فرقة الأمن), guard (عون الأمن), or a level the
+  administrator makes by ticking what it may do (see visit history, see card pictures, look up or maintain students,
+  print and export, correct others' entries, fill the shift handover registers). Each register says which levels fill and close it.
 - **Registers**, one tile each on the home screen, built from the faculty's paper books:
   shift, custody handover, incidents (with the deanship's visa), lost and found, letters, events and activities;
   and, switched off until needed: reports, maintenance, official visits, evacuation drills, fire alarms.
   - Entries are numbered, never erased: a mistake is corrected, and the correction stays visible.
-  - A team leader fills the shift and custody registers at the start of every shift, confirmed with the outgoing
-    leader's PIN (the signatures on paper).
+  - A team leader fills the shift and custody registers at the start of every shift, naming the outgoing
+    leader (replacing the paper handover).
   - Guards see the last 24 hours; administrators see the whole history, and that viewing is logged.
 - **Visitors** with ID card scanning (see below), watchlist, people on site and exit.
-- **Administration page** (administrators): accounts, a **register builder** (create or change any register and its
-  fields, preview, order, on/off) and the **audit trail**.
+- **Student directory** (Students page): import the faculty's Excel / CSV list, search by name (Arabic or Latin, any spelling
+  close enough) or card number, see who is inside. At the gate, a typed or scanned name or card number that matches a student
+  is recognised and the form is filled from the directory, which also corrects what the card scan misread.
+- **Print button** in the top bar (and Ctrl+P): one place to print the inside list, any register, the period report, the student list or the audit trail.
+- **System tab** (administrators): a password-protected **backup file** (database and its key, restorable on any PC), **safety copies** the program makes
+  itself every day and before anything that erases (restorable with the PIN), restore, erase all records, back to the first start, restart. If the data key
+  cannot be opened (another Windows account or PC) the program starts in recovery mode and asks for a backup file.
+- **Print / PDF everywhere**: every register (a period, or one entry), the visit record with its pictures, the audit trail, the
+  student list, and the period report; A4 with the faculty's header and both logos.
+- **Administration page** (administrators): accounts and permission levels, a **register builder** (create or change any
+  register and its fields, colour, help text, half-width fields, preview, order, on/off) and the **audit trail**.
 - **Reports and statistics** by day, week, month and year (in progress, phase E).
 
 ## ID card scanning

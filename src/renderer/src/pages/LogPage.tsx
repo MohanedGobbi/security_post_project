@@ -13,6 +13,7 @@ import Icon from '../components/Icon'
 import { customRows, useCustomFields } from '../components/CustomFields'
 import { bytesToUrl, errorText, todayStr } from '../util'
 import { CardGallery } from '../components/CardPictures'
+import PrintButton from '../components/PrintButton'
 
 type Tab = 'visits' | 'vehicles' | 'deliveries' | 'incidents' | 'patrols' | 'keys' | 'notes' | 'shifts' | 'activity'
 const TABS: Tab[] = ['visits', 'vehicles', 'deliveries', 'incidents', 'patrols', 'keys', 'notes', 'shifts', 'activity']
@@ -120,7 +121,10 @@ function DetailDialog({ id, onClose }: { id: number; onClose(): void }): ReactNo
             <CardGallery cards={v.cards} />
           </>
         )}
-        <div className="actions"><button type="button" onClick={onClose} autoFocus>{t('common.close')}</button></div>
+        <div className="actions">
+          <PrintButton run={(l) => window.api.exports.visitPdf(id, l)} disabled={!v} />
+          <button type="button" onClick={onClose} autoFocus>{t('common.close')}</button>
+        </div>
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { MAX_CARD_PICTURES, type CustomField, type CustomValues, type ExpectedVisitor, type IdType, type PersonFields, type PersonLookup, type ScanResult, type WatchHit } from '@shared/types'
+import { MAX_CARD_PICTURES, type CustomField, type CustomValues, type ExpectedVisitor, type IdType, type PersonFields, type PersonLookup, type ScanResult, type Student, type StudentMatch, type WatchHit } from '@shared/types'
 import { QR_BADGE, QR_PREREG } from '@shared/sync'
 import { formatDateTime } from '@shared/i18n'
 import { useApp } from '../App'
@@ -47,6 +47,10 @@ export default function VisitorInPage(): ReactNode {
   const lastField = useRef<TextField>('fullName')
   const lookedUp = useRef('')
   const [hits, setHits] = useState<WatchHit[]>([])
+  /** the student directory: the one this person is (same card or national number), and students with an alike name */
+  const [recognized, setRecognized] = useState<StudentMatch | null>(null)
+  const [studentHits, setStudentHits] = useState<StudentMatch[]>([])
+  const appliedStudent = useRef('')
   const [alertOpen, setAlertOpen] = useState(false)
   const [needPin, setNeedPin] = useState(false)
   const shownHits = useRef('')
@@ -94,6 +98,46 @@ export default function VisitorInPage(): ReactNode {
     }, 450)
     return () => clearTimeout(timer)
   }, [f.idNumber])
+
+  /** Fills the form from a student of the directory: the directory is right where a card scan or a typed name was not. */
+  const applyStudent = (s: Student): void => {
+    setF((cur) => {
+      const next = { ...cur }
+      next.fullName = s.fullName || s.fullNameAlt
+      next.fullNameAlt = s.fullName ? s.fullNameAlt : ''
+      if (!normId(cur.idNumber)) {
+        next.idNumber = s.studentNo || s.idNumber
+        if (s.studentNo) next.idType = 'student'
+      } else if (s.studentNo && normId(cur.idNumber) === normId(s.studentNo)) next.idType = 'student'
+      if (s.birthDate) next.birthDate = s.birthDate
+      if (s.phone && !cur.phone) next.phone = s.phone
+      if (!cur.company) next.company = [s.department, s.level].filter(Boolean).join(' · ')
+      return next
+    })
+    setMore(true)
+  }
+
+  // students: the same card / national number is applied by itself (once per student), alike names are only suggested
+  useEffect(() => {
+    const name = f.fullName.trim() || f.fullNameAlt.trim()
+    if (normId(f.idNumber).length < 4 && name.replace(/s/g, '').length < 3) { setRecognized(null); setStudentHits([]); return }
+    let stale = false
+    const timer = setTimeout(async () => {
+      const found = await window.api.students.suggest({ name, idNumber: f.idNumber }).catch(() => [] as StudentMatch[])
+      if (stale) return
+      const exact = found.find((h) => h.exact)
+      if (exact) {
+        const key = `${exact.student.id}:${normId(f.idNumber)}`
+        if (appliedStudent.current !== key) { appliedStudent.current = key; applyStudent(exact.student) }
+        setRecognized(exact)
+        setStudentHits([])
+      } else {
+        setRecognized(null)
+        setStudentHits(found)
+      }
+    }, 400)
+    return () => { stale = true; clearTimeout(timer) }
+  }, [f.fullName, f.fullNameAlt, f.idNumber])
 
   // watchlist: checked on the ID number, the name and the plate as they are scanned / typed
   useEffect(() => {
@@ -238,6 +282,19 @@ export default function VisitorInPage(): ReactNode {
             <button type="button" className="link" onClick={() => setExpected(null)}>{t('common.cancel')}</button></div>
         )}
         {status && <div className={`banner ${status.kind}`}>{status.text}</div>}
+        {recognized && (
+          <div className="banner ok"><Icon name="user" /> {t('students.recognized')}: <strong dir="auto">{recognized.student.fullNameAlt || recognized.student.fullName}</strong>
+            {' · '}{[recognized.student.studentNo, recognized.student.level, recognized.student.department].filter(Boolean).join(' · ')}</div>
+        )}
+        {!recognized && studentHits.length > 0 && (
+          <div className="banner info student-hits"><Icon name="user" /> {t('students.maybe')}
+            {studentHits.slice(0, 3).map((h) => (
+              <button key={h.student.id} type="button" className="chip" dir="auto" onClick={() => applyStudent(h.student)} title={t('students.use')}>
+                {h.student.fullNameAlt || h.student.fullName} · {[h.student.studentNo, h.student.level].filter(Boolean).join(' · ')} ({Math.round(h.score * 100)}%)
+              </button>
+            ))}
+          </div>
+        )}
         {returning && (
           <div className={`banner ${returning.insideVisitId ? 'error' : 'info'}`}>
             {returning.insideVisitId ? (

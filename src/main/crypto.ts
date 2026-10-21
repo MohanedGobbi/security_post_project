@@ -43,6 +43,19 @@ export function initKey(): KeyState {
   return 'ok'
 }
 
+/** The raw data key, for a portable backup (it goes into the password-protected file, never anywhere else) */
+export function exportDataKey(): Buffer {
+  return Buffer.from(key())
+}
+
+/** Takes a key from a restored backup as this PC's key: protected by this Windows account like any other */
+export function installDataKey(raw: Buffer): void {
+  if (raw.length !== 32) throw new Error('error.backupFile')
+  dataKey = Buffer.from(raw)
+  const encoded = dataKey.toString('base64')
+  writeFileSync(keyFile(), safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(encoded) : Buffer.from('RAW:' + encoded))
+}
+
 /** Starts over with a new key (only for a fresh install whose key was lost) */
 export function replaceKey(): void {
   writeNewKey()

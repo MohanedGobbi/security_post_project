@@ -4,13 +4,15 @@ import { useApp } from '../App'
 import Icon, { type IconName } from '../components/Icon'
 import RegisterBuilder from '../components/RegisterBuilder'
 import AuditLog from '../components/AuditLog'
+import SystemPanel from '../components/SystemPanel'
 import { UserSettings } from './SettingsPage'
 
-type Tab = 'accounts' | 'registers' | 'audit'
+type Tab = 'accounts' | 'registers' | 'audit' | 'system'
 const TABS: { id: Tab; icon: IconName }[] = [
   { id: 'accounts', icon: 'users' },
   { id: 'registers', icon: 'book' },
-  { id: 'audit', icon: 'eye' }
+  { id: 'audit', icon: 'eye' },
+  { id: 'system', icon: 'gear' }
 ]
 
 /** Where administrators land: accounts, registers and the audit trail; the other settings stay one click away. */
@@ -39,6 +41,7 @@ export default function AdminPage(): ReactNode {
       )}
       {tab === 'registers' && <RegisterBuilder />}
       {tab === 'audit' && <AuditLog />}
+      {tab === 'system' && <SystemPanel />}
     </div>
   )
 }

@@ -6,6 +6,7 @@ import { labelOf } from '@shared/registers'
 import { useApp } from '../App'
 import { currentLang } from '../i18n'
 import { daysAgo, errorText, todayStr } from '../util'
+import PrintButton from './PrintButton'
 
 /** Administration → Audit trail: who logged in, recorded, viewed, exported or changed what. */
 export default function AuditLog(): ReactNode {
@@ -44,6 +45,7 @@ export default function AuditLog(): ReactNode {
       <div className="section-head">
         <h2>{t('admin.audit')}</h2>
         <span className="count-pill">{rows.length}</span>
+        <PrintButton run={(l) => window.api.exports.auditPdf({ from: q.from, to: q.to, userId: q.userId || null, action: q.action }, l)} disabled={rows.length === 0} />
       </div>
       <p className="hint">{t('audit.intro')}</p>
       <div className="filters">

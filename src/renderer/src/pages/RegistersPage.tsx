@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNo
 import { useTranslation } from 'react-i18next'
 import type { EntryCorrection, EntryInputValues, FieldInput, RegisterDef, RegisterEntry, RegisterField } from '@shared/types'
 import { formatDateTime } from '@shared/i18n'
+import { can } from '@shared/permissions'
 import { labelOf, valueText } from '@shared/registers'
 import { useApp } from '../App'
 import { currentLang } from '../i18n'
@@ -9,6 +10,7 @@ import Icon, { registerIcon } from '../components/Icon'
 import { FieldInputControl, FieldInputs, missingFields, type AccountOption } from '../components/RegisterFields'
 import RegisterEntryForm, { fieldError, useAccounts } from '../components/RegisterEntryForm'
 import { daysAgo, errorText, todayStr } from '../util'
+import PrintButton from '../components/PrintButton'
 
 /** Registers the user may use: tiles first, then one register (new entry + its entries). */
 export default function RegistersPage(): ReactNode {
@@ -32,7 +34,7 @@ export default function RegistersPage(): ReactNode {
       {usable.length === 0 ? <p className="empty">{t('registers.noneOpen')}</p> : (
         <section className="register-tiles">
           {usable.map((r) => (
-            <button key={r.id} type="button" className="tile register-tile" onClick={() => openRegister(r.id)}>
+            <button key={r.id} type="button" className={`tile register-tile ${r.color ? `tone-${r.color}` : ''}`} onClick={() => openRegister(r.id)}>
               <span className="tile-icon"><Icon name={registerIcon(r.icon)} size={30} /></span>
               <strong>{labelOf(r.labels, lang)}</strong>
             </button>
@@ -74,7 +76,7 @@ function RegisterView({ reg, onBack }: { reg: RegisterDef; onBack(): void }): Re
     <div className="split-page">
       <div className="card">
         <button type="button" className="link" onClick={onBack}>← {t('registers.title')}</button>
-        <div className="register-head">
+        <div className={`register-head ${reg.color ? `tone-${reg.color}` : ''}`}>
           <span className="tile-icon"><Icon name={registerIcon(reg.icon)} size={26} /></span>
           <div>
             <h1>{labelOf(reg.labels, lang)}</h1>
@@ -88,6 +90,7 @@ function RegisterView({ reg, onBack }: { reg: RegisterDef; onBack(): void }): Re
         <div className="section-head">
           <h2>{t('registers.entries')}</h2>
           <span className="count-pill">{entries.length}</span>
+          <PrintButton run={(l) => window.api.exports.registerPdf({ registerId: reg.id, from: isAdmin ? q.from : '', to: isAdmin ? q.to : '', text: q.text, openOnly: q.openOnly }, l)} disabled={entries.length === 0} />
         </div>
         <div className="filters">
           {isAdmin ? (
@@ -166,7 +169,7 @@ function EntryDialog({ reg, entry, accounts, onClose, onChanged }: {
 
   const isAdmin = user.role === 'admin'
   const canClose = !!reg.closeLabels && !entry.closedAt && (isAdmin || reg.closeRoles.includes(user.role))
-  const canCorrect = user.role !== 'guard' || entry.createdBy === user.name
+  const canCorrect = can(user, 'correctAny') || entry.createdBy === user.name
   // closing-step fields only once the entry is closed; switched-off fields only where they hold a value
   const shown = reg.fields.filter((f) => (f.step === 'open' || entry.closedAt) && (f.active || entry.values[f.key] !== undefined))
   const fieldOf = (key: string): RegisterField | undefined => reg.fields.find((f) => f.key === key)
@@ -277,6 +280,7 @@ function EntryDialog({ reg, entry, accounts, onClose, onChanged }: {
 
         {mode === 'view' && (
           <div className="actions">
+            <PrintButton run={(l) => window.api.exports.entryPdf(entry.id, l)} />
             {canCorrect && <button type="button" onClick={() => setMode('correct')}>{t('registers.correct')}</button>}
             {canClose && reg.closeLabels && <button type="button" className="primary" onClick={() => setMode('close')}>{labelOf(reg.closeLabels, lang)}</button>}
           </div>

@@ -505,11 +505,22 @@ h2.spaced { margin-top: 18px; }
 
 /* ---------- registers (generic engine) ---------- */
 .register-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
-.tile-register .tile-icon, .register-tile .tile-icon, .register-head .tile-icon { background: var(--accent-soft); color: var(--accent-ink); }
+.tile-register .tile-icon, .register-tile .tile-icon, .register-head .tile-icon { background: var(--tone-bg, var(--accent-soft)); color: var(--tone-fg, var(--accent-ink)); }
+/* the accent colour an administrator gives a register */
+.tone-blue { --tone-bg: #e0ebff; --tone-fg: #1d4ed8; } .tone-teal { --tone-bg: #d9f3ef; --tone-fg: #0f766e; }
+.tone-violet { --tone-bg: #ece6ff; --tone-fg: #6d28d9; } .tone-amber { --tone-bg: #fdf0d3; --tone-fg: #a16207; }
+.tone-red { --tone-bg: #fde4e4; --tone-fg: #b91c1c; } .tone-grey { --tone-bg: #e8eaed; --tone-fg: #4b5563; }
+.color-pick { display: flex; gap: 8px; flex-wrap: wrap; }
+.color-pick button { width: 34px; height: 34px; border-radius: 50%; padding: 0; border: 2px solid var(--line); background: var(--tone-bg, var(--accent-soft)); }
+.color-pick button.on { border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
 .register-head { display: flex; align-items: center; gap: 12px; margin: 6px 0 14px; }
 .register-head h1 { margin: 0; }
 .register-head .hint { margin: 2px 0 0; }
-.register-fields { display: grid; gap: 2px; }
+.register-fields { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; gap: 2px 14px; }
+.register-fields .field { grid-column: 1 / -1; }
+.register-fields .field.half { grid-column: auto; }
+.field-hint { font-weight: 400; color: var(--muted, #666); font-size: 0.82rem; }
+@media (max-width: 700px) { .register-fields .field.half { grid-column: 1 / -1; } }
 .register-fields .field, .sub-form .field {
   display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: 0.9rem; color: var(--ink-2); margin-bottom: 12px;
 }
@@ -579,3 +590,18 @@ h2.spaced { margin-top: 18px; }
 .thumb-remove { position: absolute; top: 4px; inset-inline-end: 4px; background: rgb(15 23 32 / 70%); color: #fff; border: none; border-radius: 999px; padding: 3px; }
 .card-gallery h3 { margin: 14px 0 0; }
 .card-mark { margin-inline-start: 8px; background: var(--accent-soft); color: var(--accent-ink); vertical-align: middle; }
+
+/* print menu, system panel */
+.print-btn { display: inline-flex; align-items: center; gap: 6px; }
+.print-items { display: grid; gap: 10px; margin-top: 12px; }
+.print-item { display: flex; align-items: center; gap: 12px; text-align: start; padding: 12px 14px; }
+.print-item span:last-child { display: flex; flex-direction: column; gap: 2px; }
+.danger-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line); }
+.danger-row p { margin: 2px 0 6px; }
+.actions.start { justify-content: flex-start; }
+button.primary.danger { background: var(--danger); border-color: var(--danger); }
+/* permission levels */
+.perm-list { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 8px; }
+.perm-list .check { align-items: flex-start; }
+.perm-list small { font-weight: 400; }
+.head-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-inline-start: auto; }

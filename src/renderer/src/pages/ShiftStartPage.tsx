@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { Features, RegisterDef, ShiftState, User } from '@shared/types'
 import { labelOf } from '@shared/registers'
 import { formatDateTime } from '@shared/i18n'
+import { can } from '@shared/permissions'
 import { LangSwitch } from '../App'
 import { currentLang } from '../i18n'
 import ShiftSummaryGrid from '../components/ShiftSummaryGrid'
@@ -29,12 +30,12 @@ export default function ShiftStartPage({ user, onStarted, onLogout, toast }: {
   useEffect(() => {
     window.api.shifts.state().then(setS)
     window.api.settings.getFeatures().then(setFeatures)
-    if (user.role === 'leader' && BRAND.leaderStartRegisters.length) {
+    if (can(user, 'shiftHandover') && user.role !== 'admin' && BRAND.leaderStartRegisters.length) {
       window.api.registers.list().then((rs) => setSteps(BRAND.leaderStartRegisters
-        .map((k) => rs.find((r) => r.key === k && r.active && r.fillRoles.includes('leader')))
+        .map((k) => rs.find((r) => r.key === k && r.active && r.fillRoles.includes(user.role)))
         .filter((r): r is RegisterDef => !!r)))
     }
-  }, [user.role])
+  }, [user.role, user.permissions])
 
   const start = async (): Promise<void> => {
     setBusy(true)
@@ -47,7 +48,7 @@ export default function ShiftStartPage({ user, onStarted, onLogout, toast }: {
     }
   }
 
-  // team leader: the shift register, then the custody check, each confirmed by the outgoing leader's PIN
+  // team leader: the shift register, then the custody check (each names the outgoing leader)
   const current = step !== null ? steps[step] : null
   if (current) {
     return (

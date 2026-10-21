@@ -35,10 +35,27 @@ const api: Api = {
     correct: call('registers:correct'),
     corrections: call('registers:corrections'),
     accounts: call('registers:accounts'),
-    installTemplates: call('registers:installTemplates')
+    installTemplates: call('registers:installTemplates'),
+    delete: call('registers:delete')
   },
   audit: {
     list: call('audit:list')
+  },
+  system: {
+    info: call('system:info'),
+    backup: call('system:backup'),
+    restoreFile: call('system:restoreFile'),
+    restoreCopy: call('system:restoreCopy'),
+    erase: call('system:erase'),
+    factoryReset: call('system:factoryReset'),
+    openFolder: call('system:openFolder'),
+    restart: call('system:restart'),
+    recover: call('system:recover')
+  },
+  levels: {
+    list: call('levels:list'),
+    save: call('levels:save'),
+    remove: call('levels:remove')
   },
   users: {
     list: call('users:list'),
@@ -57,9 +74,24 @@ const api: Api = {
     readFront: call('scan:readFront'),
     barcodes: call('scan:barcodes')
   },
+  students: {
+    list: call('students:list'),
+    suggest: call('students:suggest'),
+    count: call('students:count'),
+    save: call('students:save'),
+    setActive: call('students:setActive'),
+    remove: call('students:remove'),
+    import: call('students:import'),
+    template: call('students:template'),
+    pdf: call('students:pdf')
+  },
   exports: {
     pdf: call('exports:pdf'),
     excel: call('exports:excel'),
+    registerPdf: call('exports:registerPdf'),
+    entryPdf: call('exports:entryPdf'),
+    auditPdf: call('exports:auditPdf'),
+    visitPdf: call('exports:visitPdf'),
     evacuation: call('exports:evacuation'),
     shiftReport: call('exports:shiftReport')
   },

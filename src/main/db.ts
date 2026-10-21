@@ -5,8 +5,9 @@ import { join } from 'node:path'
 import { app } from 'electron'
 import type {
   AuditQuery, AuditRow, CheckInInput, Features, IdType, Lang, NoteCategory, NoteRow, PersonFields, PersonLookup,
-  Role, SearchQuery, Settings, TodayStats, User, VisitDetail, VisitRow
+  Labels, Level, LevelInput, Permission, Role, SearchQuery, Settings, TodayStats, User, VisitDetail, VisitRow
 } from '@shared/types'
+import { BUILTIN_LEVELS, PERMISSIONS } from '@shared/permissions'
 import { MAX_CARD_PICTURES } from '@shared/types'
 import { decryptBuffer, decryptText, encrypt, hashPin, idHash, normalizeId, pinLookup, verifyPin } from './crypto'
 import { normalizeFeatures } from '@shared/features'
@@ -17,7 +18,7 @@ let db: DatabaseSync
 const usersTable = (name: string): string => `CREATE TABLE IF NOT EXISTS ${name} (
   id INTEGER PRIMARY KEY,
   name TEXT NOT NULL,
-  role TEXT NOT NULL CHECK (role IN ('admin','leader','guard')),
+  role TEXT NOT NULL,
   pin_hash TEXT NOT NULL,
   pin_lookup TEXT,
   language TEXT NOT NULL DEFAULT 'en',
@@ -28,6 +29,14 @@ const usersTable = (name: string): string => `CREATE TABLE IF NOT EXISTS ${name}
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 ${usersTable('users')}
+/** permission levels: the built-in guard, leader and admin, and the ones an administrator makes */
+CREATE TABLE IF NOT EXISTS levels (
+  key TEXT PRIMARY KEY,
+  labels_json TEXT NOT NULL,
+  permissions TEXT NOT NULL DEFAULT '',
+  sort INTEGER NOT NULL DEFAULT 0,
+  builtin INTEGER NOT NULL DEFAULT 0
+);
 CREATE TABLE IF NOT EXISTS persons (
   id INTEGER PRIMARY KEY,
   id_hash TEXT NOT NULL UNIQUE,
@@ -60,6 +69,27 @@ CREATE TABLE IF NOT EXISTS visits (
 );
 CREATE INDEX IF NOT EXISTS visits_time_in ON visits(time_in);
 CREATE INDEX IF NOT EXISTS visits_inside ON visits(time_out) WHERE time_out IS NULL;
+/** the faculty's students: who they are, to recognise them at the gate and to correct what a card scan misread */
+CREATE TABLE IF NOT EXISTS students (
+  id INTEGER PRIMARY KEY,
+  student_no_hash TEXT,
+  student_no_enc BLOB,
+  id_hash TEXT,
+  id_number_enc BLOB,
+  full_name TEXT NOT NULL,
+  full_name_alt TEXT NOT NULL DEFAULT '',
+  name_norm TEXT NOT NULL,
+  birth_date_enc BLOB,
+  phone_enc BLOB,
+  level TEXT NOT NULL DEFAULT '',
+  department TEXT NOT NULL DEFAULT '',
+  notes TEXT NOT NULL DEFAULT '',
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS students_no ON students(student_no_hash) WHERE student_no_hash IS NOT NULL;
+CREATE INDEX IF NOT EXISTS students_idhash ON students(id_hash);
 CREATE TABLE IF NOT EXISTS notes (
   id INTEGER PRIMARY KEY,
   time TEXT NOT NULL,
@@ -324,15 +354,16 @@ function migrate(): void {
   for (const table of ['visits', 'vehicle_logs', 'deliveries']) {
     if (!hasColumn(table, 'custom_json')) db.exec(`ALTER TABLE ${table} ADD COLUMN custom_json TEXT NOT NULL DEFAULT '{}'`)
   }
-  // the team leader role: SQLite cannot change a CHECK constraint, so the users table is rebuilt (ids kept)
+  // levels beyond the three first roles: SQLite cannot drop a CHECK constraint, so an older users table is rebuilt (ids kept)
   const users = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'").get() as { sql: string }
-  if (!users.sql.includes("'leader'")) {
+  if (users.sql.includes('CHECK')) {
+    const oldCols = (db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map((c) => c.name)
+    const cols = ['id', 'name', 'role', 'pin_hash', 'pin_lookup', 'language', 'active', 'created_at'].filter((c) => oldCols.includes(c)).join(', ')
     db.exec('PRAGMA foreign_keys = OFF')
     try {
       db.exec(`BEGIN;
         ${usersTable('users_new')}
-        INSERT INTO users_new (id, name, role, pin_hash, language, active, created_at)
-          SELECT id, name, role, pin_hash, language, active, created_at FROM users;
+        INSERT INTO users_new (${cols}) SELECT ${cols} FROM users;
         DROP TABLE users;
         ALTER TABLE users_new RENAME TO users;
         COMMIT;`)
@@ -346,6 +377,15 @@ function migrate(): void {
     } finally {
       db.exec('PRAGMA foreign_keys = ON')
     }
+  }
+  // how registers look: an accent colour, help text under fields, half-width fields
+  if (!hasColumn('registers', 'color')) db.exec("ALTER TABLE registers ADD COLUMN color TEXT NOT NULL DEFAULT ''")
+  if (!hasColumn('register_fields', 'hint_json')) db.exec("ALTER TABLE register_fields ADD COLUMN hint_json TEXT NOT NULL DEFAULT ''")
+  if (!hasColumn('register_fields', 'half')) db.exec('ALTER TABLE register_fields ADD COLUMN half INTEGER NOT NULL DEFAULT 0')
+  // the three built-in levels exist from the start (their names and permissions may have been edited: those are kept)
+  const have = new Set((db.prepare('SELECT key FROM levels').all() as { key: string }[]).map((l) => l.key))
+  for (const l of BUILTIN_LEVELS) {
+    if (!have.has(l.key)) db.prepare('INSERT INTO levels (key, labels_json, permissions, sort, builtin) VALUES (?, ?, ?, ?, 1)').run(l.key, JSON.stringify(l.labels), l.permissions.join(','), l.sort)
   }
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_pin_lookup ON users (pin_lookup) WHERE pin_lookup IS NOT NULL')
 }
@@ -387,6 +427,10 @@ export function openDb(): void {
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;')
   db.exec(SCHEMA)
   migrate()
+}
+
+export function closeDb(): void {
+  db.close()
 }
 
 /** The open connection, for the other data modules (vehicles, deliveries, …). */
@@ -479,7 +523,58 @@ export function setSettings(s: Settings): void {
 // ---------- users ----------
 export interface UserDb { id: number; name: string; role: Role; pin_hash: string; pin_lookup: string | null; language: Lang; active: number }
 
-const toUser = (r: UserDb): User => ({ id: r.id, name: r.name, role: r.role, language: r.language, active: r.active === 1 })
+const toUser = (r: UserDb): User => ({
+  id: r.id, name: r.name, role: r.role, permissions: permissionsOf(r.role), language: r.language, active: r.active === 1
+})
+
+// ---------- permission levels ----------
+const PERMISSION_SET = new Set<string>(PERMISSIONS)
+const asPermissions = (s: string): Permission[] => s.split(',').filter((p): p is Permission => PERMISSION_SET.has(p))
+
+/** What a level allows; the administrator level always has everything. */
+export function permissionsOf(role: Role): Permission[] {
+  if (role === 'admin') return [...PERMISSIONS]
+  const r = db.prepare('SELECT permissions FROM levels WHERE key = ?').get(role) as { permissions: string } | undefined
+  return r ? asPermissions(r.permissions) : []
+}
+
+export function listLevels(): Level[] {
+  const rows = db.prepare('SELECT * FROM levels ORDER BY sort, key').all() as { key: string; labels_json: string; permissions: string; builtin: number }[]
+  const counts = db.prepare('SELECT role, COUNT(*) AS n FROM users WHERE active = 1 GROUP BY role').all() as { role: string; n: number }[]
+  return rows.map((r) => ({
+    key: r.key, labels: JSON.parse(r.labels_json) as Labels, builtin: r.builtin === 1, users: counts.find((c) => c.role === r.key)?.n ?? 0,
+    permissions: r.key === 'admin' ? [...PERMISSIONS] : asPermissions(r.permissions)
+  }))
+}
+
+export const levelExists = (key: string): boolean => !!db.prepare('SELECT key FROM levels WHERE key = ?').get(key)
+
+/** Creates a level (no key) or changes one: its names and permissions. The administrator level is fixed. */
+export function saveLevel(input: LevelInput): Role {
+  const name = (s: unknown): string => String(s ?? '').trim().slice(0, 60)
+  const labels: Labels = { ar: name(input.labels?.ar), en: name(input.labels?.en), fr: name(input.labels?.fr) }
+  if (!labels.ar && !labels.en && !labels.fr) throw new Error('error.nameRequired')
+  const perms = [...new Set((input.permissions ?? []).filter((p) => PERMISSION_SET.has(p)))].join(',')
+  if (input.key) {
+    if (input.key === 'admin') throw new Error('error.forbidden')
+    if (!levelExists(input.key)) throw new Error('error.notFound')
+    db.prepare('UPDATE levels SET labels_json = ?, permissions = ? WHERE key = ?').run(JSON.stringify(labels), perms, input.key)
+    return input.key
+  }
+  const key = 'level_' + Date.now().toString(36)
+  const sort = (db.prepare('SELECT COALESCE(MAX(sort), 0) + 1 AS n FROM levels').get() as { n: number }).n
+  db.prepare('INSERT INTO levels (key, labels_json, permissions, sort, builtin) VALUES (?, ?, ?, ?, 0)').run(key, JSON.stringify(labels), perms, sort)
+  return key
+}
+
+/** A level of your own, when no account is at it. */
+export function deleteLevel(key: Role): void {
+  const row = db.prepare('SELECT builtin FROM levels WHERE key = ?').get(key) as { builtin: number } | undefined
+  if (!row) throw new Error('error.notFound')
+  if (row.builtin === 1) throw new Error('error.forbidden')
+  if ((db.prepare('SELECT COUNT(*) AS n FROM users WHERE role = ?').get(key) as { n: number }).n > 0) throw new Error('error.levelInUse')
+  db.prepare('DELETE FROM levels WHERE key = ?').run(key)
+}
 
 export function userCount(): number {
   return (db.prepare('SELECT COUNT(*) AS n FROM users').get() as { n: number }).n

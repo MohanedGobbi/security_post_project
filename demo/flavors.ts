@@ -132,12 +132,11 @@ const GHARDAIA_LAW: Flavor = {
   samples: [
     // yesterday's handover: Omar took over from Youssef
     { register: 'shift', hoursAgo: 13, by: 3, values: (h) => ({
-      outgoing: h.user(1), registers_ok: { answer: 'yes', note: '' }, incidents_visa: 'yes',
-      team_present: { answer: 'no', note: 'العون محمد التحق متأخرا بنصف ساعة' }, outgoing_pin: h.user(1)
+      outgoing: h.user(1), team_complete: 'no', absent_names: 'العون محمد التحق متأخرا بنصف ساعة'
     }) },
     { register: 'custody', hoursAgo: 13, by: 3, values: (h) => ({
       outgoing: h.user(1), keys: { answer: 'yes', note: '' }, cameras: { answer: 'no', note: 'الكاميرا رقم 3 (المدخل الخلفي) لا تعمل' },
-      radios: { answer: 'yes', note: '' }, equipment: { answer: 'yes', note: '' }, rooms: { answer: 'yes', note: '' }, outgoing_pin: h.user(1)
+      radios: { answer: 'yes', note: '' }, equipment: { answer: 'yes', note: '' }, rooms: { answer: 'yes', note: '' }
     }) },
     { register: 'incidents', hoursAgo: 30, by: 2, closedHoursAgo: 27, closedBy: 0, values: (h) => ({
       occurred: h.at(30.5), description: 'عطل في قفل باب المدرج 2: الباب لا يغلق.', actions: 'غلق المدرج بالسلسلة وإبلاغ رئيس الفرقة',

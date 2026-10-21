@@ -20,10 +20,8 @@ export const REGISTER_TEMPLATES: RegisterDefInput[] = [
     icon: 'users', fillRoles: LEADERS, closeRoles: [], closeLabels: null, sort: 1, active: true,
     fields: [
       field('outgoing', 'account', ['رئيس فرقة الأمن النازل', 'Outgoing team leader', 'Chef d’équipe sortant'], { required: true }),
-      field('registers_ok', 'yesno_note', ['حالة السجلات جيدة', 'Registers in good condition', 'Registres en bon état'], { required: true }),
-      field('incidents_visa', 'yesno', ['تأشير سجل الحوادث من طرف عمادة الكلية', 'Incidents register stamped by the deanship', 'Registre des incidents visé par le décanat'], { required: true }),
-      field('team_present', 'yesno_note', ['التحاق جميع أفراد فرقة العمل الصاعدة بمقر عملهم (حدد أسماء المتغيبين أو المتأخرين)', 'All members of the incoming team present (name those absent or late)', 'Toute l’équipe entrante présente (nommer les absents ou retardataires)'], { required: true }),
-      field('outgoing_pin', 'signature', ['تأكيد رئيس فرقة الأمن النازل (الرقم السري)', 'Outgoing team leader confirms (PIN)', 'Confirmation du chef sortant (code PIN)'], { required: true })
+      field('team_complete', 'yesno', ['التحاق جميع أفراد فرقة العمل الصاعدة بمقر عملهم', 'All members of the incoming team present', 'Toute l’équipe entrante présente'], { required: true }),
+      field('absent_names', 'longtext', ['أسماء المتغيبين أو المتأخرين (إن وجدوا)', 'Names of those absent or late (if any)', 'Noms des absents ou retardataires (le cas échéant)'])
     ]
   },
   {
@@ -37,8 +35,7 @@ export const REGISTER_TEMPLATES: RegisterDefInput[] = [
       field('cameras', 'yesno_note', ['الكاميرات تشتغل', 'Cameras working', 'Caméras en marche'], { required: true }),
       field('radios', 'yesno_note', ['أجهزة الاتصال وأجهزة التفتيش سليمة', 'Radios and inspection devices in order', 'Radios et détecteurs en état'], { required: true }),
       field('equipment', 'yesno_note', ['حالة العتاد في مكتب الأمن جيدة', 'Security office equipment in good order', 'Matériel du poste en bon état'], { required: true }),
-      field('rooms', 'yesno_note', ['حالة القاعات والمدرجات والمكاتب جيدة', 'Rooms, lecture halls and offices in good order', 'Salles, amphis et bureaux en bon état'], { required: true }),
-      field('outgoing_pin', 'signature', ['تأكيد رئيس فرقة الأمن النازل (الرقم السري)', 'Outgoing team leader confirms (PIN)', 'Confirmation du chef sortant (code PIN)'], { required: true })
+      field('rooms', 'yesno_note', ['حالة القاعات والمدرجات والمكاتب جيدة', 'Rooms, lecture halls and offices in good order', 'Salles, amphis et bureaux en bon état'], { required: true })
     ]
   },
   {

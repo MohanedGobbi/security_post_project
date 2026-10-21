@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { RegisterDef, TodayStats, VisitRow } from '@shared/types'
 import { labelOf } from '@shared/registers'
-import { pageOn, useApp, type Page } from '../App'
+import { pageAllowed, useApp, type Page } from '../App'
 import { currentLang } from '../i18n'
 import InsideList from '../components/InsideList'
 import AlertsPanel from '../components/AlertsPanel'
@@ -24,7 +24,7 @@ const TILES: { page: Page; key: string; icon: IconName; kbd: string; cls: string
 
 export default function HomePage(): ReactNode {
   const { t } = useTranslation()
-  const { go, toast, alerts, features, openRegister } = useApp()
+  const { go, toast, alerts, features, openRegister, user } = useApp()
   const on = features.modules
   const [stats, setStats] = useState<TodayStats | null>(null)
   const [inside, setInside] = useState<VisitRow[]>([])
@@ -37,7 +37,7 @@ export default function HomePage(): ReactNode {
 
   const load = useCallback(async () => {
     if (BRAND.homeTilesOnly) return
-    const [s, i] = await Promise.all([window.api.visits.stats(), window.api.visits.insideNow()])
+    const [s, i] = await Promise.all([window.api.visits.stats(), window.api.visits.insideNow()]).catch(() => [null, [] as VisitRow[]] as const)
     setStats(s)
     setInside(i)
   }, [])
@@ -64,14 +64,14 @@ export default function HomePage(): ReactNode {
 
   const tiles = (
       <section className="actions-grid">
-        {TILES.filter((x) => pageOn(x.page, features)).map((x) => (
+        {TILES.filter((x) => pageAllowed(x.page, features, user)).map((x) => (
           <button key={x.page} type="button" className={`tile ${x.cls}`} onClick={() => go(x.page)}>
             <span className="tile-icon"><Icon name={x.icon} size={30} /></span>
             <strong>{t(x.key)}</strong><kbd>{x.kbd}</kbd>
           </button>
         ))}
         {registers.map((r) => (
-          <button key={`r${r.id}`} type="button" className="tile tile-register" onClick={() => openRegister(r.id)}>
+          <button key={`r${r.id}`} type="button" className={`tile tile-register ${r.color ? `tone-${r.color}` : ''}`} onClick={() => openRegister(r.id)}>
             <span className="tile-icon"><Icon name={registerIcon(r.icon)} size={30} /></span>
             <strong>{labelOf(r.labels, currentLang())}</strong>
           </button>

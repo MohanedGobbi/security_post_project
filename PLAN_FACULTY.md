@@ -115,10 +115,9 @@ Every paper template carries the same rules, and the app keeps them:
   - incoming team leader (or deputy), taken from the PIN;
   - outgoing team leader.
 - **Checklist:**
-  - State of the registers: good / damaged (specify).
-  - Incidents register stamped by the deanship: yes / no.
-  - All members of the incoming team present: yes / no, with the names of absent or late members.
-- **Confirmation:** both team leaders confirm with their PIN, which replaces the two signatures.
+  - All members of the incoming team present: yes / no, and a separate box for the names of those absent or late.
+  - (Dropped on the client's request, 21 Oct: "state of the registers" and "incidents register stamped by the deanship".)
+- **Confirmation:** none in the form (dropped on the client's request: the incoming leader is already signed in with their PIN).
 - **App side:**
   - Reuses and extends today's shift and handover screen.
   - Team composition comes from the accounts, so attendance is ticked from the team list instead of typed (needs Q8).
@@ -128,7 +127,7 @@ Every paper template carries the same rules, and the app keeps them:
 - **Cameras:** working / broken or unclear picture (specify).
 - **Equipment in the security office:** good / other (specify).
 - **Rooms, lecture halls and offices:** good / other (specify).
-- **Confirmation:** both team leaders' PINs.
+- **Confirmation:** none in the form (same reason as the shift register).
 - **Their overview file adds** radios and inspection devices to the items list. These become checklist lines the admin can edit.
 - **Proposal:** sections 3.1 and 3.2 form **one "start of shift" flow** with two pages, saved as two entries in two registers.
 

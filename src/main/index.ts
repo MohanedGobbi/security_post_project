@@ -1,6 +1,7 @@
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, Menu, session, shell } from 'electron'
 import { initKey, replaceKey } from './crypto'
+import { autoSafetyCopy, setRecovery } from './backup'
 import { applyRetention, audit, isFreshInstall, openDb, resetDatabase } from './db'
 import { registerIpc } from './ipc'
 import { seedFaculty } from './seed'
@@ -73,18 +74,16 @@ if (!app.requestSingleInstanceLock()) {
         replaceKey()
         openDb()
       } else {
-        dialog.showErrorBox(
-          'برنامج إدارة الأمن بالكلية',
-          'تعذر فتح مفتاح تشفير البيانات: هذه البيانات أُنشئت بحساب ويندوز آخر أو على جهاز آخر.\n' +
-          'افتح البرنامج بحساب ويندوز الذي أُنشئت به البيانات، أو استرجع نسخة احتياطية.\n\n' +
-          'The data encryption key cannot be opened: these data were created by another Windows account or on another PC.\n' +
-          'Open the program with the Windows account that created them, or restore a backup.'
-        )
-        app.quit()
+        // the data key cannot be opened (another Windows account or PC): the program starts in recovery mode, where only
+        // restoring a backup file is possible
+        setRecovery(true)
+        registerIpc()
+        createWindow()
         return
       }
     }
     seedFaculty()
+    autoSafetyCopy()
     const purged = applyRetention()
     if (Object.values(purged).some(Boolean)) audit(null, 'retention_purge', '', null, JSON.stringify(purged))
     registerIpc()

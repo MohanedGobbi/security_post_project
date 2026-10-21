@@ -1,11 +1,31 @@
 export type Lang = 'ar' | 'en' | 'fr'
-/** leader = head of a guard team (رئيس فرقة الأمن) */
-export type Role = 'admin' | 'leader' | 'guard'
+/**
+ * The key of an account's level: 'admin' (everything), 'leader' (head of a guard team, رئيس فرقة الأمن), 'guard',
+ * or a level the administrator made (a name of lower-case letters, digits and _).
+ */
+export type Role = string
+
+/** What a level may do (src/shared/permissions.ts says what each one allows) */
+export type Permission = 'visitors' | 'history' | 'cardPictures' | 'students' | 'studentsEdit' | 'exports' | 'correctAny' | 'shiftHandover'
+
+export interface Level {
+  key: Role
+  labels: Labels
+  permissions: Permission[]
+  /** guard, leader and admin: renamed and re-ticked as needed, never deleted */
+  builtin: boolean
+  /** active accounts at this level */
+  users: number
+}
+
+export interface LevelInput { key?: Role; labels: Labels; permissions: Permission[] }
 
 export interface User {
   id: number
   name: string
   role: Role
+  /** what the level allows; administrators have all of them */
+  permissions: Permission[]
   language: Lang
   active: boolean
   /** only in the accounts list of an administrator: the account still has the PIN it was created with */
@@ -28,6 +48,8 @@ export type ProfileId = 'small' | 'company' | 'large'
 
 export interface AuthStatus {
   user: User | null
+  /** the data key could not be opened (another Windows account or PC): the only thing possible is restoring a backup */
+  recovery?: boolean
   siteName: string
   features: Features
 }
@@ -398,7 +420,14 @@ export interface RegisterField {
   step: 'open' | 'close'
   /** a field is never removed once entries exist: it is hidden */
   active: boolean
+  /** help text shown under the field in the entry form (any of the three languages may be empty) */
+  hint?: Labels
+  /** half the width of the form: two such fields side by side */
+  half?: boolean
 }
+
+/** the accent colours an administrator can give a register ('' = the program's own) */
+export const REGISTER_COLORS = ['', 'blue', 'teal', 'violet', 'amber', 'red', 'grey'] as const
 
 export interface RegisterDef {
   id: number
@@ -415,6 +444,10 @@ export interface RegisterDef {
   closeLabels: Labels | null
   sort: number
   active: boolean
+  /** accent colour of its tile and heading, one of REGISTER_COLORS */
+  color?: string
+  /** how many entries it holds (known when read from the database) */
+  entryCount?: number
   /** like the dean's "this register was opened on …" */
   openedAt: string
   openedBy: string
@@ -594,6 +627,61 @@ export interface ScanResult {
   lines: string[]
 }
 
+// ---------- students (directory) ----------
+export interface Student {
+  id: number
+  /** the number on the student card; also what a scanned student card gives as its ID number */
+  studentNo: string
+  /** national identity number, when known */
+  idNumber: string
+  fullName: string
+  fullNameAlt: string
+  birthDate: string
+  phone: string
+  /** year of study (L1, M2…) */
+  level: string
+  /** department / specialty */
+  department: string
+  notes: string
+  active: boolean
+}
+
+export type StudentInput = Omit<Student, 'id' | 'active'> & { id?: number; active?: boolean }
+
+/** a student found by a search or suggested for a name / ID, with what the visit log knows about them */
+export interface StudentMatch {
+  student: Student
+  /** 1 = the same card number, otherwise how alike the names are (0..1) */
+  score: number
+  exact: boolean
+  /** the visit they are inside with, if any */
+  insideVisitId: number | null
+  insideSince: string | null
+  lastSeen: string | null
+  visitsCount: number
+}
+
+/** a copy the program made of its database, kept on this PC */
+export interface SafetyCopy {
+  /** folder name, also its id */
+  name: string
+  /** auto (daily) or before-restore, before-erase, before-reset, before-delete */
+  kind: string
+  time: string
+  bytes: number
+}
+
+export interface BackupInfo {
+  dataDir: string
+  backupsDir: string
+  dbBytes: number
+  copies: SafetyCopy[]
+  /** when the last portable backup file was made */
+  lastBackup: string | null
+}
+
+export interface StudentImportResult { added: number; updated: number; skipped: number; file: string }
+
 // ---------- expected visitors (pre-registration) ----------
 export interface ExpectedInput {
   fullName: string
@@ -688,13 +776,37 @@ export interface Api {
     correct(entryId: number, fieldKey: string, value: FieldInput, reason: string): Promise<void>
     corrections(entryId: number): Promise<EntryCorrection[]>
     /** accounts for 'account' fields */
-    accounts(): Promise<{ id: number; name: string; role: Role }[]>
+    accounts(): Promise<{ id: number; name: string; role: Role; roleLabels: Labels }[]>
+    /** administrators: deletes a register with its entries; the PIN is checked when it holds entries. A safety copy is made first. */
+    delete(id: number, pin: string): Promise<void>
     /** administrators: opens the ready-made registers with these keys that do not exist yet; returns how many */
     installTemplates(keys: string[]): Promise<number>
   }
   audit: {
     /** administrators: the audit trail of a period, newest first */
     list(q: AuditQuery): Promise<AuditRow[]>
+  }
+  levels: {
+    list(): Promise<Level[]>
+    save(input: LevelInput): Promise<Role>
+    remove(key: Role): Promise<void>
+  }
+  system: {
+    info(): Promise<BackupInfo>
+    /** saves a password-protected backup file (database and key); null when the save dialog was cancelled */
+    backup(password: string): Promise<string | null>
+    /** picks a backup file, checks its password and the administrator's PIN, replaces the data and restarts */
+    restoreFile(password: string, pin: string): Promise<boolean>
+    /** restores a safety copy kept on this PC and restarts */
+    restoreCopy(name: string, pin: string): Promise<void>
+    /** deletes every record (visits, register entries, notes, shifts…) but keeps accounts, levels, registers and settings */
+    erase(pin: string, includeStudents: boolean): Promise<void>
+    /** back to the first start: everything deleted, the program restarts and sets itself up again */
+    factoryReset(pin: string): Promise<void>
+    openFolder(): Promise<void>
+    restart(): Promise<void>
+    /** recovery mode only (the data key cannot be opened): restores a backup file, no PIN possible */
+    recover(password: string): Promise<boolean>
   }
   users: {
     list(): Promise<User[]>
@@ -714,9 +826,29 @@ export interface Api {
     readFront(image: Uint8Array): Promise<ScanResult>
     barcodes(image: Uint8Array): Promise<string[]>
   }
+  students: {
+    /** search by name (Arabic or Latin, any spelling close enough), card number or ID number; blank = the first 200 */
+    list(q: { text: string; includeInactive: boolean }): Promise<StudentMatch[]>
+    /** students that could be the person being registered: the same card / ID number first, then alike names */
+    suggest(q: { name: string; idNumber: string }): Promise<StudentMatch[]>
+    count(): Promise<number>
+    save(input: StudentInput): Promise<number>
+    setActive(id: number, active: boolean): Promise<void>
+    remove(id: number): Promise<void>
+    /** picks an Excel or CSV file and adds or updates the students in it */
+    import(): Promise<StudentImportResult | null>
+    /** saves an empty Excel file with the right columns */
+    template(lang: Lang): Promise<string | null>
+    pdf(q: { text: string; includeInactive: boolean }, lang: Lang): Promise<string | null>
+  }
   exports: {
     pdf(range: ExportRange): Promise<string | null>
     excel(range: ExportRange): Promise<string | null>
+    /** A4 PDFs with the faculty header; each returns the saved path, or null when the save dialog was cancelled */
+    registerPdf(q: EntryQuery, lang: Lang): Promise<string | null>
+    entryPdf(entryId: number, lang: Lang): Promise<string | null>
+    auditPdf(q: AuditQuery, lang: Lang): Promise<string | null>
+    visitPdf(visitId: number, lang: Lang): Promise<string | null>
     evacuation(lang: Lang): Promise<string>
     shiftReport(shiftId: number, lang: Lang): Promise<string | null>
   }

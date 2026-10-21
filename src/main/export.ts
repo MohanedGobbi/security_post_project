@@ -19,13 +19,25 @@ import { listFields } from './customFields'
 import { listCheckpoints, listRounds, QR_PREFIX } from './patrols'
 import { searchLoans } from './keys'
 
-const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
+export const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 
-interface Column<T> { label: string; value: (row: T) => string; time?: boolean }
-interface Section { title: string; columns: Column<never>[]; rows: unknown[] }
+export interface Column<T> { label: string; value: (row: T) => string; time?: boolean }
+export interface Section { title: string; columns: Column<never>[]; rows: unknown[] }
 
-const section = <T>(title: string, columns: Column<T>[], rows: T[]): Section => ({ title, columns: columns as Column<never>[], rows })
-const tr = (lang: Lang) => (k: string, vars?: Record<string, string | number>): string => translate(lang, k, vars)
+export const section = <T>(title: string, columns: Column<T>[], rows: T[]): Section => ({ title, columns: columns as Column<never>[], rows })
+export const tr = (lang: Lang) => (k: string, vars?: Record<string, string | number>): string => translate(lang, k, vars)
+
+/** The faculty's and the university's logos, as data addresses so a printout needs no files next to it */
+const logoUris = (): string[] => {
+  const dir = join(app.isPackaged ? process.resourcesPath : join(app.getAppPath(), 'resources'), 'brand')
+  return ['ghardaia-law-faculty.png', 'ghardaia-university.png'].flatMap((f) => {
+    try {
+      return [`data:image/png;base64,${readFileSync(join(dir, f)).toString('base64')}`]
+    } catch {
+      return []
+    }
+  })
+}
 
 // ---------- column sets ----------
 /** One column per custom field of the entity: active ones, and disabled ones that still have values in these rows */
@@ -172,7 +184,7 @@ function summaryHtml(lang: Lang, s: ShiftSummary): string {
   return `<div class="summary">${cells.filter(([k]) => summaryKeyOn(k.replace('shift.sum.', '') as keyof ShiftSummary, f)).map(([k, v]) => `<div><b>${v}</b><span>${esc(t(k))}</span></div>`).join('')}</div>`
 }
 
-function reportHtml(lang: Lang, title: string, subtitle: string, sections: Section[], userName: string, intro = ''): string {
+export function reportHtml(lang: Lang, title: string, subtitle: string, sections: Section[], userName: string, intro = '', landscape = true): string {
   const t = tr(lang)
   const s = getSettings()
   const tables = sections.map((sec) => {
@@ -182,9 +194,13 @@ function reportHtml(lang: Lang, title: string, subtitle: string, sections: Secti
       ? `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>` : '<p class="none">—</p>'}`
   }).join('')
   return `<!doctype html><html lang="${lang}" dir="${isRtl(lang) ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><style>
-    @page { size: A4 landscape; margin: 12mm; }
+    @page { size: A4 ${landscape ? 'landscape' : 'portrait'}; margin: 12mm; }
     body { font-family: "Segoe UI", Tahoma, Arial, sans-serif; font-size: 9pt; color: #111; }
-    header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 10px; }
+    header { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 10px; }
+    .head-main { display: flex; align-items: center; gap: 10px; }
+    .logos { display: flex; gap: 6px; } .logos img { height: 52px; width: auto; }
+    .detail th { width: 32%; background: #eee; } .detail td { font-size: 10.5pt; }
+    .sign { display: flex; gap: 24px; margin-top: 28px; } .sign div { flex: 1; border-top: 1px solid #111; padding-top: 4px; text-align: center; }
     h1 { font-size: 16pt; margin: 0; } h2 { font-size: 12pt; margin: 16px 0 6px; } h2 small { font-weight: 400; color: #555; }
     .meta { text-align: end; color: #444; }
     table { width: 100%; border-collapse: collapse; }
@@ -198,23 +214,24 @@ function reportHtml(lang: Lang, title: string, subtitle: string, sections: Secti
     .summary b { font-size: 13pt; }
     .handover { border: 2px solid #111; border-radius: 4px; padding: 8px; white-space: pre-wrap; margin-top: 6px; }
   </style></head><body>
-    <header><div><h1>${esc(title)}</h1><div>${esc([s.siteName, s.postName].filter(Boolean).join(' · '))}</div><div>${esc(subtitle)}</div></div>
+    <header><div class="head-main"><div class="logos">${logoUris().map((u) => `<img src="${u}" alt="">`).join('')}</div>
+    <div><h1>${esc(title)}</h1><div>${esc([s.siteName, s.postName].filter(Boolean).join(' · '))}</div><div>${esc(subtitle)}</div></div></div>
     <div class="meta">${esc(t('export.generated', { date: formatDateTime(new Date().toISOString(), lang), user: userName }))}</div></header>
     ${intro}${tables}
   </body></html>`
 }
 
-async function htmlToPdf(html: string): Promise<Buffer> {
+export async function htmlToPdf(html: string, landscape = true): Promise<Buffer> {
   const win = new BrowserWindow({ show: false, webPreferences: { sandbox: true, javascript: false } })
   try {
     await win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
-    return await win.webContents.printToPDF({ landscape: true, pageSize: 'A4', printBackground: true, preferCSSPageSize: true })
+    return await win.webContents.printToPDF({ landscape, pageSize: 'A4', printBackground: true, preferCSSPageSize: true })
   } finally {
     win.destroy()
   }
 }
 
-async function askSavePath(parent: BrowserWindow | null, defaultName: string, ext: 'pdf' | 'xlsx'): Promise<string | null> {
+export async function askSavePath(parent: BrowserWindow | null, defaultName: string, ext: 'pdf' | 'xlsx'): Promise<string | null> {
   // fixed reports folder (or automated tests): save there without asking
   const fixedDir = process.env['SECREG_EXPORT_DIR']
   if (fixedDir) return join(fixedDir, defaultName)
@@ -248,8 +265,8 @@ function registerSections(r: ExportRange): Section[] {
   return out
 }
 
-export async function exportPdf(parent: BrowserWindow | null, r: ExportRange, userName: string): Promise<string | null> {
-  const pdf = await htmlToPdf(reportHtml(r.lang, translate(r.lang, 'export.reportTitle'), periodLabel(r), registerSections(r), userName))
+export async function exportPdf(parent: BrowserWindow | null, r: ExportRange, userName: string, extra: Section[] = []): Promise<string | null> {
+  const pdf = await htmlToPdf(reportHtml(r.lang, translate(r.lang, 'export.reportTitle'), periodLabel(r), [...registerSections(r), ...extra], userName))
   const path = await askSavePath(parent, `register_${r.from}_${r.to}.pdf`, 'pdf')
   if (!path) return null
   await writeFile(path, pdf)
@@ -283,11 +300,11 @@ export async function exportShiftReport(parent: BrowserWindow | null, shiftId: n
   return path
 }
 
-export async function exportExcel(parent: BrowserWindow | null, r: ExportRange): Promise<string | null> {
+export async function exportExcel(parent: BrowserWindow | null, r: ExportRange, extra: Section[] = []): Promise<string | null> {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'برنامج إدارة الأمن بالكلية'
   const views = [{ state: 'frozen' as const, ySplit: 1, rightToLeft: isRtl(r.lang) }]
-  for (const sec of registerSections(r)) {
+  for (const sec of [...registerSections(r), ...extra]) {
     // sheet names: max 31 chars, no []:*?/\
     const ws = wb.addWorksheet(sec.title.replace(/[[\]:*?/\\]/g, ' ').slice(0, 31), { views })
     ws.columns = sec.columns.map((c) => ({ header: c.label, width: Math.max(12, Math.min(40, c.label.length + 6)) }))
