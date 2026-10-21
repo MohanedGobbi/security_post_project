@@ -840,6 +840,8 @@ export interface Api {
     /** saves an empty Excel file with the right columns */
     template(lang: Lang): Promise<string | null>
     pdf(q: { text: string; includeInactive: boolean }, lang: Lang): Promise<string | null>
+    /** with the right to maintain the directory: every column, with titles the import understands (correct in Excel, import back) */
+    xlsx(q: { text: string; includeInactive: boolean }, lang: Lang): Promise<string | null>
   }
   exports: {
     pdf(range: ExportRange): Promise<string | null>
@@ -849,6 +851,12 @@ export interface Api {
     entryPdf(entryId: number, lang: Lang): Promise<string | null>
     auditPdf(q: AuditQuery, lang: Lang): Promise<string | null>
     visitPdf(visitId: number, lang: Lang): Promise<string | null>
+    /** the same data as Excel files, to work on in a spreadsheet (real date cells, filters, right-to-left for Arabic) */
+    registerXlsx(q: EntryQuery, lang: Lang): Promise<string | null>
+    entryXlsx(entryId: number, lang: Lang): Promise<string | null>
+    auditXlsx(q: AuditQuery, lang: Lang): Promise<string | null>
+    visitXlsx(visitId: number, lang: Lang): Promise<string | null>
+    insideXlsx(lang: Lang): Promise<string | null>
     evacuation(lang: Lang): Promise<string>
     shiftReport(shiftId: number, lang: Lang): Promise<string | null>
   }

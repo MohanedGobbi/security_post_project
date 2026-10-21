@@ -1099,7 +1099,12 @@
     "everythingHelp": "un rapport avec chaque registre",
     "studentsHelp": "numéro, noms, niveau, spécialité",
     "auditHelp": "qui a fait quoi, pour la période",
-    "shiftHint": ""
+    "shiftHint": "",
+    "excel": "Excel",
+    "field": "Champ",
+    "value": "Valeur",
+    "before": "Avant",
+    "after": "Après"
   },
   "students": {
     "title": "Étudiants",

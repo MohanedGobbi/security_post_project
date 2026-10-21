@@ -687,7 +687,8 @@ export const demoApi: Api = {
     async remove() {},
     async import() { return null },
     async template() { return null },
-    async pdf() { window.print(); return null }
+    async pdf() { window.print(); return null },
+    async xlsx() { return null }
   },
 
   exports: {
@@ -715,6 +716,11 @@ export const demoApi: Api = {
     async entryPdf(): Promise<string | null> { window.print(); return null },
     async auditPdf(): Promise<string | null> { window.print(); return null },
     async visitPdf(): Promise<string | null> { window.print(); return null },
+    async registerXlsx(): Promise<string | null> { return null },
+    async entryXlsx(): Promise<string | null> { return null },
+    async auditXlsx(): Promise<string | null> { return null },
+    async visitXlsx(): Promise<string | null> { return null },
+    async insideXlsx(): Promise<string | null> { return null },
     async evacuation(l) {
       const t = (k: string): string => translate(l, k)
       const rows = await demoApi.visits.insideNow()

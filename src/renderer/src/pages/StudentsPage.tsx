@@ -64,7 +64,7 @@ export default function StudentsPage(): ReactNode {
           {canEdit && <button type="button" className="primary" onClick={() => setEditing({ ...EMPTY })}><Icon name="user" /> {t('students.add')}</button>}
           {canEdit && <button type="button" onClick={importFile}><Icon name="upload" /> {t('students.import')}</button>}
           {canEdit && <button type="button" onClick={template}>{t('students.template')}</button>}
-          <PrintButton run={(l) => window.api.students.pdf({ text, includeInactive: inactive }, l)} disabled={rows.length === 0} />
+          <PrintButton run={(l) => window.api.students.pdf({ text, includeInactive: inactive }, l)} runXlsx={(l) => window.api.students.xlsx({ text, includeInactive: inactive }, l)} disabled={rows.length === 0} />
         </div>
       </div>
       <p className="hint">{t('students.intro')}</p>

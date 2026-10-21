@@ -594,7 +594,7 @@ h2.spaced { margin-top: 18px; }
 /* print menu, system panel */
 .print-btn { display: inline-flex; align-items: center; gap: 6px; }
 .print-items { display: grid; gap: 10px; margin-top: 12px; }
-.print-item { display: flex; align-items: center; gap: 12px; text-align: start; padding: 12px 14px; }
+.print-item { display: flex; align-items: center; gap: 10px; text-align: start; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .print-item span:last-child { display: flex; flex-direction: column; gap: 2px; }
 .danger-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line); }
 .danger-row p { margin: 2px 0 6px; }

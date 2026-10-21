@@ -1099,7 +1099,12 @@
     "everythingHelp": "one report with every register",
     "studentsHelp": "number, names, level, department",
     "auditHelp": "who did what, for the period",
-    "shiftHint": ""
+    "shiftHint": "",
+    "excel": "Excel",
+    "field": "Field",
+    "value": "Value",
+    "before": "Before",
+    "after": "After"
   },
   "students": {
     "title": "Students",

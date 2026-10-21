@@ -6,15 +6,22 @@ import { currentLang } from '../i18n'
 import Icon from './Icon'
 import { errorText } from '../util'
 
-/** "Print / PDF": builds an A4 PDF with the faculty header, asks where to save it, and says where it went. */
-export default function PrintButton({ run, disabled = false }: { run(lang: Lang): Promise<string | null>; disabled?: boolean }): ReactNode {
+/**
+ * "Print / PDF" (an A4 PDF with the faculty header) and, where the data suits a spreadsheet, "Excel" (the same rows to work on
+ * in Excel). Each asks where to save the file and says where it went.
+ */
+export default function PrintButton({ run, runXlsx, disabled = false }: {
+  run(lang: Lang): Promise<string | null>
+  runXlsx?(lang: Lang): Promise<string | null>
+  disabled?: boolean
+}): ReactNode {
   const { t } = useTranslation()
   const { toast } = useApp()
   const [busy, setBusy] = useState(false)
-  const click = async (): Promise<void> => {
+  const click = (fn: (lang: Lang) => Promise<string | null>) => async (): Promise<void> => {
     setBusy(true)
     try {
-      const path = await run(currentLang())
+      const path = await fn(currentLang())
       if (path) toast(t('export.saved', { path }))
     } catch (e) {
       toast(errorText(e, t), 'error')
@@ -23,8 +30,15 @@ export default function PrintButton({ run, disabled = false }: { run(lang: Lang)
     }
   }
   return (
-    <button type="button" disabled={busy || disabled} onClick={click}>
-      <Icon name="printer" size={18} /> {t('print.button')}
-    </button>
+    <>
+      <button type="button" disabled={busy || disabled} onClick={click(run)}>
+        <Icon name="printer" size={18} /> {t('print.button')}
+      </button>
+      {runXlsx && (
+        <button type="button" disabled={busy || disabled} onClick={click(runXlsx)}>
+          <Icon name="list" size={18} /> {t('print.excel')}
+        </button>
+      )}
+    </>
   )
 }

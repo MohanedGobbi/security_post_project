@@ -142,12 +142,12 @@ export function removeStudent(id: number): void {
 // ---------- Excel / CSV ----------
 /** the columns of the file, with the headers people use for them (Arabic, French, English), compared without accents or spaces */
 const HEADERS: Record<string, string[]> = {
-  studentNo: ['رقم التسجيل', 'رقم الطالب', 'رقم بطاقة الطالب', 'رقم بطاقه الطالب', 'matricule', 'n etudiant', 'numero etudiant', 'student no', 'student number', 'student id', 'studentno'],
-  idNumber: ['رقم التعريف الوطني', 'رقم التعريف', 'nin', 'cni', 'national id', 'id number', 'idnumber'],
-  fullName: ['full name', 'name', 'nom et prenom', 'nom prenom', 'fullname', 'nom complet'],
+  studentNo: ['رقم التسجيل', 'رقم الطالب', 'رقم بطاقة الطالب', 'رقم بطاقه الطالب', 'matricule', 'n etudiant', 'numero etudiant', 'student no', 'student number', 'student id', 'studentno', 'card number', 'n de carte', 'رقم البطاقة'],
+  idNumber: ['رقم التعريف الوطني', 'رقم التعريف', 'nin', 'cni', 'national id', 'id number', 'idnumber', 'national number', 'n national'],
+  fullName: ['full name', 'name', 'nom et prenom', 'nom prenom', 'fullname', 'nom complet', 'name latin', 'nom latin', 'الاسم لاتيني'],
   surname: ['nom', 'surname', 'last name', 'lastname', 'family name'],
   given: ['prenom', 'prenoms', 'given name', 'given names', 'first name', 'firstname'],
-  fullNameAlt: ['الاسم واللقب', 'اللقب والاسم', 'الاسم الكامل', 'الاسم و اللقب', 'اللقب و الاسم'],
+  fullNameAlt: ['الاسم واللقب', 'اللقب والاسم', 'الاسم الكامل', 'الاسم و اللقب', 'اللقب و الاسم', 'name arabic', 'nom arabe', 'الاسم عربي'],
   surnameAr: ['اللقب'],
   givenAr: ['الاسم'],
   birthDate: ['تاريخ الميلاد', 'date de naissance', 'birth date', 'birthdate', 'date of birth', 'dob'],

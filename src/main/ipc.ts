@@ -15,8 +15,8 @@ import { verifyPin } from './crypto'
 import { analyzeImage, barcodeTexts, readFront, readText } from './scan'
 import * as students from './students'
 import * as backup from './backup'
-import { exportAuditPdf, exportStudentsPdf, exportEntryPdf, exportRegisterPdf, exportVisitPdf, registersSections } from './printouts'
-import { exportCheckpointLabels, exportEvacuation, exportExcel, exportPdf, exportShiftReport } from './export'
+import { exportAuditPdf, exportAuditXlsx, exportEntryXlsx, exportRegisterXlsx, exportStudentsPdf, exportStudentsXlsx, exportVisitXlsx, exportEntryPdf, exportRegisterPdf, exportVisitPdf, registersSections } from './printouts'
+import { exportCheckpointLabels, exportInsideXlsx, exportEvacuation, exportExcel, exportPdf, exportShiftReport } from './export'
 import * as vehicles from './vehicles'
 import * as deliveries from './deliveries'
 import * as incidents from './incidents'
@@ -46,7 +46,8 @@ const PERMISSION_OF: Record<string, Permission> = {
   'students:list': 'students', 'students:suggest': 'students', 'students:count': 'students',
   'students:save': 'studentsEdit', 'students:setActive': 'studentsEdit', 'students:import': 'studentsEdit', 'students:template': 'studentsEdit',
   'students:pdf': 'exports',
-  'exports:pdf': 'exports', 'exports:excel': 'exports', 'exports:registerPdf': 'exports', 'exports:entryPdf': 'exports', 'exports:visitPdf': 'exports'
+  'exports:pdf': 'exports', 'exports:excel': 'exports', 'exports:registerPdf': 'exports', 'exports:entryPdf': 'exports', 'exports:visitPdf': 'exports',
+  'exports:registerXlsx': 'exports', 'exports:entryXlsx': 'exports', 'exports:visitXlsx': 'exports', 'exports:insideXlsx': 'visitors', 'students:xlsx': 'exports'
 }
 
 /** Actions of an optional module are refused while the module is switched off (history stays readable). */
@@ -400,6 +401,13 @@ export function registerIpc(): void {
     return r
   })
   handle('students:template', 'user', (_u, lang: Lang) => students.saveTemplate(BrowserWindow.getFocusedWindow(), checkLang(lang)))
+  handle('students:xlsx', 'user', async (u, q: { text: string; includeInactive: boolean }, lang: Lang) => {
+    const full = can(u, 'studentsEdit')
+    const rows = students.listStudents({ text: String(q?.text ?? ''), includeInactive: !!q?.includeInactive && full })
+    const path = await exportStudentsXlsx(BrowserWindow.getFocusedWindow(), rows, checkLang(lang), full)
+    if (path) db.audit(u.id, 'export_excel', 'student')
+    return path
+  })
   handle('students:pdf', 'user', async (u, q: { text: string; includeInactive: boolean }, lang: Lang) => {
     const path = await exportStudentsPdf(BrowserWindow.getFocusedWindow(), students.listStudents({ text: String(q?.text ?? ''), includeInactive: !!q?.includeInactive }), checkLang(lang), u.name)
     if (path) db.audit(u.id, 'export_pdf', 'student')
@@ -426,6 +434,31 @@ export function registerIpc(): void {
   handle('exports:entryPdf', 'user', async (u, entryId: number, lang: Lang) => {
     const path = await exportEntryPdf(win(), u, entryId, checkLang(lang))
     if (path) db.audit(u.id, 'export_pdf', 'register_entry', entryId)
+    return path
+  })
+  handle('exports:registerXlsx', 'user', async (u, q: EntryQuery, lang: Lang) => {
+    const path = await exportRegisterXlsx(win(), u, q, checkLang(lang))
+    if (path) db.audit(u.id, 'export_excel', 'register', q.registerId, `${q.from}..${q.to}`)
+    return path
+  })
+  handle('exports:entryXlsx', 'user', async (u, entryId: number, lang: Lang) => {
+    const path = await exportEntryXlsx(win(), u, entryId, checkLang(lang))
+    if (path) db.audit(u.id, 'export_excel', 'register_entry', entryId)
+    return path
+  })
+  handle('exports:auditXlsx', 'admin', async (u, q: AuditQuery, lang: Lang) => {
+    const path = await exportAuditXlsx(win(), q, checkLang(lang))
+    if (path) db.audit(u.id, 'export_excel', 'audit', null, `${q.from}..${q.to}`)
+    return path
+  })
+  handle('exports:visitXlsx', 'user', async (u, visitId: number, lang: Lang) => {
+    const path = await exportVisitXlsx(win(), visitId, checkLang(lang))
+    if (path) db.audit(u.id, 'export_excel', 'visit', visitId)
+    return path
+  })
+  handle('exports:insideXlsx', 'user', async (u, lang: Lang) => {
+    const path = await exportInsideXlsx(win(), checkLang(lang))
+    if (path) db.audit(u.id, 'export_excel', '', null, 'inside')
     return path
   })
   handle('exports:auditPdf', 'admin', async (u, q: AuditQuery, lang: Lang) => {

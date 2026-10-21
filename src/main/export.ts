@@ -21,7 +21,8 @@ import { searchLoans } from './keys'
 
 export const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 
-export interface Column<T> { label: string; value: (row: T) => string; time?: boolean }
+/** iso: the exact moment (ISO time) of a time column, so Excel gets a real date to sort and filter on instead of text */
+export interface Column<T> { label: string; value: (row: T) => string; time?: boolean; iso?: (row: T) => string | null }
 export interface Section { title: string; columns: Column<never>[]; rows: unknown[] }
 
 export const section = <T>(title: string, columns: Column<T>[], rows: T[]): Section => ({ title, columns: columns as Column<never>[], rows })
@@ -75,8 +76,8 @@ function keyColumns(lang: Lang): Column<KeyLoan>[] {
 function visitColumns(lang: Lang): Column<VisitRow>[] {
   const t = tr(lang)
   return [
-    { label: t('visitor.timeIn'), value: (v) => formatDateTime(v.timeIn, lang), time: true },
-    { label: t('visitor.timeOut'), value: (v) => formatDateTime(v.timeOut, lang), time: true },
+    { label: t('visitor.timeIn'), value: (v) => formatDateTime(v.timeIn, lang), time: true, iso: (v) => v.timeIn },
+    { label: t('visitor.timeOut'), value: (v) => formatDateTime(v.timeOut, lang), time: true, iso: (v) => v.timeOut },
     { label: t('visitor.fullName'), value: (v) => [v.fullName, v.fullNameAlt].filter(Boolean).join(' / ') },
     { label: t('visitor.idType'), value: (v) => t(`idType.${v.idType}`) },
     { label: t('visitor.idNumber'), value: (v) => v.idNumber },
@@ -300,22 +301,61 @@ export async function exportShiftReport(parent: BrowserWindow | null, shiftId: n
   return path
 }
 
-export async function exportExcel(parent: BrowserWindow | null, r: ExportRange, extra: Section[] = []): Promise<string | null> {
+/** A moment as a spreadsheet date showing the same wall-clock time as on screen (spreadsheets have no time zones) */
+const sheetDate = (iso: string): Date => {
+  const d = new Date(iso)
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()))
+}
+
+/**
+ * Writes sections as an Excel file, one sheet each: a header row (bold, frozen, with filters), widths that fit the content,
+ * right-to-left sheets for Arabic, real date cells for the columns that know their moment.
+ */
+export async function writeWorkbook(parent: BrowserWindow | null, defaultName: string, sections: Section[], lang: Lang): Promise<string | null> {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'برنامج إدارة الأمن بالكلية'
-  const views = [{ state: 'frozen' as const, ySplit: 1, rightToLeft: isRtl(r.lang) }]
-  for (const sec of [...registerSections(r), ...extra]) {
-    // sheet names: max 31 chars, no []:*?/\
-    const ws = wb.addWorksheet(sec.title.replace(/[[\]:*?/\\]/g, ' ').slice(0, 31), { views })
-    ws.columns = sec.columns.map((c) => ({ header: c.label, width: Math.max(12, Math.min(40, c.label.length + 6)) }))
-    for (const row of sec.rows) ws.addRow(sec.columns.map((c) => c.value(row as never)))
-    ws.getRow(1).font = { bold: true }
-    ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: sec.columns.length } }
+  const used = new Set<string>()
+  for (const sec of sections) {
+    // sheet names: max 31 chars, no []:*?/\, each different
+    const base = (sec.title.replace(/[[\]:*?/\\]/g, ' ').trim() || 'Sheet').slice(0, 28)
+    let name = base
+    for (let n = 2; used.has(name.toLowerCase()); n++) name = `${base} ${n}`
+    used.add(name.toLowerCase())
+    const ws = wb.addWorksheet(name, { views: [{ state: 'frozen', ySplit: 1, rightToLeft: isRtl(lang) }] })
+    const cols = sec.columns as Column<unknown>[]
+    ws.columns = cols.map((c) => {
+      const longest = sec.rows.reduce<number>((m, r) => Math.max(m, c.iso ? 16 : Math.min(60, c.value(r).length)), 0)
+      return { header: c.label, width: Math.max(10, Math.min(60, Math.max(c.label.length + 4, longest + 2))) }
+    })
+    for (const row of sec.rows) {
+      ws.addRow(cols.map((c) => {
+        const iso = c.iso?.(row)
+        return c.iso ? (iso ? sheetDate(iso) : '') : c.value(row)
+      }))
+    }
+    cols.forEach((c, i) => {
+      if (c.iso) ws.getColumn(i + 1).numFmt = 'yyyy-mm-dd hh:mm'
+      ws.getColumn(i + 1).alignment = { vertical: 'top', wrapText: true }
+    })
+    const head = ws.getRow(1)
+    head.font = { bold: true }
+    head.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8E8E8' } }
+    if (cols.length) ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: cols.length } }
   }
-  const path = await askSavePath(parent, `register_${r.from}_${r.to}.xlsx`, 'xlsx')
+  const path = await askSavePath(parent, defaultName, 'xlsx')
   if (!path) return null
   await wb.xlsx.writeFile(path)
   return path
+}
+
+export async function exportExcel(parent: BrowserWindow | null, r: ExportRange, extra: Section[] = []): Promise<string | null> {
+  return writeWorkbook(parent, `register_${r.from}_${r.to}.xlsx`, [...registerSections(r), ...extra], r.lang)
+}
+
+/** The people inside now, as a spreadsheet (the evacuation list to work on). */
+export async function exportInsideXlsx(parent: BrowserWindow | null, lang: Lang): Promise<string | null> {
+  const people = section(translate(lang, 'export.visitorsTitle'), visitColumns(lang), insideNow())
+  return writeWorkbook(parent, `inside_${new Date().toISOString().slice(0, 10)}.xlsx`, [people], lang)
 }
 
 // ---------- checkpoint QR labels ----------

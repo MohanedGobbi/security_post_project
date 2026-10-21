@@ -24,7 +24,9 @@ It runs on a Windows PC at the security office and works without a network.
 - **Student directory** (Students page): import the faculty's Excel / CSV list, search by name (Arabic or Latin, any spelling
   close enough) or card number, see who is inside. At the gate, a typed or scanned name or card number that matches a student
   is recognised and the form is filled from the directory, which also corrects what the card scan misread.
-- **Print button** in the top bar (and Ctrl+P): one place to print the inside list, any register, the period report, the student list or the audit trail.
+- **Print button** in the top bar (and Ctrl+P): one place to print or export the inside list, any register, the period report, the student list or the audit trail.
+  Each is available as a **PDF** and as an **Excel** file (real date cells, filters, right-to-left sheets for Arabic) to work on in a spreadsheet.
+  The student sheet of a level that maintains the directory can be corrected in Excel and imported back.
 - **System tab** (administrators): a password-protected **backup file** (database and its key, restorable on any PC), **safety copies** the program makes
   itself every day and before anything that erases (restorable with the PIN), restore, erase all records, back to the first start, restart. If the data key
   cannot be opened (another Windows account or PC) the program starts in recovery mode and asks for a backup file.

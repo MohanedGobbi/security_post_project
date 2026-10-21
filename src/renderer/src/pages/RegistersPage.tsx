@@ -90,7 +90,8 @@ function RegisterView({ reg, onBack }: { reg: RegisterDef; onBack(): void }): Re
         <div className="section-head">
           <h2>{t('registers.entries')}</h2>
           <span className="count-pill">{entries.length}</span>
-          <PrintButton run={(l) => window.api.exports.registerPdf({ registerId: reg.id, from: isAdmin ? q.from : '', to: isAdmin ? q.to : '', text: q.text, openOnly: q.openOnly }, l)} disabled={entries.length === 0} />
+          <PrintButton run={(l) => window.api.exports.registerPdf({ registerId: reg.id, from: isAdmin ? q.from : '', to: isAdmin ? q.to : '', text: q.text, openOnly: q.openOnly }, l)}
+            runXlsx={(l) => window.api.exports.registerXlsx({ registerId: reg.id, from: isAdmin ? q.from : '', to: isAdmin ? q.to : '', text: q.text, openOnly: q.openOnly }, l)} disabled={entries.length === 0} />
         </div>
         <div className="filters">
           {isAdmin ? (
@@ -280,7 +281,7 @@ function EntryDialog({ reg, entry, accounts, onClose, onChanged }: {
 
         {mode === 'view' && (
           <div className="actions">
-            <PrintButton run={(l) => window.api.exports.entryPdf(entry.id, l)} />
+            <PrintButton run={(l) => window.api.exports.entryPdf(entry.id, l)} runXlsx={(l) => window.api.exports.entryXlsx(entry.id, l)} />
             {canCorrect && <button type="button" onClick={() => setMode('correct')}>{t('registers.correct')}</button>}
             {canClose && reg.closeLabels && <button type="button" className="primary" onClick={() => setMode('close')}>{labelOf(reg.closeLabels, lang)}</button>}
           </div>

@@ -83,7 +83,8 @@ const api: Api = {
     remove: call('students:remove'),
     import: call('students:import'),
     template: call('students:template'),
-    pdf: call('students:pdf')
+    pdf: call('students:pdf'),
+    xlsx: call('students:xlsx')
   },
   exports: {
     pdf: call('exports:pdf'),
@@ -92,6 +93,11 @@ const api: Api = {
     entryPdf: call('exports:entryPdf'),
     auditPdf: call('exports:auditPdf'),
     visitPdf: call('exports:visitPdf'),
+    registerXlsx: call('exports:registerXlsx'),
+    entryXlsx: call('exports:entryXlsx'),
+    auditXlsx: call('exports:auditXlsx'),
+    visitXlsx: call('exports:visitXlsx'),
+    insideXlsx: call('exports:insideXlsx'),
     evacuation: call('exports:evacuation'),
     shiftReport: call('exports:shiftReport')
   },

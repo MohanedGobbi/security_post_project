@@ -122,7 +122,7 @@ function DetailDialog({ id, onClose }: { id: number; onClose(): void }): ReactNo
           </>
         )}
         <div className="actions">
-          <PrintButton run={(l) => window.api.exports.visitPdf(id, l)} disabled={!v} />
+          <PrintButton run={(l) => window.api.exports.visitPdf(id, l)} runXlsx={(l) => window.api.exports.visitXlsx(id, l)} disabled={!v} />
           <button type="button" onClick={onClose} autoFocus>{t('common.close')}</button>
         </div>
       </div>

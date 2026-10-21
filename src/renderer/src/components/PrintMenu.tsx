@@ -45,11 +45,13 @@ export default function PrintMenu({ onClose }: { onClose(): void }): ReactNode {
     }
   }
   const range = (l: Lang): { from: string; to: string; lang: Lang } => ({ from: FROM[period](), to: todayStr(), lang: l })
-  const item = (icon: 'users' | 'list' | 'book' | 'user' | 'eye', title: string, help: string, go: () => Promise<string | null | void>): ReactNode => (
-    <button type="button" className="print-item" disabled={busy} onClick={() => run(go)}>
+  const item = (icon: 'users' | 'list' | 'book' | 'user' | 'eye', title: string, help: string, pdf: () => Promise<string | null | void>, xlsx: () => Promise<string | null | void>): ReactNode => (
+    <div className="print-item">
       <span className="tile-icon"><Icon name={icon} size={22} /></span>
-      <span><strong>{title}</strong><small className="muted">{help}</small></span>
-    </button>
+      <span className="grow"><strong>{title}</strong><small className="muted">{help}</small></span>
+      <button type="button" disabled={busy} onClick={() => run(pdf)}><Icon name="printer" size={18} /> PDF</button>
+      <button type="button" disabled={busy} onClick={() => run(xlsx)}><Icon name="list" size={18} /> Excel</button>
+    </div>
   )
 
   return (
@@ -79,11 +81,13 @@ export default function PrintMenu({ onClose }: { onClose(): void }): ReactNode {
         </div>
         <div className="print-items">
           {regs.length > 0 && can(user, 'exports') && item('book', t('print.thisRegister'), isAdmin ? t(`print.${period}`) : t('registers.recent'),
-            () => window.api.exports.registerPdf({ registerId: regId, from: isAdmin ? FROM[period]() : '', to: isAdmin ? todayStr() : '', text: '', openOnly: false }, lang))}
-          {can(user, 'visitors') && item('users', t('print.inside'), t('print.insideHelp'), async () => { await window.api.exports.evacuation(lang) })}
-          {can(user, 'exports') && can(user, 'history') && item('list', t('print.everything'), t('print.everythingHelp'), () => window.api.exports.pdf(range(lang)))}
-          {can(user, 'exports') && can(user, 'students') && item('user', t('print.studentsTitle'), t('print.studentsHelp'), () => window.api.students.pdf({ text: '', includeInactive: false }, lang))}
-          {isAdmin && item('eye', t('admin.audit'), t('print.auditHelp'), () => window.api.exports.auditPdf({ from: FROM[period](), to: todayStr(), userId: null, action: '' }, lang))}
+            () => window.api.exports.registerPdf({ registerId: regId, from: isAdmin ? FROM[period]() : '', to: isAdmin ? todayStr() : '', text: '', openOnly: false }, lang),
+            () => window.api.exports.registerXlsx({ registerId: regId, from: isAdmin ? FROM[period]() : '', to: isAdmin ? todayStr() : '', text: '', openOnly: false }, lang))}
+          {can(user, 'visitors') && item('users', t('print.inside'), t('print.insideHelp'), async () => { await window.api.exports.evacuation(lang) }, () => window.api.exports.insideXlsx(lang))}
+          {can(user, 'exports') && can(user, 'history') && item('list', t('print.everything'), t('print.everythingHelp'), () => window.api.exports.pdf(range(lang)), () => window.api.exports.excel(range(lang)))}
+          {can(user, 'exports') && can(user, 'students') && item('user', t('print.studentsTitle'), t('print.studentsHelp'), () => window.api.students.pdf({ text: '', includeInactive: false }, lang), () => window.api.students.xlsx({ text: '', includeInactive: false }, lang))}
+          {isAdmin && item('eye', t('admin.audit'), t('print.auditHelp'), () => window.api.exports.auditPdf({ from: FROM[period](), to: todayStr(), userId: null, action: '' }, lang),
+            () => window.api.exports.auditXlsx({ from: FROM[period](), to: todayStr(), userId: null, action: '' }, lang))}
         </div>
         {features.modules.shifts && <p className="hint">{t('print.shiftHint')}</p>}
       </div>
