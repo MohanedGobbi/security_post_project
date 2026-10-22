@@ -80,15 +80,19 @@ until the starting PINs are changed). The starting PINs and names are in `src/sh
 Set `SECREG_DATA_DIR` to use another data folder, for example for tests. Data folder by default: `%APPDATA%\FacultySecurity`.
 
 ## Install on a PC (no Node.js, no repository)
-Build the installer once, on any Windows PC that has the repository and `npm install` done:
+The ready-made installer (`FacultySecurity-Setup-0.1.0.exe`, about 160 MB) is **not published in this repository**.
+**To get it, contact Mohaned Gobbi (ROWD Tech)**, who will send it. Copy the file to the security office PC and run it: it
+installs the program, adds a desktop and Start menu shortcut, and nothing else has to be installed (no Node.js, no npm).
+The program is not code-signed, so Windows SmartScreen may show "Windows protected your PC": click **More info**, then **Run anyway**.
+Uninstalling keeps the data folder (`%APPDATA%FacultySecurity`).
+
+To build the installer yourself, on a Windows PC with the repository and `npm install` done:
 
 ```bash
 npm run dist
 ```
 
-It writes `release/FacultySecurity-Setup-0.1.0.exe` (about 160 MB; the first build downloads the Electron and installer tools, so it needs internet and a few minutes). Copy that one file to the security office PC and run it: it
-installs the program, adds a desktop and Start menu shortcut, and nothing else has to be installed. The program is not code-signed, so Windows SmartScreen may show
-"Windows protected your PC": click **More info**, then **Run anyway**. Uninstalling keeps the data folder (`%APPDATA%FacultySecurity`).
+It writes `release/FacultySecurity-Setup-0.1.0.exe`. The first build downloads the Electron and installer tools, so it needs internet and a few minutes.
 
 ## Web demo (Vercel)
 A browser-only demo (the same screens, sample data in Arabic, nothing sent anywhere) lives in `demo/`.
