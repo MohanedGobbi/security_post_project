@@ -1,4 +1,4 @@
-/* demo bar (reception app and dashboard) */
+/* demo bar */
 .demo-bar {
   position: fixed; bottom: 12px; inset-inline-start: 12px; z-index: 60; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   background: #fff3df; color: #6b4300; border: 1px solid #e8b860; border-radius: 10px; padding: 6px 12px; font-size: 0.85rem;

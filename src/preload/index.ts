@@ -166,12 +166,6 @@ const api: Api = {
     cancel: call('expected:cancel'),
     findByRef: call('expected:findByRef')
   },
-  sync: {
-    status: call('sync:status'),
-    connect: call('sync:connect'),
-    disconnect: call('sync:disconnect'),
-    now: call('sync:now')
-  },
   badges: {
     settings: call('badges:settings'),
     setSettings: call('badges:setSettings'),

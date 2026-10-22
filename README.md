@@ -1,5 +1,9 @@
 # برنامج إدارة الأمن بالكلية
 
+<img src="resources/brand/rowd-tech-wordmark.png" alt="ROWD Tech" height="48">
+
+**Made by ROWD Tech.**
+
 Security management program of the **Faculty of Law and Political Science, University of Ghardaia**
 (مكتب الأمن الداخلي للكلية). It replaces the paper registers of the security office: visitors, incidents, shift
 and custody handovers, lost items, letters, events and more. Arabic first (right to left), French and English.
@@ -84,31 +88,7 @@ npm run dev:demo
 
 `npm run build:demo` builds it into `demo-dist/`. On Vercel, import the repository: `vercel.json` already sets
 the install command, build command and output folder. Sample PINs are shown in the bar at the bottom:
-administrator `1234`, team leaders `2580` and `1357`, guard `5678`. Dashboard demo: `demo@security-register.app` / `demo1234`.
-
-## Several sites: server and dashboard (optional)
-A small server (`server/`, Node.js, one SQLite file) can link several posts and serves a supervisor dashboard
-(`dashboard/`) with invitations, a watchlist shared by all posts, and records search. Posts keep working
-when the network is down and catch up later; photos and full ID numbers never leave the post PC.
-
-```bash
-npm run build:dashboard
-```
-
-```bash
-npm run server
-```
-
-On first start the console prints a **setup code**: open `http://<server>:8787` and create the owner account with it.
-
-| Variable | Default | |
-|---|---|---|
-| `SECREG_PORT` | `8787` | listening port |
-| `SECREG_HOST` | `0.0.0.0` | listening address |
-| `SECREG_DATA` | `./server-data` | database `server.db` and key `server.key` (back up both together) |
-| `SECREG_TLS_CERT`, `SECREG_TLS_KEY` | – | PEM certificate and key to serve HTTPS directly |
-
-Use **HTTPS** outside a closed network (certificate files above, or a reverse proxy such as Caddy, IIS or nginx).
+administrator `1234`, team leaders `2580` and `1357`, guard `5678`.
 
 ## Privacy and security
 - ID numbers, birth dates, phone numbers, photos and the confidential fields of registers are encrypted
@@ -126,9 +106,7 @@ Use **HTTPS** outside a closed network (certificate files above, or a reverse pr
 src/main/       Electron main process: database, encryption, registers, scanning (OCR/MRZ/barcodes), exports, IPC
 src/preload/    the bridge exposing window.api to the UI
 src/renderer/   React UI (pages, components, styles); brand.ts = the faculty's name, logos, colours, settings
-src/shared/     types, AR/EN/FR texts, register rules and templates, shared by the app, the server and the dashboard
+src/shared/     types, AR/EN/FR texts, register rules and templates, shared by the app and the demo
 resources/tessdata/  offline OCR models (see NOTICE.md)
-server/         organisation server (Node.js, runs TypeScript directly)
-dashboard/      web dashboard (React), built into server/public
 demo/           web demo for Vercel (the app with its API answered in the browser), built into demo-dist
 ```

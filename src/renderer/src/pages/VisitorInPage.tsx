@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MAX_CARD_PICTURES, type CustomField, type CustomValues, type ExpectedVisitor, type IdType, type PersonFields, type PersonLookup, type ScanResult, type Student, type StudentMatch, type WatchHit } from '@shared/types'
-import { QR_BADGE, QR_PREREG } from '@shared/sync'
+import { QR_BADGE, QR_PREREG } from '@shared/qr'
 import { formatDateTime } from '@shared/i18n'
 import { useApp } from '../App'
 import { currentLang } from '../i18n'

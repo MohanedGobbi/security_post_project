@@ -69,7 +69,8 @@
     "enterPin": "Enter your PIN",
     "signIn": "Sign in",
     "wrongPin": "Wrong PIN",
-    "locked": "Too many attempts. Try again in {{s}} seconds."
+    "locked": "Too many attempts. Try again in {{s}} seconds.",
+    "madeBy": "Made by ROWD Tech"
   },
   "home": {
     "inside": "Inside now",
@@ -272,12 +273,6 @@
     "keyOut": "This item is already out",
     "alreadyReturned": "This item was already returned",
     "featureOff": "This part of the program is switched off in Settings → Features",
-    "serverManaged": "Managed in the dashboard",
-    "syncBadUrl": "Server address is not valid",
-    "syncUnreachable": "Server unreachable",
-    "syncRevoked": "This post was unlinked in the dashboard",
-    "syncBadCode": "Link code not valid or expired",
-    "syncServer": "Server error",
     "printFailed": "Printing failed: check the printer",
     "pinTaken": "This PIN is already used by someone else: choose another one",
     "badKey": "Invalid identifier ({{s}})",
@@ -495,8 +490,7 @@
     "alertText": "Entry allowed, but report it to your supervisor.",
     "supervisorPin": "Supervisor PIN to override",
     "override": "Override and continue",
-    "understood": "Understood",
-    "fromServer": "Organisation"
+    "understood": "Understood"
   },
   "alert": {
     "title": "Alerts",
@@ -676,7 +670,7 @@
       },
       "preregistration": {
         "name": "Expected visitors",
-        "desc": "Pre-registered guests (from the dashboard or added here), with QR passes."
+        "desc": "Pre-registered guests with QR passes."
       },
       "badges": {
         "name": "Visitor badges",
@@ -709,17 +703,12 @@
     "noneToday": "Nobody expected today.",
     "filter": "Name, company, host or pass code…",
     "add": "Add an expected visitor",
-    "addHint": "Hosts can also invite guests from the web dashboard.",
     "added": "{{name}} is expected",
     "from": "From",
     "to": "Until",
     "checkIn": "Check in",
     "cancel": "Cancel",
     "arrived": "Arrived",
-    "source": {
-      "local": "Added here",
-      "server": "Dashboard"
-    },
     "scanPass": "Scan a pass",
     "scanHint": "Hold the QR of the visitor’s pass in front of the camera.",
     "notFound": "Unknown pass code",
@@ -728,28 +717,6 @@
     "notToday": "This pass is not valid today",
     "pick": "Expected visitor",
     "filling": "Expected visitor (pass {{ref}}): check the ID card and complete."
-  },
-  "sync": {
-    "title": "Server connection",
-    "intro": "Optional. Link this post to your organisation’s server: supervisors see it live in the web dashboard, and the watchlist and expected visitors are shared.",
-    "server": "Server",
-    "site": "Site",
-    "post": "This post",
-    "lastSync": "Last sync",
-    "never": "never",
-    "online": "Connected",
-    "offline": "Offline",
-    "privacy": "Photos and full ID numbers stay on this PC; the server receives masked ID numbers (••••1234).",
-    "disconnect": "Unlink",
-    "now": "Sync now",
-    "url": "Server address",
-    "code": "Link code",
-    "postName": "Name of this post",
-    "codeHint": "An owner creates the code in the dashboard: Sites → Link a post. It works once, for 24 hours.",
-    "connect": "Link this post",
-    "connected": "Post linked to the server",
-    "disconnected": "Post unlinked",
-    "last": "Last sync: {{time}}"
   },
   "badge": {
     "title": "Visitor badges",
@@ -775,126 +742,6 @@
     "visitor": "VISITOR",
     "visiting": "Visiting",
     "returnAtExit": "Return at exit"
-  },
-  "dash": {
-    "subtitle": "Supervisor dashboard",
-    "login": "Sign in",
-    "updated": "Updated {{time}}",
-    "setup": {
-      "title": "First start",
-      "intro": "Create the owner account. The setup code is shown in the server window.",
-      "token": "Setup code",
-      "siteName": "First site (optional)",
-      "create": "Create the owner account"
-    },
-    "user": {
-      "name": "Name",
-      "email": "E-mail",
-      "password": "Password",
-      "role": "Role",
-      "sites": "Sites",
-      "newPassword": "New password (8 characters min.)",
-      "confirmPassword": "Confirm the password",
-      "changePassword": "Change password",
-      "resetPassword": "Change password",
-      "tempPassword": "First password (8 characters min.)"
-    },
-    "nav": {
-      "overview": "Overview",
-      "records": "Records",
-      "expected": "Expected visitors",
-      "sites": "Sites & posts",
-      "watchlist": "Watchlist",
-      "users": "Users",
-      "account": "My account"
-    },
-    "noSites": "No site yet.",
-    "sites": {
-      "add": "Add a site",
-      "name": "Site name",
-      "address": "Address"
-    },
-    "totalInside": "People inside (all sites)",
-    "expectedToday": "Expected today",
-    "postsOnline": "Posts online",
-    "noPosts": "No post linked.",
-    "lastSeen": "last seen {{time}}",
-    "todayActivity": "Today’s activity",
-    "site": "Site",
-    "post": "Post",
-    "allSites": "All sites",
-    "csv": "Export CSV",
-    "entity": {
-      "visit": "Visitors",
-      "vehicle": "Vehicles",
-      "delivery": "Deliveries",
-      "incident": "Incidents",
-      "patrol": "Patrols",
-      "key_loan": "Keys",
-      "note": "Notes",
-      "shift": "Shifts"
-    },
-    "prereg": {
-      "new": "Invite a visitor",
-      "intro": "The visitor receives a code and a QR. At the gate the guard finds them in “Expected visitors” or scans the QR.",
-      "create": "Create the invitation",
-      "showPass": "Pass",
-      "pass": "VISITOR PASS",
-      "passHint": "Show this code at the security desk with your ID card.",
-      "messageLabel": "Message to send",
-      "copy": "Copy message",
-      "copied": "Message copied",
-      "downloadQr": "Download QR",
-      "message": "Hello {{name}}, you are expected at {{site}} on {{when}} (host: {{host}}). Please show your pass code {{code}} and your ID card at the security desk.",
-      "status": {
-        "pending": "Expected",
-        "arrived": "Arrived",
-        "cancelled": "Cancelled"
-      }
-    },
-    "posts": "Posts",
-    "revoked": "unlinked",
-    "revoke": "Unlink",
-    "enroll": {
-      "button": "Link a post",
-      "instructions": "On the reception PC: Settings → Server connection, then enter:",
-      "expires": "Valid until {{time}}, once."
-    },
-    "watchIntro": "Shared by all posts at their next sync (about one minute).",
-    "usersIntro": "Accounts for the dashboard. Guards keep their PIN on the reception PCs.",
-    "roles": {
-      "owner": "Owner",
-      "supervisor": "Supervisor",
-      "host": "Host"
-    },
-    "roleHint": {
-      "owner": "Everything: sites, posts, users and all data.",
-      "supervisor": "Sees the activity of their sites, invites visitors, manages the watchlist.",
-      "host": "Only invites their own visitors (employees, teachers…)."
-    },
-    "serverSettings": "Server",
-    "retentionHelp": "Records older than this are deleted from the server every day.",
-    "err": {
-      "server_error": "Something went wrong",
-      "bad_setup_token": "Wrong setup code",
-      "bad_email": "E-mail not valid",
-      "password_short": "Password too short (8 characters min.)",
-      "password_mismatch": "The two passwords are different",
-      "bad_credentials": "Wrong e-mail or password",
-      "locked": "Too many attempts, wait one minute",
-      "login_required": "Please sign in again",
-      "forbidden": "Not allowed",
-      "csrf": "Request refused",
-      "not_found": "Not found",
-      "name_required": "Name required",
-      "bad_dates": "Dates not valid",
-      "watch_target": "Fill a name, an ID number or a plate",
-      "reason_required": "A reason is required",
-      "email_taken": "This e-mail already has an account",
-      "last_owner": "There must be at least one owner",
-      "bad_value": "Value not valid",
-      "too_large": "Too much data"
-    }
   },
   "registers": {
     "title": "Registers",

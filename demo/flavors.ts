@@ -33,16 +33,8 @@ export interface Flavor {
   idBase: number
   siteName: string
   postName: string
-  /** [name, address]; the first one is the site of the reception demo */
-  sites: [string, string][]
-  /** post names of sites 1, 2 and 3 */
-  devices: [string, string, string]
   /** 7 visits: 1-3 still inside (1 overstays, with a car), 4-7 left */
   visits: Visit[]
-  /** visitors of sites 2 and 3: [name, company, host] */
-  otherPeople: [string, string, string][]
-  otherVehicle: { plate: string; driver: string; company: string; cargo: string }
-  otherIncidentPlace: string
   notes: [string, string, string]
   van: { plate: string; driver: string; company: string }
   deliveries: [{ carrier: string; recipient: string; tracking: string }, { carrier: string; recipient: string }, { carrier: string; recipient: string; tracking: string; pickedUpBy: string }]
@@ -53,8 +45,6 @@ export interface Flavor {
   loans: [{ borrower: string; info: string }, { borrower: string; info: string }]
   watch: { name: string; idNumber: string; reason: string }
   expected: [{ name: string; company: string; host: string; purpose: string }, { name: string; company: string; host: string; purpose: string; notes: string }, { name: string; company: string; host: string; purpose: string }]
-  owner: string
-  hostUser: string
   /** what "Read card text" returns (front side of the returning visitor's card) */
   cardText: string[]
 }
@@ -70,8 +60,6 @@ const GHARDAIA: Flavor = {
   idBase: 100000000,
   siteName: 'Université de Ghardaïa',
   postName: 'Entrée principale',
-  sites: [['Université de Ghardaïa', 'Campus principal, Ghardaïa'], ['Résidence universitaire', 'Ghardaïa'], ['Annexe pédagogique', 'Ghardaïa']],
-  devices: ['Entrée principale', 'Poste résidence', 'Accueil annexe'],
   visits: [
     { name: 'Yacine Bouameur', company: 'Sonelgaz', host: 'Laboratoire de chimie', purpose: 'Réunion', alt: 'ياسين بوعامر', plate: '04512 116 47' },
     { name: 'Amina Hadj Said', company: 'Mobilis', host: 'Service des achats', purpose: 'Réunion fournisseur' },
@@ -81,10 +69,6 @@ const GHARDAIA: Flavor = {
     { name: 'Brahim Babaousmail', company: 'Bureau d’études Babaousmail', host: 'Rectorat', purpose: 'Rendez-vous' },
     { name: 'Khadidja Benyoucef', company: '', host: 'Bibliothèque centrale', purpose: 'Visite' }
   ],
-  otherPeople: [['Sofiane Belkacem', 'Djezzy', 'Administration'], ['Nawel Cherif', '', 'Hébergement'], ['Hamza Bensaci', 'Sonelgaz', 'Maintenance'],
-    ['Meriem Aouf', '', 'Restauration'], ['Walid Bekkaye', 'Yalidine', 'Courrier'], ['Selma Hamidi', '', 'Scolarité'], ['Ilyes Zerrouki', '', 'Comptabilité']],
-  otherVehicle: { plate: '10245 316 47', driver: 'Abdelkader', company: 'ONOU', cargo: 'Denrées alimentaires' },
-  otherIncidentPlace: 'Pavillon B',
   notes: ['Ronde de 8h : parking et bloc pédagogique C vérifiés, RAS.', 'Éclairage du parking sud en panne, signalé au service technique.', 'Livraison de matériel informatique attendue cet après-midi.'],
   van: { plate: '07823 117 47', driver: 'Nabil', company: 'Yalidine' },
   deliveries: [{ carrier: 'Yalidine', recipient: 'Centre de calcul', tracking: 'YAL-55102' }, { carrier: 'EMS Algérie Poste', recipient: 'مصلحة المحاسبة' },
@@ -98,8 +82,6 @@ const GHARDAIA: Flavor = {
   expected: [{ name: 'Karima Djellouli', company: 'Bureau d’audit', host: 'Rectorat', purpose: 'Audit' },
     { name: 'Slimane Haddad', company: 'Huawei Algérie', host: 'Centre de calcul', purpose: 'Installation', notes: 'Apporte du matériel' },
     { name: 'Dr. Samia Ferhat', company: 'Ministère de l’Enseignement supérieur', host: 'Rectorat', purpose: 'Visite officielle' }],
-  owner: 'Mouna (Rectorat)',
-  hostUser: 'Ahmed (Centre de calcul)',
   cardText: ['الجمهورية الجزائرية الديمقراطية الشعبية', 'CARTE NATIONALE D’IDENTITÉ', 'Nom : BENYOUCEF', 'Prénom : Khadidja', 'اللقب : بن يوسف', 'الاسم : خديجة', 'Né(e) le 14/06/1996 à Ghardaïa']
 }
 
@@ -115,8 +97,6 @@ const GHARDAIA_LAW: Flavor = {
   lostSample: { item: 'محفظة سوداء بها بطاقة طالب', place: 'المدرج 3', finder: 'أمينة حاج سعيد' },
   siteName: 'كلية الحقوق والعلوم السياسية',
   postName: 'مكتب الأمن الرئيسي',
-  sites: [['كلية الحقوق والعلوم السياسية', 'جامعة غرداية'], ...GHARDAIA.sites.slice(1)],
-  devices: ['مكتب الأمن الرئيسي', GHARDAIA.devices[1], GHARDAIA.devices[2]],
   visits: [
     { name: 'ياسين بوعامر', company: 'سونلغاز', host: 'مخبر القانون الخاص', purpose: 'اجتماع', alt: 'Yacine Bouameur', plate: '04512 116 47' },
     { name: 'أمينة حاج سعيد', company: 'موبيليس', host: 'مصلحة المالية والمحاسبة', purpose: 'اجتماع مع ممون' },

@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron'
 import type { BadgeSettings, BadgeSize, Lang } from '@shared/types'
 import { formatDateTime, isRtl, translate } from '@shared/i18n'
-import { QR_BADGE } from '@shared/sync'
+import { QR_BADGE } from '@shared/qr'
 import { conn, getSettings, getVisit } from './db'
 import { qrSvg } from './export'
 

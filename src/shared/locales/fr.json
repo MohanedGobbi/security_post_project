@@ -69,7 +69,8 @@
     "enterPin": "Saisissez votre code PIN",
     "signIn": "Se connecter",
     "wrongPin": "Code PIN incorrect",
-    "locked": "Trop de tentatives. Réessayez dans {{s}} secondes."
+    "locked": "Trop de tentatives. Réessayez dans {{s}} secondes.",
+    "madeBy": "Développé par ROWD Tech"
   },
   "home": {
     "inside": "Sur site",
@@ -272,12 +273,6 @@
     "keyOut": "Cet objet est déjà sorti",
     "alreadyReturned": "Cet objet a déjà été rendu",
     "featureOff": "Cette partie du programme est désactivée dans Paramètres → Fonctionnalités",
-    "serverManaged": "Géré dans le tableau de bord",
-    "syncBadUrl": "Adresse du serveur non valide",
-    "syncUnreachable": "Serveur injoignable",
-    "syncRevoked": "Ce poste a été délié dans le tableau de bord",
-    "syncBadCode": "Code de liaison non valide ou expiré",
-    "syncServer": "Erreur du serveur",
     "printFailed": "Échec de l’impression : vérifiez l’imprimante",
     "pinTaken": "Ce code PIN est déjà utilisé par quelqu’un d’autre : choisissez-en un autre",
     "badKey": "Identifiant invalide ({{s}})",
@@ -495,8 +490,7 @@
     "alertText": "Entrée autorisée, mais prévenez votre responsable.",
     "supervisorPin": "Code PIN du responsable pour passer outre",
     "override": "Passer outre et continuer",
-    "understood": "Compris",
-    "fromServer": "Organisation"
+    "understood": "Compris"
   },
   "alert": {
     "title": "Alertes",
@@ -676,7 +670,7 @@
       },
       "preregistration": {
         "name": "Visiteurs attendus",
-        "desc": "Invités pré-enregistrés (depuis le tableau de bord ou ajoutés ici), avec laissez-passer QR."
+        "desc": "Invités pré-enregistrés avec laissez-passer QR."
       },
       "badges": {
         "name": "Badges visiteurs",
@@ -709,17 +703,12 @@
     "noneToday": "Personne n’est attendu aujourd’hui.",
     "filter": "Nom, société, hôte ou code du laissez-passer…",
     "add": "Ajouter un visiteur attendu",
-    "addHint": "Les hôtes peuvent aussi inviter depuis le tableau de bord web.",
     "added": "{{name}} est attendu(e)",
     "from": "Du",
     "to": "Au",
     "checkIn": "Faire entrer",
     "cancel": "Annuler",
     "arrived": "Arrivé(e)",
-    "source": {
-      "local": "Ajouté ici",
-      "server": "Tableau de bord"
-    },
     "scanPass": "Scanner un laissez-passer",
     "scanHint": "Présentez le QR du laissez-passer devant la caméra.",
     "notFound": "Code de laissez-passer inconnu",
@@ -728,28 +717,6 @@
     "notToday": "Ce laissez-passer n’est pas valable aujourd’hui",
     "pick": "Visiteur attendu",
     "filling": "Visiteur attendu (laissez-passer {{ref}}) : vérifiez la pièce d’identité et complétez."
-  },
-  "sync": {
-    "title": "Connexion au serveur",
-    "intro": "Facultatif. Reliez ce poste au serveur de votre organisation : les responsables le suivent en direct dans le tableau de bord web, la liste de surveillance et les visiteurs attendus sont partagés.",
-    "server": "Serveur",
-    "site": "Site",
-    "post": "Ce poste",
-    "lastSync": "Dernière synchronisation",
-    "never": "jamais",
-    "online": "Connecté",
-    "offline": "Hors ligne",
-    "privacy": "Les photos et les numéros de pièce complets restent sur ce PC ; le serveur reçoit des numéros masqués (••••1234).",
-    "disconnect": "Délier",
-    "now": "Synchroniser",
-    "url": "Adresse du serveur",
-    "code": "Code de liaison",
-    "postName": "Nom de ce poste",
-    "codeHint": "Un propriétaire crée le code dans le tableau de bord : Sites → Relier un poste. Il sert une fois, pendant 24 heures.",
-    "connect": "Relier ce poste",
-    "connected": "Poste relié au serveur",
-    "disconnected": "Poste délié",
-    "last": "Dernière synchronisation : {{time}}"
   },
   "badge": {
     "title": "Badges visiteurs",
@@ -775,126 +742,6 @@
     "visitor": "VISITEUR",
     "visiting": "Rend visite à",
     "returnAtExit": "À rendre à la sortie"
-  },
-  "dash": {
-    "subtitle": "Tableau de bord des responsables",
-    "login": "Se connecter",
-    "updated": "Mis à jour à {{time}}",
-    "setup": {
-      "title": "Premier démarrage",
-      "intro": "Créez le compte propriétaire. Le code d’installation est affiché dans la fenêtre du serveur.",
-      "token": "Code d’installation",
-      "siteName": "Premier site (facultatif)",
-      "create": "Créer le compte propriétaire"
-    },
-    "user": {
-      "name": "Nom",
-      "email": "E-mail",
-      "password": "Mot de passe",
-      "role": "Rôle",
-      "sites": "Sites",
-      "newPassword": "Nouveau mot de passe (8 caractères min.)",
-      "confirmPassword": "Confirmer le mot de passe",
-      "changePassword": "Changer le mot de passe",
-      "resetPassword": "Changer le mot de passe",
-      "tempPassword": "Premier mot de passe (8 caractères min.)"
-    },
-    "nav": {
-      "overview": "Vue d’ensemble",
-      "records": "Registres",
-      "expected": "Visiteurs attendus",
-      "sites": "Sites et postes",
-      "watchlist": "Liste de surveillance",
-      "users": "Utilisateurs",
-      "account": "Mon compte"
-    },
-    "noSites": "Aucun site pour le moment.",
-    "sites": {
-      "add": "Ajouter un site",
-      "name": "Nom du site",
-      "address": "Adresse"
-    },
-    "totalInside": "Personnes sur site (tous sites)",
-    "expectedToday": "Attendus aujourd’hui",
-    "postsOnline": "Postes connectés",
-    "noPosts": "Aucun poste relié.",
-    "lastSeen": "vu le {{time}}",
-    "todayActivity": "Activité du jour",
-    "site": "Site",
-    "post": "Poste",
-    "allSites": "Tous les sites",
-    "csv": "Exporter CSV",
-    "entity": {
-      "visit": "Visiteurs",
-      "vehicle": "Véhicules",
-      "delivery": "Colis",
-      "incident": "Incidents",
-      "patrol": "Rondes",
-      "key_loan": "Clés",
-      "note": "Main courante",
-      "shift": "Services"
-    },
-    "prereg": {
-      "new": "Inviter un visiteur",
-      "intro": "Le visiteur reçoit un code et un QR. Au poste, l’agent le trouve dans « Visiteurs attendus » ou scanne le QR.",
-      "create": "Créer l’invitation",
-      "showPass": "Laissez-passer",
-      "pass": "LAISSEZ-PASSER VISITEUR",
-      "passHint": "Présentez ce code au poste de sécurité avec votre pièce d’identité.",
-      "messageLabel": "Message à envoyer",
-      "copy": "Copier le message",
-      "copied": "Message copié",
-      "downloadQr": "Télécharger le QR",
-      "message": "Bonjour {{name}}, vous êtes attendu(e) à {{site}} le {{when}} (hôte : {{host}}). Merci de présenter votre code {{code}} et votre pièce d’identité au poste de sécurité.",
-      "status": {
-        "pending": "Attendu",
-        "arrived": "Arrivé",
-        "cancelled": "Annulé"
-      }
-    },
-    "posts": "Postes",
-    "revoked": "délié",
-    "revoke": "Délier",
-    "enroll": {
-      "button": "Relier un poste",
-      "instructions": "Sur le PC de l’accueil : Paramètres → Connexion au serveur, puis saisir :",
-      "expires": "Valable jusqu’au {{time}}, une seule fois."
-    },
-    "watchIntro": "Partagée par tous les postes à leur prochaine synchronisation (environ une minute).",
-    "usersIntro": "Comptes du tableau de bord. Les agents gardent leur code PIN sur les PC de l’accueil.",
-    "roles": {
-      "owner": "Propriétaire",
-      "supervisor": "Responsable",
-      "host": "Hôte"
-    },
-    "roleHint": {
-      "owner": "Tout : sites, postes, utilisateurs et toutes les données.",
-      "supervisor": "Voit l’activité de ses sites, invite des visiteurs, gère la liste de surveillance.",
-      "host": "Invite seulement ses propres visiteurs (employés, enseignants…)."
-    },
-    "serverSettings": "Serveur",
-    "retentionHelp": "Les enregistrements plus anciens sont supprimés du serveur chaque jour.",
-    "err": {
-      "server_error": "Une erreur est survenue",
-      "bad_setup_token": "Code d’installation incorrect",
-      "bad_email": "E-mail non valide",
-      "password_short": "Mot de passe trop court (8 caractères min.)",
-      "password_mismatch": "Les deux mots de passe sont différents",
-      "bad_credentials": "E-mail ou mot de passe incorrect",
-      "locked": "Trop de tentatives, patientez une minute",
-      "login_required": "Merci de vous reconnecter",
-      "forbidden": "Non autorisé",
-      "csrf": "Requête refusée",
-      "not_found": "Introuvable",
-      "name_required": "Nom obligatoire",
-      "bad_dates": "Dates non valides",
-      "watch_target": "Indiquez un nom, un n° de pièce ou une immatriculation",
-      "reason_required": "Le motif est obligatoire",
-      "email_taken": "Cet e-mail a déjà un compte",
-      "last_owner": "Il faut au moins un propriétaire",
-      "bad_value": "Valeur non valide",
-      "too_large": "Trop de données"
-    }
   },
   "registers": {
     "title": "Registres",

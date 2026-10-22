@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ExpectedVisitor } from '@shared/types'
-import { QR_PREREG } from '@shared/sync'
+import { QR_PREREG } from '@shared/qr'
 import { formatDateTime, LOCALE_TAG } from '@shared/i18n'
 import { useApp } from '../App'
 import { currentLang } from '../i18n'
@@ -87,7 +87,6 @@ export default function ExpectedPage(): ReactNode {
       <div className="meta-col">
         <span className="mono ref">{e.refCode}</span>
         {e.validFrom !== e.validTo || e.validFrom !== today ? <span>{day(e.validFrom)}{e.validTo !== e.validFrom && ` → ${day(e.validTo)}`}</span> : null}
-        <span className={`tag ${e.source === 'server' ? 'kind-shift_start' : ''}`}>{t(`expected.source.${e.source}`)}</span>
       </div>
       <div className="row-actions">
         {e.status === 'arrived' ? (
@@ -95,7 +94,7 @@ export default function ExpectedPage(): ReactNode {
         ) : (
           <>
             {e.validFrom <= today && <button type="button" className="primary" onClick={() => checkInExpected(e)}><Icon name="enter" /> {t('expected.checkIn')}</button>}
-            {e.source === 'local' && <button type="button" onClick={() => cancel(e.id)}>{t('expected.cancel')}</button>}
+            <button type="button" onClick={() => cancel(e.id)}>{t('expected.cancel')}</button>
           </>
         )}
       </div>
@@ -124,7 +123,6 @@ export default function ExpectedPage(): ReactNode {
 
       <form className="card" onSubmit={add}>
         <h2>{t('expected.add')}</h2>
-        <p className="hint">{t('expected.addHint')}</p>
         <label className="req">{t('visitor.fullName')}<input value={f.fullName} onChange={(e) => set('fullName', e.target.value)} dir="auto" /></label>
         <div className="row2">
           <label>{t('visitor.company')}<input value={f.company} onChange={(e) => set('company', e.target.value)} dir="auto" /></label>

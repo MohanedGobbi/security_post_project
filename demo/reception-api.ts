@@ -7,7 +7,7 @@ import type {
 } from '@shared/types'
 import { formatDateTime, translate } from '@shared/i18n'
 import { normalizeFeatures, PROFILES, summaryKeyOn } from '@shared/features'
-import { QR_BADGE, QR_PREREG } from '@shared/sync'
+import { QR_BADGE, QR_PREREG } from '@shared/qr'
 import {
   db, dayBounds, fail, nextId, nowIso, photos, refresh, save, today, wait,
   type DEntry, type DExpected, type DLoan, type DRound, type DShift, type DUser, type DVisit
@@ -112,10 +112,9 @@ function watchHits(q: { idNumber?: string; name?: string; plate?: string }): Wat
   if (!db().features.modules.watchlist) return []
   const out: WatchHit[] = []
   for (const w of db().watch.filter((x) => x.active)) {
-    const id = w.org ? -w.id : w.id
-    if (q.idNumber && normId(q.idNumber) && w.idNumber && normId(w.idNumber) === normId(q.idNumber)) out.push({ id, level: w.level, reason: w.reason, name: w.name, match: 'id' })
-    else if (q.plate && normPlate(q.plate).length >= 3 && w.plate && normPlate(w.plate) === normPlate(q.plate)) out.push({ id, level: w.level, reason: w.reason, name: w.name, match: 'plate' })
-    else if (q.name && normName(q.name).includes(' ') && w.name && normName(w.name) === normName(q.name)) out.push({ id, level: w.level, reason: w.reason, name: w.name, match: 'name' })
+    if (q.idNumber && normId(q.idNumber) && w.idNumber && normId(w.idNumber) === normId(q.idNumber)) out.push({ id: w.id, level: w.level, reason: w.reason, name: w.name, match: 'id' })
+    else if (q.plate && normPlate(q.plate).length >= 3 && w.plate && normPlate(w.plate) === normPlate(q.plate)) out.push({ id: w.id, level: w.level, reason: w.reason, name: w.name, match: 'plate' })
+    else if (q.name && normName(q.name).includes(' ') && w.name && normName(w.name) === normName(q.name)) out.push({ id: w.id, level: w.level, reason: w.reason, name: w.name, match: 'name' })
   }
   return out
 }
@@ -219,7 +218,7 @@ const loanRow = (l: DLoan): KeyLoan => ({
 // ---------- expected ----------
 const expectedRow = (e: DExpected): ExpectedVisitor => ({
   id: e.id, refCode: e.refCode, fullName: e.fullName, company: e.company, host: e.host, purpose: e.purpose, phone: e.phone, validFrom: e.validFrom,
-  validTo: e.validTo, notes: e.notes, status: e.status, source: e.source, arrivedAt: e.arrivedAt, visitId: e.visitId
+  validTo: e.validTo, notes: e.notes, status: e.status, arrivedAt: e.arrivedAt, visitId: e.visitId
 })
 const newRef = (): string => {
   const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -1081,56 +1080,28 @@ export const demoApi: Api = {
       const t = today()
       const until = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10)
       const rank = { pending: 0, arrived: 1, cancelled: 2 }
-      return db().expected.filter((e) => e.siteId === 1 && e.validTo >= t && e.validFrom <= until && e.status !== 'cancelled')
+      return db().expected.filter((e) => e.validTo >= t && e.validFrom <= until && e.status !== 'cancelled')
         .sort((a, b) => rank[a.status] - rank[b.status] || a.validFrom.localeCompare(b.validFrom)).map(expectedRow)
     },
     async add(input) {
       need('preregistration')
       if (!input.fullName.trim()) fail('error.nameRequired')
       db().expected.push({ id: nextId(), refCode: newRef(), ...input, fullName: input.fullName.trim(), validTo: input.validTo >= input.validFrom ? input.validTo : input.validFrom,
-        status: 'pending', source: 'local', arrivedAt: null, visitId: null, siteId: 1, createdBy: me().name, email: '', createdAt: nowIso() })
+        status: 'pending', arrivedAt: null, visitId: null })
       done(undefined)
     },
     async cancel(id) {
       need('preregistration')
       const e = db().expected.find((x) => x.id === id)
       if (!e) fail('error.notFound')
-      if (e?.source === 'server') fail('error.serverManaged')
       Object.assign(e as object, { status: 'cancelled' })
       done(undefined)
     },
     async findByRef(ref) {
       refresh()
       const code = ref.trim().toUpperCase().replace(QR_PREREG, '')
-      const e = db().expected.find((x) => x.refCode === code && x.siteId === 1)
+      const e = db().expected.find((x) => x.refCode === code)
       return e ? expectedRow(e) : null
-    }
-  },
-
-  sync: {
-    async status() {
-      const s = db().sync
-      return { configured: s.configured, url: 'https://demo.security-register.app', siteName: db().sites[0]?.name ?? '', deviceName: s.deviceName,
-        lastSync: s.lastSync, lastError: '', online: s.configured, syncing: false }
-    },
-    async connect(_url, code, deviceName) {
-      admin()
-      await wait(600)
-      if (!/^[A-Z0-9]{6,12}$/i.test(code.trim())) fail('error.syncBadCode')
-      Object.assign(db().sync, { configured: true, deviceName: deviceName || 'Post', lastSync: nowIso() })
-      save()
-      return demoApi.sync.status()
-    },
-    async disconnect() {
-      admin()
-      db().sync.configured = false
-      done(undefined)
-    },
-    async now() {
-      await wait(500)
-      if (db().sync.configured) db().sync.lastSync = nowIso()
-      save()
-      return demoApi.sync.status()
     }
   },
 
@@ -1164,8 +1135,8 @@ export const demoApi: Api = {
       return watchHits(q)
     },
     async list(): Promise<WatchRow[]> {
-      return db().watch.map((w) => ({ id: w.org ? -w.id : w.id, name: w.name, idNumber: w.idNumber, plate: w.plate, reason: w.reason, level: w.level,
-        addedBy: w.org ? '' : w.addedBy, createdAt: w.createdAt, active: w.active, source: w.org ? 'server' : 'local' }))
+      return db().watch.map((w) => ({ id: w.id, name: w.name, idNumber: w.idNumber, plate: w.plate, reason: w.reason, level: w.level,
+        addedBy: w.addedBy, createdAt: w.createdAt, active: w.active }))
     },
     async add(input) {
       admin()
@@ -1173,7 +1144,7 @@ export const demoApi: Api = {
       if (!input.name.trim() && !normId(input.idNumber) && !normPlate(input.plate)) fail('error.watchTarget')
       if (!input.reason.trim()) fail('error.reasonRequired')
       db().watch.push({ id: nextId(), name: input.name.trim(), idNumber: normId(input.idNumber), plate: input.plate.trim().toUpperCase(), reason: input.reason.trim(),
-        level: input.level, active: true, addedBy: me().name, createdAt: nowIso(), org: false })
+        level: input.level, active: true, addedBy: me().name, createdAt: nowIso() })
       done(undefined)
     },
     async setActive(id, active) {

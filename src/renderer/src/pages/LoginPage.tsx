@@ -4,6 +4,7 @@ import type { User } from '@shared/types'
 import { LangSwitch } from '../App'
 import { errorText } from '../util'
 import { appTitle, BRAND, orgName } from '../brand'
+import rowdLogo from '../assets/brands/rowd-tech.png'
 
 interface Props {
   siteName: string
@@ -87,6 +88,7 @@ function PinOnlyLogin({ onDone, toast }: Props): ReactNode {
         <p className="muted">{orgName(i18n.language)}</p>
         <h2>{t('login.enterPin')}</h2>
         <PinPad pin={pin} setPin={setPin} busy={busy} onOk={submit} />
+        <p className="made-by"><img src={rowdLogo} alt="" /><span>{t('login.madeBy')}</span></p>
       </div>
     </div>
   )

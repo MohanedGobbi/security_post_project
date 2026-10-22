@@ -13,8 +13,6 @@ and University-of-Ghardaia versions were deleted on 20 Oct 2026.
 | Part | Folder | Runs on | Purpose |
 |---|---|---|---|
 | Desktop app | `src/` | Windows PC at the security office (Electron) | Registers, visitors with ID scanning, shifts, administration. Offline. |
-| Organisation server | `server/` | Any PC with Node.js 22.5+ | Optional: links several posts, serves the dashboard. Not part of the faculty's current need. |
-| Supervisor dashboard | `dashboard/` | Browser, served by the server | Optional, same. |
 | Web demo | `demo/` | Vercel (static) | The real screens with their API answered in the browser, Arabic sample data, for showing the client. |
 | Test bench | `tools/scan-test/` | Windows, Python | Synthetic ID cards and a runner that measures the scanner on the real app. |
 
@@ -34,9 +32,9 @@ npm run dev:demo     # the web demo
   | رئيس فرقة الأمن | team leader | `135790` |
 
   A warning on Administration → Accounts stays until the PINs are changed. Guards are added there.
-- Demo PINs (shown in the demo's bottom bar): administrator `1234`, team leaders `2580` and `1357`, guard `5678`; dashboard demo `demo@security-register.app` / `demo1234`.
+- Demo PINs (shown in the demo's bottom bar): administrator `1234`, team leaders `2580` and `1357`, guard `5678`.
 - Data folder of the dev app: `%APPDATA%\FacultySecurity` (old test data of the previous product name sits in `%APPDATA%\Security Register`). `SECREG_DATA_DIR` overrides it (all tests use scratch folders).
-- Environment: `SECREG_EXPORT_DIR` (exports without a dialog); server: `SECREG_PORT`, `SECREG_HOST`, `SECREG_DATA`, `SECREG_TLS_CERT`, `SECREG_TLS_KEY`.
+- Environment: `SECREG_EXPORT_DIR` (exports without a dialog).
 
 ## 3. Pushing to GitHub from this machine
 `github.com` on the developer's network often times out on the IP DNS returns. Pushing works through another GitHub address, for one command only:
@@ -52,7 +50,6 @@ If it times out, try `140.82.113.3`, `20.201.28.151` or `20.205.243.166`. Git id
   - ID numbers are looked up through an HMAC hash; PINs are scrypt hashes; `users.pin_lookup` is a keyed hash of the PIN so the PIN alone finds its owner (PINs are unique).
   - Every sensitive action goes to the `audit` table. Old records are purged by the retention setting (default 365 days); card pictures and other children go with their parent (`ON DELETE CASCADE`).
 - Scanning (offline): `tesseract.js` (models in `resources/tessdata`: ara, fra, eng and `mrz`), the `mrz` package, `zxing-wasm` for QR codes.
-- Server: plain `node:http`, runs `.ts` directly (Node type stripping), hence `package.json` with `"type":"module"` in `server/` and `src/shared/`.
 
 ## 5. Folder map
 ```
@@ -61,8 +58,7 @@ src/preload/      window.api (typed by Api in src/shared/types.ts)
 src/renderer/src/ React UI: pages/, components/, styles.css, brand.ts (names, logos, colours of the faculty), scanPipeline.ts
 src/shared/       types.ts (Api), faculty.ts (first-start settings and accounts), registers.ts (rules), registerTemplates.ts, features.ts, locales/{ar,fr,en}.json
 resources/tessdata/  OCR models (licences in NOTICE.md)
-server/, dashboard/  optional multi-site server and its web dashboard
-demo/             web demo: reception-api.ts (mock of window.api), dashboard-api.ts, store.ts, flavors.ts (sample data)
+demo/             web demo: reception-api.ts (mock of window.api), store.ts, flavors.ts (sample data)
 tools/scan-test/  scanner test bench (README inside)
 vercel.json       Vercel build settings for the demo
 ```
@@ -137,7 +133,7 @@ If the program is killed within the first seconds of its very first start, Windo
 ## 7. How it was tested (and what that proves)
 All of it on the **real desktop app** driven through Chrome's debugging port (`--remote-debugging-port`, Playwright for Python) on scratch data folders, plus the web demo in the browser pane:
 registers and corrections, the team leader handover, the register builder, the audit trail, first start and restart, lost-key recovery, card pictures (also: unreadable in the database files, removed with the visit).
-Scanner: `tools/scan-test` (synthetic cards). Server API script: 25/25 (earlier phases). **No automated test suite exists**; these were manual scripted runs (the scripts are not in the repo except the scanner bench).
+Scanner: `tools/scan-test` (synthetic cards). **No automated test suite exists**; these were manual scripted runs (the scripts are not in the repo except the scanner bench).
 
 ## 8. Scanner status (read before touching it)
 - Synthetic Algerian-style cards through the real app: readable-font set **17/18** (was 13/18 with a single shot), passport read, harsh OCR-A set 4/18 (not representative: the model is OCR-B).
@@ -174,14 +170,12 @@ Scanner: `tools/scan-test` (synthetic cards). Server API script: 25/25 (earlier 
 
 ## 11. Gotchas that cost time
 - Windows + Git Bash: long `node -e` one-liners with quotes or backticks break. Write a script file and run it.
-- The three TypeScript projects that share `src/renderer` code (`tsconfig.web.json`, `dashboard/`, `demo/`) resolve different aliases: code shared with the dashboard must import `@desktop/...`, not `@renderer/...`.
 - `electron-vite build` writes `out/` (used by the test scripts); `npm run dev` uses its own dev server and restarts the main process on change.
 - Killing the app hard (`taskkill /F`) in its first seconds is exactly the lost-key case above; the tests use it on purpose.
 - Typing in the browser pane's tools does not send real key events: set input values with the native setter and an `input` event (see how the tests do it).
 - `.gitattributes` forces LF; Windows may warn about CRLF, ignore.
 
 ## 12. Security notes
-- Photos, card pictures and full ID numbers never leave the post PC: `src/shared/sync.ts` masks them on purpose (only matters if the optional server is used).
+- Photos, card pictures and full ID numbers never leave the PC: the program has no network connection of its own (an earlier optional multi-site server and dashboard were removed on 22 Oct 2026; they stay in the git history).
 - The encryption key is tied to the Windows account through DPAPI: back up by exports, not by copying the data folder.
 - Starting PINs are public in this repository (`src/shared/faculty.ts`): the administrator must change them at the first login (the warning insists).
-- Dashboard API calls send `X-Requested-With: secreg` (CSRF check); cookies are HttpOnly and SameSite=Strict. `server-data/server.key` encrypts the watchlist ID numbers: keep `server-data/` out of git.

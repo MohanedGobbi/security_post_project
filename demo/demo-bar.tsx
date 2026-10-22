@@ -3,15 +3,13 @@ import { createRoot } from 'react-dom/client'
 import { resetDemo } from './store'
 import { F } from './flavors'
 
-type Kind = 'app' | 'dashboard'
-
 const TEXT = {
-  en: { demo: 'Demo', pin: 'PIN', dashboard: 'demo@security-register.app · demo1234', local: 'data stays in this browser', reset: 'Reset demo', home: 'Demo home' },
-  fr: { demo: 'Démo', pin: 'PIN', dashboard: 'demo@security-register.app · demo1234', local: 'données dans ce navigateur', reset: 'Réinitialiser', home: 'Accueil démo' },
-  ar: { demo: 'نسخة تجريبية', pin: 'الرقم السري', dashboard: 'demo@security-register.app · demo1234', local: 'البيانات في هذا المتصفح فقط', reset: 'إعادة التعيين', home: 'صفحة العرض' }
+  en: { demo: 'Demo', pin: 'PIN', local: 'data stays in this browser', reset: 'Reset demo', home: 'Demo home' },
+  fr: { demo: 'Démo', pin: 'PIN', local: 'données dans ce navigateur', reset: 'Réinitialiser', home: 'Accueil démo' },
+  ar: { demo: 'نسخة تجريبية', pin: 'الرقم السري', local: 'البيانات في هذا المتصفح فقط', reset: 'إعادة التعيين', home: 'صفحة العرض' }
 }
 
-function Bar({ kind }: { kind: Kind }): ReactNode {
+function Bar(): ReactNode {
   const [lang, setLang] = useState(document.documentElement.lang)
   const [open, setOpen] = useState(true)
   // follow the language chosen in the app
@@ -25,7 +23,7 @@ function Bar({ kind }: { kind: Kind }): ReactNode {
   return (
     <div className="demo-bar" role="note">
       <strong>{t.demo}</strong>
-      <span className="mono">{kind === 'app' ? `${t.pin}: ${F.users.map((u) => `${u.name} ${u.pin}`).join(' · ')}` : t.dashboard}</span>
+      <span className="mono">{`${t.pin}: ${F.users.map((u) => `${u.name} ${u.pin}`).join(' · ')}`}</span>
       <span className="muted">{t.local}</span>
       <button type="button" className="link" onClick={() => { resetDemo(); location.reload() }}>{t.reset}</button>
       <button type="button" className="link" onClick={() => setOpen(false)} aria-label="×">×</button>
@@ -33,8 +31,8 @@ function Bar({ kind }: { kind: Kind }): ReactNode {
   )
 }
 
-export function mountDemoBar(kind: Kind): void {
+export function mountDemoBar(): void {
   const el = document.createElement('div')
   document.body.appendChild(el)
-  createRoot(el).render(<Bar kind={kind} />)
+  createRoot(el).render(<Bar />)
 }

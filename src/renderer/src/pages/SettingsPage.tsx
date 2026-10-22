@@ -8,7 +8,6 @@ import { currentLang } from '../i18n'
 import { errorText, saveCameraId, savedCameraId } from '../util'
 import CustomFieldsEditor from '../components/CustomFieldsEditor'
 import FeaturesSettings from '../components/FeaturesSettings'
-import ServerSettings from '../components/ServerSettings'
 import BadgeSettingsCard from '../components/BadgeSettingsCard'
 
 function CameraSettings(): ReactNode {
@@ -188,7 +187,6 @@ export default function SettingsPage(): ReactNode {
         <CameraSettings />
         {user.role === 'admin' && <FeaturesSettings />}
         {user.role === 'admin' && <SiteSettings />}
-        {user.role === 'admin' && <ServerSettings />}
         {user.role === 'admin' && features.modules.badges && <BadgeSettingsCard />}
         {user.role === 'admin' && <CustomFieldsEditor />}
       </div>

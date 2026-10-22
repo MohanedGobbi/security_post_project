@@ -1,4 +1,4 @@
-// Demo data shared by the reception app and the dashboard demos.
+// Demo data of the web demo (kept in the browser's localStorage).
 // Everything lives in this browser (localStorage); photos only in memory.
 import type {
   BadgeSettings, Checkpoint, CheckStatus, CustomField, CustomValues, ExpectedVisitor, Features, IdType, IncidentType, KeyKind,
@@ -39,16 +39,8 @@ export interface DLoan {
 }
 export interface DWatch {
   id: number; name: string; idNumber: string; plate: string; reason: string; level: WatchLevel; active: boolean; addedBy: string; createdAt: string
-  /** true = created in the dashboard (organisation list) */
-  org: boolean
 }
-export interface DExpected extends ExpectedVisitor { siteId: number; createdBy: string; email: string; createdAt: string }
-export interface DDashUser { id: number; email: string; name: string; role: 'owner' | 'supervisor' | 'host'; password: string; language: Lang; active: boolean; siteIds: number[] | null; createdAt: string }
-export interface DSite { id: number; name: string; address: string; active: boolean }
-export interface DDevice { id: number; siteId: number; name: string; lastSeen: string | null; revoked: boolean; appVersion: string; createdAt: string }
-/** visit / vehicle / incident… of the other demo sites, already in the shape the dashboard expects */
-export interface DOtherRecord { entity: string; localId: number; siteId: number; device: string; time: string; data: Record<string, unknown> }
-
+export type DExpected = ExpectedVisitor
 /** register engine: an entry keeps the names as they were, like the main process */
 /** the audit trail, like the audit table of the desktop app */
 export interface DAudit { id: number; time: string; userId: number | null; action: string; entity: string; entityId: number | null; detail: string }
@@ -84,21 +76,14 @@ export interface DemoStore {
   registers: RegisterDef[]
   entries: DEntry[]
   corrections: DCorrection[]
-  sync: { configured: boolean; deviceName: string; lastSync: string | null }
-  // dashboard side
-  dashUsers: DDashUser[]
-  dashUserId: number | null
-  sites: DSite[]
-  devices: DDevice[]
-  other: DOtherRecord[]
   retentionDays: number
   seq: number
 }
 
 // one store per brand, so the generic and the branded demo never mix their data
 const KEY = 'secreg-demo-faculty'
-// 2: registers (generic engine) · 3: faculty registers and sample entries
-const VERSION = 3
+// 2: registers (generic engine) · 3: faculty registers and sample entries · 4: no server/dashboard data
+const VERSION = 4
 
 const iso = (msAgo: number): string => new Date(Date.now() - msAgo).toISOString()
 const H = 3600000
@@ -119,25 +104,6 @@ function seed(): DemoStore {
       company: f.company, host: f.host, purpose: f.purpose, badgeNo: `V-${id}`, vehiclePlate: f.plate ?? '', notes: '', timeIn: iso(inAgo), timeOut: outAgo === null ? null : iso(outAgo),
       guardIn: id % 2 ? G : A, guardOut: outAgo === null ? null : G, custom: {}, hasPhoto: false
     }
-  }
-  const other = (): DOtherRecord[] => {
-    const out: DOtherRecord[] = []
-    F.otherPeople.forEach(([name, company, host], i) => {
-      const site = i % 2 ? 3 : 2
-      const inAgo = (i + 1) * 47 * M
-      out.push({ entity: 'visit', localId: i + 1, siteId: site, device: F.devices[site - 1], time: iso(inAgo), data: {
-        fullName: name, fullNameAlt: '', idType: 'national_id', idMasked: `••••${(4321 + i * 37) % 10000}`, company, host, purpose: 'Réunion', badgeNo: `B-${i + 1}`,
-        vehiclePlate: '', notes: '', timeIn: iso(inAgo), timeOut: i < 3 ? null : iso(inAgo - 35 * M), guardIn: 'Karim', guardOut: i < 3 ? null : 'Karim', custom: []
-      } })
-    })
-    const ov = F.otherVehicle
-    out.push({ entity: 'vehicle', localId: 1, siteId: 2, device: F.devices[1], time: iso(2 * H), data: {
-      plate: ov.plate, vehicleType: 'truck', color: 'Blanc', driverName: ov.driver, company: ov.company, passengers: 1, cargo: ov.cargo,
-      notes: '', timeIn: iso(2 * H), timeOut: null, guardIn: 'Karim', guardOut: null, custom: [] } })
-    out.push({ entity: 'incident', localId: 1, siteId: 3, device: F.devices[2], time: iso(5 * H), data: {
-      type: 'fire_alarm', severity: 'medium', occurredAt: iso(5 * H), location: F.otherIncidentPlace, description: 'Alarme incendie déclenchée par de la fumée de cuisine.',
-      peopleInvolved: '', actionTaken: 'Vérification, réarmement', guard: 'Leila', closedAt: iso(4 * H), closedBy: 'Leila', resolution: 'Fausse alerte', photoCount: 0 } })
-    return out
   }
   const [v1] = F.visits
   const registers = templatesFor(F.registerKeys ?? ['lost_found', 'custody']).map((r, i) => ({ ...r, id: i + 1, openedAt: iso(40 * 24 * H), openedBy: A }))
@@ -225,18 +191,18 @@ function seed(): DemoStore {
       { id: 2, itemId: 4, borrower: F.loans[1].borrower, borrowerInfo: F.loans[1].info, outAt: iso(3 * H), dueAt: iso(30 * M), returnedAt: null, guardOut: G, guardIn: null, notes: '' }
     ],
     watch: [
-      { id: 1, name: F.watch.name, idNumber: F.watch.idNumber, plate: '', reason: F.watch.reason, level: 'deny', active: true, addedBy: 'Direction', createdAt: iso(30 * 24 * H), org: true }
+      { id: 1, name: F.watch.name, idNumber: F.watch.idNumber, plate: '', reason: F.watch.reason, level: 'deny', active: true, addedBy: 'Direction', createdAt: iso(30 * 24 * H) }
     ],
     customFields: [
       { id: 1, entity: 'visit', labels: { ar: 'نوع الشارة', en: 'Badge type', fr: 'Type de badge' }, type: 'select', options: ['Visiteur', 'Prestataire', 'VIP'], required: false, active: true }
     ],
     expected: [
       { id: 1, refCode: 'ZX2SP6', fullName: e1.name, company: e1.company, host: e1.host, purpose: e1.purpose, phone: '', validFrom: dayStr(), validTo: dayStr(),
-        notes: '', status: 'pending', source: 'server', arrivedAt: null, visitId: null, siteId: 1, createdBy: F.owner, email: '', createdAt: iso(26 * H) },
+        notes: '', status: 'pending', arrivedAt: null, visitId: null },
       { id: 2, refCode: 'QM7TA4', fullName: e2.name, company: e2.company, host: e2.host, purpose: e2.purpose, phone: '', validFrom: dayStr(), validTo: dayStr(1),
-        notes: e2.notes, status: 'pending', source: 'local', arrivedAt: null, visitId: null, siteId: 1, createdBy: A, email: '', createdAt: iso(3 * H) },
+        notes: e2.notes, status: 'pending', arrivedAt: null, visitId: null },
       { id: 3, refCode: 'HT3PB9', fullName: e3.name, company: e3.company, host: e3.host, purpose: e3.purpose, phone: '', validFrom: dayStr(1), validTo: dayStr(1),
-        notes: '', status: 'pending', source: 'server', arrivedAt: null, visitId: null, siteId: 1, createdBy: F.owner, email: '', createdAt: iso(5 * H) }
+        notes: '', status: 'pending', arrivedAt: null, visitId: null }
     ],
     registers,
     entries,
@@ -248,19 +214,6 @@ function seed(): DemoStore {
       ])
     ].map((a, i) => ({ ...a, id: i + 1 })),
     corrections: [],
-    sync: { configured: true, deviceName: F.devices[0], lastSync: iso(30000) },
-    dashUsers: [
-      { id: 1, email: 'demo@security-register.app', name: F.owner, role: 'owner', password: 'demo1234', language: 'fr', active: true, siteIds: null, createdAt: iso(60 * 24 * H) },
-      { id: 2, email: 'it@security-register.app', name: F.hostUser, role: 'host', password: 'demo1234', language: 'fr', active: true, siteIds: [1], createdAt: iso(20 * 24 * H) }
-    ],
-    dashUserId: null,
-    sites: F.sites.map(([name, address], i) => ({ id: i + 1, name, address, active: true })),
-    devices: [
-      { id: 1, siteId: 1, name: F.devices[0], lastSeen: iso(30000), revoked: false, appVersion: '0.1.0', createdAt: iso(30 * 24 * H) },
-      { id: 2, siteId: 2, name: F.devices[1], lastSeen: iso(45000), revoked: false, appVersion: '0.1.0', createdAt: iso(30 * 24 * H) },
-      { id: 3, siteId: 3, name: F.devices[2], lastSeen: iso(3 * H), revoked: false, appVersion: '0.1.0', createdAt: iso(30 * 24 * H) }
-    ],
-    other: other(),
     retentionDays: 365,
     seq: 1000
   }
@@ -283,7 +236,7 @@ export function db(): DemoStore {
   return store
 }
 
-/** Saves after every change; another tab (dashboard ↔ reception) picks it up on its next read */
+/** Saves after every change; another tab picks it up on its next read */
 export function save(): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(db()))
@@ -292,7 +245,7 @@ export function save(): void {
   }
 }
 
-/** Reload from storage (changes made in the other demo tab) */
+/** Reload from storage (changes made in another demo tab) */
 export function refresh(): void {
   try {
     const raw = localStorage.getItem(KEY)

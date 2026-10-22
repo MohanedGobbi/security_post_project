@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LANGS } from '@shared/i18n'
-import type { AlertItem, ExpectedVisitor, Features, Lang, Module, Permission, SyncStatus, User } from '@shared/types'
+import type { AlertItem, ExpectedVisitor, Features, Lang, Module, Permission, User } from '@shared/types'
 import { can } from '@shared/permissions'
 import { formatDateTime } from '@shared/i18n'
 import { ALL_ON } from '@shared/features'
@@ -141,17 +141,7 @@ export default function App(): ReactNode {
   const [printing, setPrinting] = useState(false)
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [features, setFeatures] = useState<Features>(ALL_ON)
-  const [sync, setSync] = useState<SyncStatus | null>(null)
   const pendingExpected = useRef<ExpectedVisitor | null>(null)
-
-  // connection to the organisation's server, when there is one
-  useEffect(() => {
-    if (state !== 'ready') return
-    const load = (): void => { window.api.sync.status().then(setSync).catch(() => undefined) }
-    load()
-    const timer = setInterval(load, 30000)
-    return () => clearInterval(timer)
-  }, [state, page])
 
   const refreshFeatures = useCallback(async () => {
     setFeatures(await window.api.settings.getFeatures())
@@ -284,12 +274,6 @@ export default function App(): ReactNode {
             </div>
           </div>
           <div className="topbar-end">
-            {sync?.configured && (
-              <button type="button" className={`sync-pill ${sync.online ? 'ok' : 'off'}`} onClick={() => setPage('settings')}
-                title={sync.lastSync ? t('sync.last', { time: formatDateTime(sync.lastSync, i18n.language as Lang) }) : t('sync.never')}>
-                <Icon name="cloud" size={16} /> {t(sync.online ? 'sync.online' : 'sync.offline')}
-              </button>
-            )}
             {alerts.length > 0 && (
               <button type="button" className="alert-bell" onClick={() => setPage('home')} aria-label={t('alert.title')}>
                 <Icon name="alert" size={18} /> {alerts.length}

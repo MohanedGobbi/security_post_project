@@ -63,18 +63,12 @@ export default function WatchlistPage(): ReactNode {
                     <td>{r.plate && <span className="plate">{r.plate}</span>}</td>
                     <td dir="auto">{r.reason}</td>
                     <td><span className={`tag level-${r.level}`}>{t(`watch.levels.${r.level}`)}</span></td>
-                    <td>
-                      {r.source === 'server'
-                        ? <span className="tag kind-shift_start">{t('watch.fromServer')}</span>
-                        : <>{r.addedBy}<div className="muted">{formatDateTime(r.createdAt, lang)}</div></>}
-                    </td>
+                    <td>{r.addedBy}<div className="muted">{formatDateTime(r.createdAt, lang)}</div></td>
                     {isAdmin && (
                       <td className="row-actions">
-                        {r.source === 'local' && (
-                          <button type="button" onClick={() => run(() => window.api.watchlist.setActive(r.id, !r.active))}>
-                            {t(r.active ? 'watch.disable' : 'watch.enable')}
-                          </button>
-                        )}
+                        <button type="button" onClick={() => run(() => window.api.watchlist.setActive(r.id, !r.active))}>
+                          {t(r.active ? 'watch.disable' : 'watch.enable')}
+                        </button>
                       </td>
                     )}
                   </tr>

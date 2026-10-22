@@ -115,6 +115,8 @@ textarea { resize: vertical; }
 .org-logos img { height: 104px; width: auto; max-width: 42%; object-fit: contain; }
 .org-login h1 { font-size: 1.6rem; margin-bottom: 4px; }
 .org-login > p.muted { margin-bottom: 18px; }
+.made-by { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 22px 0 0; color: var(--ink-2); font-size: 0.85rem; }
+.made-by img { height: 24px; width: auto; }
 .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
 .user-tile { flex-direction: column; padding: 16px 10px; gap: 4px; }
 .user-tile small { color: var(--ink-2); font-weight: 400; }
@@ -468,7 +470,7 @@ label.invalid > input, label.invalid > select { border-color: var(--danger); box
 @media (prefers-reduced-motion: reduce) { .switch, .switch::after { transition: none; } }
 @media (max-width: 1180px) { .profile-grid, .features-cols { grid-template-columns: 1fr; } }
 
-/* ---------- phase 3: server, expected visitors, badges ---------- */
+/* ---------- expected visitors, badges ---------- */
 .sync-pill { padding: 5px 10px; font-size: 0.85rem; border-color: #ffffff33; background: #ffffff14; color: #fff; }
 .sync-pill.ok { color: #9ff0c4; }
 .sync-pill.off { color: #ffd38a; }

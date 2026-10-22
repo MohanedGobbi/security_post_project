@@ -28,7 +28,6 @@ import * as keys from './keys'
 import * as registers from './registers'
 import { currentAlerts } from './alerts'
 import * as expected from './expected'
-import * as sync from './sync'
 import { getBadgeSettings, listPrinters, previewBadge, printBadge, setBadgeSettings } from './badges'
 
 let currentUser: User | null = null
@@ -629,19 +628,6 @@ export function registerIpc(): void {
     db.audit(u.id, 'expected_cancel', 'expected', id)
   })
   handle('expected:findByRef', 'user', (_u, ref: string) => expected.findByRef(String(ref ?? '')))
-
-  // ---------- server connection ----------
-  handle('sync:status', 'user', () => sync.syncStatus())
-  handle('sync:connect', 'admin', async (u, url: string, code: string, deviceName: string) => {
-    const s = await sync.connect(String(url ?? ''), String(code ?? ''), String(deviceName ?? ''))
-    db.audit(u.id, 'sync_connect', '', null, s.url)
-    return s
-  })
-  handle('sync:disconnect', 'admin', (u) => {
-    sync.disconnect()
-    db.audit(u.id, 'sync_disconnect')
-  })
-  handle('sync:now', 'user', () => sync.runSync())
 
   // ---------- badges ----------
   handle('badges:settings', 'user', () => getBadgeSettings())

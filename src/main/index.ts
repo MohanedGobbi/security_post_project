@@ -6,7 +6,6 @@ import { applyRetention, audit, isFreshInstall, openDb, resetDatabase } from './
 import { registerIpc } from './ipc'
 import { seedFaculty } from './seed'
 import { shutdownScanner, warmUpScanner } from './scan'
-import { startSyncLoop, stopSyncLoop } from './sync'
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -89,11 +88,9 @@ if (!app.requestSingleInstanceLock()) {
     registerIpc()
     createWindow()
     warmUpScanner()
-    startSyncLoop()
   })
 
   app.on('window-all-closed', () => {
-    stopSyncLoop()
     shutdownScanner().finally(() => app.quit())
   })
 }

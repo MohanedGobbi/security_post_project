@@ -338,8 +338,6 @@ export interface WatchRow {
   addedBy: string
   createdAt: string
   active: boolean
-  /** entries from the organisation's server are managed in the dashboard */
-  source: 'local' | 'server'
 }
 
 export interface WatchHit {
@@ -698,23 +696,8 @@ export interface ExpectedVisitor extends ExpectedInput {
   id: number
   refCode: string
   status: 'pending' | 'arrived' | 'cancelled'
-  /** created on this post, or received from the server (dashboard) */
-  source: 'local' | 'server'
   arrivedAt: string | null
   visitId: number | null
-}
-
-// ---------- server connection ----------
-export interface SyncStatus {
-  configured: boolean
-  url: string
-  siteName: string
-  deviceName: string
-  lastSync: string | null
-  lastError: string
-  /** last attempt reached the server */
-  online: boolean
-  syncing: boolean
 }
 
 // ---------- badges ----------
@@ -924,12 +907,6 @@ export interface Api {
     add(input: ExpectedInput): Promise<void>
     cancel(id: number): Promise<void>
     findByRef(ref: string): Promise<ExpectedVisitor | null>
-  }
-  sync: {
-    status(): Promise<SyncStatus>
-    connect(url: string, code: string, deviceName: string): Promise<SyncStatus>
-    disconnect(): Promise<void>
-    now(): Promise<SyncStatus>
   }
   badges: {
     settings(): Promise<BadgeSettings>

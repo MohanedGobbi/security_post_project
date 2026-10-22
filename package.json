@@ -11,11 +11,8 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "start": "electron-vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json && tsc -p tsconfig.server.json && tsc --noEmit -p dashboard/tsconfig.json && tsc --noEmit -p demo/tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p demo/tsconfig.json",
     "dist": "electron-vite build && electron-builder --win",
-    "server": "node server/index.ts",
-    "build:dashboard": "vite build --config dashboard/vite.config.ts",
-    "dev:dashboard": "vite --config dashboard/vite.config.ts",
     "build:demo": "vite build --config demo/vite.config.ts",
     "dev:demo": "vite --config demo/vite.config.ts"
   },

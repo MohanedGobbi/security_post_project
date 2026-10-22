@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { VisitRow } from '@shared/types'
-import { QR_BADGE } from '@shared/sync'
+import { QR_BADGE } from '@shared/qr'
 import { useApp } from '../App'
 import InsideList from '../components/InsideList'
 import CheckOutDialog from '../components/CheckOutDialog'

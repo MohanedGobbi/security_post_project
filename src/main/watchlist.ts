@@ -1,5 +1,4 @@
 import type { WatchHit, WatchInput, WatchLevel, WatchRow } from '@shared/types'
-import type { ServerWatchEntry } from '@shared/sync'
 import { decryptText, encrypt, idHash, normalizeId, verifyPin } from './crypto'
 import { conn, normPlate, now } from './db'
 
@@ -32,39 +31,10 @@ interface WatchDb {
 export function listWatch(): WatchRow[] {
   const rows = conn().prepare(`SELECT w.*, u.name AS added_by_name FROM watchlist w JOIN users u ON u.id = w.added_by
     ORDER BY w.active DESC, w.created_at DESC`).all() as unknown as WatchDb[]
-  const local = rows.map((r): WatchRow => ({
+  return rows.map((r): WatchRow => ({
     id: r.id, name: r.name, idNumber: decryptText(r.id_number_enc), plate: r.plate, reason: r.reason, level: r.level,
-    addedBy: r.added_by_name, createdAt: r.created_at, active: r.active === 1, source: 'local'
+    addedBy: r.added_by_name, createdAt: r.created_at, active: r.active === 1
   }))
-  // entries of the organisation (dashboard): negative ids so they never collide with local ones
-  const server = (conn().prepare('SELECT * FROM server_watchlist ORDER BY name').all() as
-    { server_id: number; name: string; id_number_enc: Uint8Array | null; plate: string; reason: string; level: WatchLevel }[])
-    .map((r): WatchRow => ({
-      id: -r.server_id, name: r.name, idNumber: decryptText(r.id_number_enc), plate: r.plate, reason: r.reason, level: r.level,
-      addedBy: '', createdAt: '', active: true, source: 'server'
-    }))
-  return [...server, ...local]
-}
-
-/** The organisation's list replaces the previous copy on every sync */
-export function replaceServerWatch(entries: ServerWatchEntry[]): void {
-  const db = conn()
-  db.exec('BEGIN')
-  try {
-    db.exec('DELETE FROM server_watchlist')
-    const ins = db.prepare(`INSERT INTO server_watchlist (server_id, name, name_norm, id_hash, id_number_enc, plate, plate_norm, reason, level)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    for (const e of entries) {
-      if (!e.active) continue
-      const id = normalizeId(e.idNumber)
-      ins.run(e.id, e.name, normName(e.name), id ? idHash(id) : null, id ? encrypt(id) : null, e.plate.toUpperCase(), normPlate(e.plate),
-        e.reason, e.level === 'deny' ? 'deny' : 'alert')
-    }
-    db.exec('COMMIT')
-  } catch (err) {
-    db.exec('ROLLBACK')
-    throw err
-  }
 }
 
 export function addWatch(input: WatchInput, userId: number): number {
@@ -81,7 +51,6 @@ export function addWatch(input: WatchInput, userId: number): number {
 }
 
 export function setWatchActive(id: number, active: boolean): void {
-  if (id < 0) throw new Error('error.serverManaged')
   conn().prepare('UPDATE watchlist SET active = ? WHERE id = ?').run(active ? 1 : 0, id)
 }
 
@@ -91,10 +60,8 @@ export function checkWatch(q: { idNumber?: string; name?: string; plate?: string
   const add = (rows: { id: number; level: WatchLevel; reason: string; name: string }[], match: WatchHit['match']): void => {
     for (const r of rows) if (!hits.has(r.id)) hits.set(r.id, { id: r.id, level: r.level, reason: r.reason, name: r.name, match })
   }
-  // local list and the organisation's list (negative ids)
   const query = (where: string, value: string): unknown =>
-    db.prepare(`SELECT id, level, reason, name FROM watchlist WHERE active = 1 AND ${where} = ?
-      UNION ALL SELECT -server_id, level, reason, name FROM server_watchlist WHERE ${where} = ?`).all(value, value)
+    db.prepare(`SELECT id, level, reason, name FROM watchlist WHERE active = 1 AND ${where} = ?`).all(value)
   if (q.idNumber && normalizeId(q.idNumber)) add(query('id_hash', idHash(q.idNumber)) as never, 'id')
   if (q.plate && normPlate(q.plate).length >= 3) add(query('plate_norm', normPlate(q.plate)) as never, 'plate')
   // a single word is too vague to match on

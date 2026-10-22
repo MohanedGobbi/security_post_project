@@ -7,4 +7,4 @@ import '../demo.css'
 ;(window as unknown as { api: Api }).api = demoApi
 ;(window as unknown as { __SECREG_DEMO__: boolean }).__SECREG_DEMO__ = true
 await import('@renderer/main')
-mountDemoBar('app')
+mountDemoBar()

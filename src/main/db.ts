@@ -251,7 +251,6 @@ CREATE TABLE IF NOT EXISTS key_loans (
 CREATE INDEX IF NOT EXISTS key_loans_out ON key_loans(out_at);
 CREATE TABLE IF NOT EXISTS expected_visits (
   id INTEGER PRIMARY KEY,
-  server_id INTEGER UNIQUE,
   ref_code TEXT NOT NULL,
   full_name TEXT NOT NULL,
   company TEXT NOT NULL DEFAULT '',
@@ -264,28 +263,10 @@ CREATE TABLE IF NOT EXISTS expected_visits (
   status TEXT NOT NULL DEFAULT 'pending',
   arrived_at TEXT,
   visit_id INTEGER REFERENCES visits(id) ON DELETE SET NULL,
-  arrival_synced INTEGER NOT NULL DEFAULT 0,
   created_by INTEGER REFERENCES users(id),
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS expected_dates ON expected_visits(valid_to);
-CREATE TABLE IF NOT EXISTS server_watchlist (
-  server_id INTEGER PRIMARY KEY,
-  name TEXT NOT NULL DEFAULT '',
-  name_norm TEXT NOT NULL DEFAULT '',
-  id_hash TEXT,
-  id_number_enc BLOB,
-  plate TEXT NOT NULL DEFAULT '',
-  plate_norm TEXT NOT NULL DEFAULT '',
-  reason TEXT NOT NULL,
-  level TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS sync_state (
-  entity TEXT NOT NULL,
-  local_id INTEGER NOT NULL,
-  hash TEXT NOT NULL,
-  PRIMARY KEY (entity, local_id)
-);
 CREATE TABLE IF NOT EXISTS registers (
   id INTEGER PRIMARY KEY,
   key TEXT NOT NULL UNIQUE,
