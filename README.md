@@ -80,19 +80,24 @@ until the starting PINs are changed). The starting PINs and names are in `src/sh
 Set `SECREG_DATA_DIR` to use another data folder, for example for tests. Data folder by default: `%APPDATA%\FacultySecurity`.
 
 ## Install on a PC (no Node.js, no repository)
-The ready-made installer (`FacultySecurity-Setup-0.1.0.exe`, about 160 MB) is **not published in this repository**.
-**To get it, contact Mohaned Gobbi (ROWD Tech)**, who will send it. Copy the file to the security office PC and run it: it
-installs the program, adds a desktop and Start menu shortcut, and nothing else has to be installed (no Node.js, no npm).
-The program is not code-signed, so Windows SmartScreen may show "Windows protected your PC": click **More info**, then **Run anyway**.
-Uninstalling keeps the data folder (`%APPDATA%FacultySecurity`).
+The ready-made installers are **not published in this repository**: `FacultySecurity-Setup-0.1.0.exe` for Windows (about 160 MB) and
+`FacultySecurity-0.1.0-amd64.deb` for Debian / Ubuntu (about 150 MB).
+**To get one, contact Mohaned Gobbi (ROWD Tech)**, who will send it. Nothing else has to be installed (no Node.js, no npm).
 
-To build the installer yourself, on a Windows PC with the repository and `npm install` done:
+- **Windows:** run the `.exe`; it installs the program and adds a desktop and Start menu shortcut. It is not code-signed, so SmartScreen may show
+  "Windows protected your PC": click **More info**, then **Run anyway**. Uninstalling keeps the data folder (`%APPDATA%FacultySecurity`).
+- **Debian / Ubuntu:** `sudo apt install ./FacultySecurity-0.1.0-amd64.deb`, then start it from the applications menu (the command is `security-register`).
+  Data folder: `~/.config/FacultySecurity`. The Windows OCR helper is not available there, so cards are read with Tesseract only (a little slower).
+  The Debian package was built but not tested on a real machine.
+
+To build them yourself (needs internet and a few minutes the first time):
 
 ```bash
 npm run dist
 ```
 
-It writes `release/FacultySecurity-Setup-0.1.0.exe`. The first build downloads the Electron and installer tools, so it needs internet and a few minutes.
+builds the Windows installer into `release/` on a Windows PC. The Debian package cannot be built on Windows directly; run `npm run dist:linux` on Linux, or inside a Linux
+container (for example Docker with the `electronuserland/builder` image), with the repository copied in and `npm ci` run there.
 
 ## Web demo (Vercel)
 A browser-only demo (the same screens, sample data in Arabic, nothing sent anywhere) lives in `demo/`.

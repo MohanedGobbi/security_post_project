@@ -7,3 +7,4 @@ demo-dist-*/
 .vercel/
 *.tsbuildinfo
 .env*
+release-linux/
