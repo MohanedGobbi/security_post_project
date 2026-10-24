@@ -1,10 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install",
-  "buildCommand": "npm run build:demo",
-  "outputDirectory": "demo-dist",
-  "cleanUrls": true,
+  "installCommand": "ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install && npm --prefix landing ci",
+  "buildCommand": "npm --prefix landing run site",
+  "outputDirectory": "landing/dist",
+  "cleanUrls": false,
+  "redirects": [
+    { "source": "/app", "destination": "/demo/app/", "permanent": false },
+    { "source": "/app/:path*", "destination": "/demo/app/:path*", "permanent": false }
+  ],
   "headers": [
     {
       "source": "/(.*)",

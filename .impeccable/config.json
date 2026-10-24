@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "landing/index.html"
+        ],
+        "createdAt": "2026-10-24T09:13:33.802Z",
+        "reason": "Claude: detector reads index.html without the Vite-imported src/style.css; real sizes are h1 up to 4.4rem, h2 up to 3.4rem, h3 1.1-1.7rem, body 1rem"
+      }
+    ]
+  }
+}

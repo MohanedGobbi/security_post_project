@@ -8,3 +8,6 @@ demo-dist-*/
 *.tsbuildinfo
 .env*
 release-linux/
+landing/dist/
+landing/public/demo/
+.impeccable/review/

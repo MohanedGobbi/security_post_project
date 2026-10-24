@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>برنامج إدارة الأمن بالكلية</title>
+  <meta name="description" content="برنامج إدارة الأمن بالكلية: سجلات مكتب الأمن الداخلي بكلية الحقوق والعلوم السياسية، جامعة غرداية. صُنع بواسطة ROWD Tech." />
+  <meta name="theme-color" content="#8fb6c6" />
+  <link rel="icon" href="./brand/faculty.png" />
+  <script>document.documentElement.classList.add('js')</script>
+</head>
+<body>
+  <a class="skip" href="#story" data-i18n="nav.skip">تخطَّ إلى المحتوى</a>
+  <canvas id="gl" aria-hidden="true"></canvas>
+
+  <header class="bar" id="bar">
+    <a class="bar-brand" href="#hero">
+      <img src="./brand/university.png" alt="" width="40" height="33" />
+      <img src="./brand/faculty.png" alt="" width="38" height="33" />
+      <span data-i18n="nav.brand">برنامج إدارة الأمن بالكلية</span>
+    </a>
+    <nav class="bar-nav" aria-label="sections">
+      <a href="#story" data-i18n="nav.story">من الورق</a>
+      <a href="#doors" data-i18n="nav.doors">السجلات</a>
+      <a href="#scan" data-i18n="nav.scan">البطاقة</a>
+      <a href="#demo" data-i18n="nav.demo">التجربة</a>
+      <a href="#walls" data-i18n="nav.walls">الأمان</a>
+    </nav>
+    <div class="bar-tools">
+      <div class="lang" role="group" aria-label="language">
+        <button type="button" data-lang="ar" lang="ar">العربية</button>
+        <button type="button" data-lang="fr" lang="fr">FR</button>
+        <button type="button" data-lang="en" lang="en">EN</button>
+      </div>
+      <button type="button" class="btn-present" id="presentBtn" data-i18n="nav.present">ابدأ العرض</button>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- 1. Hero: the card is read, the form fills -->
+    <section id="hero" class="hero" data-slide data-edge="sky">
+      <div class="sky" aria-hidden="true"></div>
+      <div class="ksar" id="ksarDay" aria-hidden="true"></div>
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <h1 data-i18n="hero.h1">كل دخول، كل حادثة: مسجَّلة ولا تُمحى.</h1>
+          <p class="hero-sub" data-i18n="hero.sub"></p>
+          <div class="hero-actions">
+            <button type="button" class="btn btn-solid" id="presentBtn2" data-i18n="nav.present">ابدأ العرض</button>
+            <a class="btn btn-ghost" href="#demo" data-i18n="hero.try">جرّبه الآن</a>
+          </div>
+          <aside class="readout" id="readout" aria-live="polite">
+            <p class="readout-title" data-i18n="form.title">نموذج الزائر</p>
+            <dl class="readout-fields">
+              <div><dt data-i18n="form.surname">اللقب</dt><dd data-fill="0"></dd></div>
+              <div><dt data-i18n="form.given">الاسم</dt><dd data-fill="1"></dd></div>
+              <div><dt data-i18n="form.birth">تاريخ الميلاد</dt><dd data-fill="2" dir="ltr"></dd></div>
+              <div><dt data-i18n="form.docno">رقم الوثيقة</dt><dd data-fill="3" dir="ltr"></dd></div>
+            </dl>
+            <p class="readout-status" id="readoutStatus" data-i18n="form.wait">في انتظار البطاقة…</p>
+            <button type="button" class="readout-again" id="scanAgain" data-i18n="form.again">أعد القراءة</button>
+            <p class="specimen" data-i18n="card.specimen">بطاقة نموذجية، بيانات وهمية</p>
+          </aside>
+        </div>
+        <div class="hero-stage">
+          <div class="card-slot" id="heroSlot" data-card-slot="hero" data-pose="hero" role="img" data-i18n-aria="card.alt" tabindex="0"></div>
+          
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. From the paper register to the digital one -->
+    <section id="story" class="story" data-slide data-edge="rose">
+      <div class="story-stage" id="storyStage">
+        <div class="story-head">
+          <h2 class="story-h">
+            <span class="h-paper" data-i18n="story.h1">على الورق، خطأ واحد يُشطب فتضيع المعلومة.</span>
+            <span class="h-digital" data-i18n="story.h2">على الشاشة، يبقى الخطأ ظاهرًا ومعه من صحّحه ومتى.</span>
+          </h2>
+        </div>
+        <div class="story-scene">
+          <div class="ledger" id="ledger" aria-hidden="true">
+            <div class="ledger-margin"></div>
+            <p class="ledger-title">سجل الزوار والمراسلات</p>
+            <ol class="ledger-rows">
+              <li><span>08:10</span><span>زائر · إلى الأمانة العامة</span></li>
+              <li><span>08:40</span><span>مراسلة · موجّهة إلى العمادة</span></li>
+              <li class="ledger-wrong"><span>09:15</span><span>مفقودات · محفظة سوداء، <em class="wrong">المدرج 3<svg class="scribble" viewBox="0 0 120 30" preserveAspectRatio="none"><path pathLength="1" d="M2 20 L38 6 L12 24 L52 8 L26 26 L66 10 L42 27 L82 12 L58 26 L98 13 L74 25 L116 14"/></svg></em><em class="fixhand">2</em></span></li>
+              <li><span>10:30</span><span>حادث · عطب في باب القاعة 4</span></li>
+              <li><span>11:05</span><span>زائر · إلى مكتب الأساتذة</span></li>
+            </ol>
+          </div>
+          <div class="register" id="register">
+            <div class="register-head">
+              <img src="./brand/faculty.png" alt="" width="34" height="30" />
+              <span data-i18n="reg.title">سجل المراسلات والمفقودات</span>
+              <span class="register-live" data-i18n="reg.sample">عيّنة</span>
+            </div>
+            <ol class="register-rows">
+              <li><b>1</b><span>08:10</span><span>زائر · إلى الأمانة العامة</span></li>
+              <li><b>2</b><span>08:40</span><span>مراسلة · موجّهة إلى العمادة</span></li>
+              <li class="orig"><b>3</b><span>09:15</span><span>مفقودات · محفظة سوداء، <s>المدرج 3</s></span></li>
+              <li class="corr"><b>3 ت</b><span>09:42</span><span>مفقودات · محفظة سوداء، المدرج 2
+                <small data-i18n="reg.corr">صُحّح بواسطة رئيس فرقة الأمن · الأصل محفوظ</small></span></li>
+              <li><b>4</b><span>10:30</span><span>حادث · عطب في باب القاعة 4</span></li>
+              <li><b>5</b><span>11:05</span><span>زائر · إلى مكتب الأساتذة</span></li>
+            </ol>
+          </div>
+        </div>
+        <ul class="story-chips">
+          <li data-i18n="story.c1">مرقّمة</li>
+          <li data-i18n="story.c2">لا تُمحى</li>
+          <li data-i18n="story.c3">كل تصحيح موثّق في سجل التدقيق</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 3. The doors: one per paper book -->
+    <section id="doors" class="doors" data-slide data-edge="blue">
+      <div class="doors-head">
+        <h2 data-i18n="doors.h">كل دفتر ورقي صار بابًا.</h2>
+        <p data-i18n="doors.sub"></p>
+      </div>
+      <div class="doors-row" id="doorsRow" role="tablist" aria-label="registers"></div>
+      <div class="door-panel" id="doorPanel" role="tabpanel" aria-live="polite">
+        <h3 id="doorName"></h3>
+        <p id="doorBlurb"></p>
+        <ul id="doorFields"></ul>
+      </div>
+      <p class="doors-print" data-i18n="doors.print"></p>
+    </section>
+
+    <!-- 4. Scan: the card turns as you scroll -->
+    <section id="scan" class="scan" data-slide data-edge="ochre">
+      <div class="scan-grid">
+        <div class="scan-copy">
+          <h2 data-i18n="scan.h">من البطاقة إلى السجل دون كتابة.</h2>
+          <ol class="steps" id="steps">
+            <li class="is-on"><h3 data-i18n="scan.s1h"></h3><p data-i18n="scan.s1p"></p></li>
+            <li><h3 data-i18n="scan.s2h"></h3><p data-i18n="scan.s2p"></p></li>
+            <li><h3 data-i18n="scan.s3h"></h3><p data-i18n="scan.s3p"></p></li>
+          </ol>
+          <p class="scan-extra" data-i18n="scan.extra"></p>
+        </div>
+        <div class="scan-stage">
+          <div class="card-slot" id="scanSlot" data-card-slot="scan" data-pose="scrub" role="img" data-i18n-aria="card.alt"></div>
+          <p class="specimen" data-i18n="card.specimen">بطاقة نموذجية، بيانات وهمية</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. The real program, live -->
+    <section id="demo" class="demo" data-slide data-edge="lime">
+      <div class="demo-head">
+        <h2 data-i18n="demo.h">جرّبه بنفسك.</h2>
+        <p data-i18n="demo.sub"></p>
+        <a class="btn btn-solid" id="demoOpen" href="./demo/app/index.html" target="_blank" rel="noopener" data-i18n="demo.open">افتح بملء الشاشة</a>
+      </div>
+      <div class="device" id="device">
+        <div class="device-screen" id="deviceScreen">
+          <iframe id="demoFrame" title="demo" data-src="./demo/app/index.html" loading="lazy"></iframe>
+          <p class="device-missing" id="demoMissing" hidden data-i18n="demo.missing"></p>
+        </div>
+        <div class="device-foot"><i></i></div>
+      </div>
+    </section>
+
+    <!-- 6. Inside the walls -->
+    <section id="walls" class="walls" data-slide data-edge="green">
+      <div class="walls-grid">
+        <div class="walls-copy">
+          <h2 data-i18n="walls.h">يعيش داخل أسوار الكلية.</h2>
+          <p data-i18n="walls.sub"></p>
+          <ul class="facts" id="facts"></ul>
+        </div>
+        <figure class="walls-fig" aria-hidden="true">
+          <svg id="wallsSvg" viewBox="0 0 520 440" role="presentation"></svg>
+        </figure>
+      </div>
+    </section>
+
+    <!-- 7. Close -->
+    <section id="close" class="close" data-slide data-edge="night">
+      <div class="ksar ksar-night" id="ksarNight" aria-hidden="true"></div>
+      <div class="close-body">
+        <div class="close-logos">
+          <img src="./brand/university.png" alt="Université de Ghardaïa" width="120" height="98" />
+          <img src="./brand/faculty.png" alt="Faculté de droit et des sciences politiques" width="112" height="98" />
+        </div>
+        <h2 data-i18n="close.h">برنامج إدارة الأمن بالكلية</h2>
+        <p class="close-org" data-i18n="close.org"></p>
+        <div class="close-next">
+          <h3 data-i18n="close.nexth">المرحلة المقبلة</h3>
+          <ul>
+            <li data-i18n="close.n1"></li>
+            <li data-i18n="close.n2"></li>
+            <li data-i18n="close.n3"></li>
+          </ul>
+        </div>
+        <p class="close-made"><span data-i18n="close.made">صُنع بواسطة</span><img src="./brand/rowd-wordmark.png" alt="ROWD Tech" height="30" /></p>
+      </div>
+    </section>
+  </main>
+
+  <div class="hud" id="hud" hidden>
+    <button type="button" id="hudPrev" data-i18n-aria="pres.prev" aria-label="Previous"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+    <ol id="hudDots"></ol>
+    <button type="button" id="hudNext" data-i18n-aria="pres.next" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button type="button" id="hudExit" data-i18n="pres.exit">خروج</button>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-24T00:00:00Z",
+  "title": "Design System: Faculty Security Register, landing world",
+  "extensions": {
+    "scope": "landing/ only. The Electron app in src/renderer keeps its own brand.ts green/red and Cairo font; this world does not replace it.",
+    "colorMeta": {
+      "ink": { "role": "neutral", "displayName": "Ksar Ink", "canonical": "#10281f", "tonalRamp": ["#08140f", "#10281f", "#1f3d30", "#365647", "#557563", "#7b9887", "#a9c0b2", "#dbe7df"] },
+      "ink-soft": { "role": "neutral", "displayName": "Soft Ink", "canonical": "#2d4a3c", "tonalRamp": ["#0e1a14", "#1c3128", "#2d4a3c", "#436352", "#5f7f6d", "#83a090", "#afc5b8", "#dfe9e3"] },
+      "on-rose": { "role": "neutral", "displayName": "Rose Shadow", "canonical": "#1d0f0b", "tonalRamp": ["#1d0f0b", "#3a2019", "#5a3529", "#7c4d3e", "#a06a59", "#c18f80", "#dfbcb1", "#f6e9e4"] },
+      "rose": { "role": "secondary", "displayName": "Ksar Rose", "canonical": "#c9735f", "tonalRamp": ["#3e1a12", "#62291d", "#8d4b3e", "#ac5a49", "#c9735f", "#d99a89", "#e9c1b6", "#f7e7e2"] },
+      "ochre": { "role": "secondary", "displayName": "Ochre Plaster", "canonical": "#dca24c", "tonalRamp": ["#3a2606", "#5e3d0c", "#8a5a12", "#b67d23", "#dca24c", "#ecc782", "#f4dcae", "#fbf1de"] },
+      "ochre-deep": { "role": "secondary", "displayName": "Burnt Ochre", "canonical": "#8a5a12", "tonalRamp": ["#2a1a04", "#4a3008", "#6a450d", "#8a5a12", "#ad7a2c", "#cc9f5a", "#e4c793", "#f6e9d2"] },
+      "ochre-light": { "role": "secondary", "displayName": "Pale Ochre", "canonical": "#ecc782", "tonalRamp": ["#3a2606", "#5e3d0c", "#8a5a12", "#b67d23", "#dca24c", "#ecc782", "#f4dcae", "#fbf1de"] },
+      "sky": { "role": "neutral", "displayName": "Sky Wash", "canonical": "#8fb6c6", "tonalRamp": ["#13242c", "#23404d", "#375e6f", "#4f7f91", "#6f9bb0", "#8fb6c6", "#b9d2dc", "#e3eff3"] },
+      "wash-blue": { "role": "neutral", "displayName": "Wash Blue", "canonical": "#35607a", "tonalRamp": ["#0e1c25", "#1b3444", "#284a5f", "#35607a", "#4f7d98", "#749db5", "#a6c3d4", "#dce8ef"] },
+      "night": { "role": "neutral", "displayName": "Indigo Night", "canonical": "#1b2f45", "tonalRamp": ["#0c1827", "#13243a", "#1b2f45", "#27405b", "#3a5772", "#587592", "#8aa2ba", "#d3dde8"] },
+      "faculty-green": { "role": "primary", "displayName": "Faculty Green", "canonical": "#0f4426", "tonalRamp": ["#05190e", "#0b2f1b", "#0f4426", "#16703a", "#2f8a55", "#5fae7e", "#9fd2b0", "#e3f1e7"] },
+      "faculty-green-2": { "role": "primary", "displayName": "Faculty Green Bright", "canonical": "#16703a", "tonalRamp": ["#05190e", "#0b2f1b", "#0f4426", "#16703a", "#2f8a55", "#5fae7e", "#9fd2b0", "#e3f1e7"] },
+      "lime-wash": { "role": "neutral", "displayName": "Lime-Wash", "canonical": "#f3ead9", "tonalRamp": ["#3b3324", "#5e533e", "#84775d", "#a99b80", "#c9bda4", "#e3d9c4", "#f3ead9", "#fbf7ef"] },
+      "algerian-red": { "role": "tertiary", "displayName": "Algerian Red", "canonical": "#d81830", "tonalRamp": ["#3a050c", "#620914", "#8e0f1f", "#b81428", "#d81830", "#e8596a", "#f29aa4", "#fbdde1"] },
+      "door-sand": { "role": "tertiary", "displayName": "Door Sand", "canonical": "#e6d3b0", "tonalRamp": ["#3a2f1c", "#5c4c2f", "#806b46", "#a68c61", "#c8ae84", "#e6d3b0", "#f1e6d1", "#faf5eb"] },
+      "palm-green": { "role": "tertiary", "displayName": "Palm Door Green", "canonical": "#6aa57e", "tonalRamp": ["#11251a", "#1f402d", "#2f5d42", "#437c59", "#6aa57e", "#8fc0a0", "#bcdbc6", "#e7f3eb"] },
+      "lilac": { "role": "tertiary", "displayName": "Wall Lilac", "canonical": "#a893c2", "tonalRamp": ["#221a2d", "#3a2e4c", "#54456d", "#715f8f", "#8e79aa", "#a893c2", "#cbbedc", "#eeeaf4"] },
+      "ledger-paper": { "role": "neutral", "displayName": "Ledger Paper", "canonical": "#f1e6cd", "tonalRamp": ["#3b3220", "#5f523a", "#857558", "#ab9a7a", "#cdbd9d", "#e6d8ba", "#f1e6cd", "#faf6ec"] },
+      "ledger-ink": { "role": "neutral", "displayName": "Ledger Ink", "canonical": "#1d3f8a", "tonalRamp": ["#0a1636", "#14306e", "#1d3f8a", "#3157a6", "#5578bf", "#81a0d4", "#b4c7e7", "#e3eaf7"] },
+      "sheet-white": { "role": "neutral", "displayName": "Sheet White", "canonical": "#ffffff", "tonalRamp": ["#262626", "#444444", "#666666", "#8a8a8a", "#ababab", "#cccccc", "#e8e1d2", "#ffffff"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display (Arabic)", "purpose": "Hero and close headlines only; Reem Kufi 700." },
+      "display-latin": { "displayName": "Display (Latin)", "purpose": "Same roles under FR/EN with tight leading and -0.015em tracking." },
+      "headline": { "displayName": "Headline", "purpose": "One per terrace." },
+      "title": { "displayName": "Title", "purpose": "Step titles, door panel names, facts." },
+      "body": { "displayName": "Body", "purpose": "Readex Pro running text, measure about 33-38rem." },
+      "label": { "displayName": "Label", "purpose": "Buttons, chips, language switch, door names, HUD." },
+      "data": { "displayName": "Data", "purpose": "Overpass Mono for MRZ, numbers, LTR fields inside RTL." },
+      "hand": { "displayName": "Ledger Hand", "purpose": "Aref Ruqaa on the paper ledger only." }
+    },
+    "shadows": [
+      { "name": "paper-lift", "value": "0 22px 30px -18px rgba(16, 40, 31, 0.55)", "purpose": "Readout and lime paper cards." },
+      { "name": "sheet-drop", "value": "0 34px 44px -24px rgba(60, 20, 10, 0.65), 0 1px 0 rgba(0, 0, 0, 0.1)", "purpose": "Ledger and register sheets on the rose terrace." },
+      { "name": "door-stand", "value": "0 14px 20px -12px rgba(8, 20, 30, 0.7), inset 0 -10px 0 rgba(16, 40, 31, 0.12)", "purpose": "Arch doors; the inset is the threshold." },
+      { "name": "button-press", "value": "0 10px 18px -10px rgba(15, 68, 38, 0.8)", "purpose": "Solid green button at rest." },
+      { "name": "bar-scrolled", "value": "0 1px 0 rgba(16, 40, 31, 0.14), 0 10px 24px -16px rgba(16, 40, 31, 0.4)", "purpose": "Navigation bar once scrolled." },
+      { "name": "device", "value": "0 40px 56px -30px rgba(27, 47, 69, 0.8)", "purpose": "Demo device frame." },
+      { "name": "skyline-haze", "value": "drop-shadow(0 -10px 16px rgba(16, 36, 50, 0.2))", "purpose": "Ksar skyline layers (filter)." }
+    ],
+    "motion": [
+      { "name": "ease", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Every CSS state change and entrance." },
+      { "name": "lenis", "value": "lerp 0.085, wheelMultiplier 0.9; scrollTo 1.15s ease-out-quart", "purpose": "Smooth scroll and slide jumps." },
+      { "name": "rise", "value": "1s, stagger 0.12s, 28px", "purpose": "Hero copy and card entrance." },
+      { "name": "climb", "value": "1.6s, stagger 0.14s per layer, 90px", "purpose": "Skyline layers climbing in." },
+      { "name": "reduced", "value": "animation and transition none", "purpose": "prefers-reduced-motion: all motion off; static story fallback." }
+    ],
+    "breakpoints": [
+      { "name": "narrow", "value": "820px" },
+      { "name": "brand-wordmark", "value": "1240px" }
+    ],
+    "material": {
+      "grain": "SVG noise tile at 220px, mix-blend-mode multiply, opacity 0.55, fixed over the page",
+      "terraceEdge": "Stepped parapet SVG 480x56 tiled repeat-x, top -55px, in the colour of the section above",
+      "card": "THREE.NeutralToneMapping exposure 1.05; key light #fff1dc 1.25 + ambient 0.35; print MeshPhysical roughness 0.6 clearcoat 0.6/0.2 specular 0.3; core #0d3a22 roughness 0.35 clearcoat 1/0.12, bevelled; eight-point M'zab star hologram shader; additive light band; red #d81830 read-head 0.96 and read band 0.15"
+    }
+  },
+  "components": [
+    {
+      "name": "Solid Button",
+      "kind": "button",
+      "refersTo": "button-solid",
+      "description": "Primary action pill in faculty green.",
+      "html": "<a class=\"ds-btn ds-btn-solid\" href=\"#\">Try the demo</a>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; font: 600 1rem/1 'Readex Pro', system-ui, sans-serif; padding: 0.95rem 1.7rem; border-radius: 99px; border: 2px solid transparent; transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s, background 0.25s; } .ds-btn-solid { background: #0f4426; color: #f3ead9; box-shadow: 0 10px 18px -10px rgba(15,68,38,0.8); } .ds-btn-solid:hover { transform: translateY(-2px); background: #16703a; box-shadow: 0 14px 22px -10px rgba(15,68,38,0.8); } .ds-btn:focus-visible { outline: 3px solid #8a5a12; outline-offset: 3px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary pill with an ink outline.",
+      "html": "<a class=\"ds-btn-ghost\" href=\"#\">See how it reads</a>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; text-decoration: none; font: 600 1rem/1 'Readex Pro', system-ui, sans-serif; padding: 0.95rem 1.7rem; border-radius: 99px; border: 2px solid #10281f; color: #10281f; background: transparent; transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), background 0.25s; } .ds-btn-ghost:hover { transform: translateY(-2px); background: rgba(16,40,31,0.08); } .ds-btn-ghost:focus-visible { outline: 3px solid #8a5a12; outline-offset: 3px; }"
+    },
+    {
+      "name": "Present Button",
+      "kind": "button",
+      "refersTo": "button-present",
+      "description": "Ochre pill in the bar that starts presentation mode.",
+      "html": "<button class=\"ds-btn-present\">Start presentation</button>",
+      "css": ".ds-btn-present { white-space: nowrap; border: 0; background: #dca24c; color: #10281f; font: 600 0.88rem/1 'Readex Pro', system-ui, sans-serif; padding: 0.7rem 1.1rem; border-radius: 99px; cursor: pointer; transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s; } .ds-btn-present:hover { transform: translateY(-2px); box-shadow: 0 8px 16px -8px rgba(16,40,31,0.6); } .ds-btn-present:focus-visible { outline: 3px solid #8a5a12; outline-offset: 3px; }"
+    },
+    {
+      "name": "Navigation Bar",
+      "kind": "nav",
+      "refersTo": "nav-bar-scrolled",
+      "description": "Scrolled lime-wash bar with ochre underline links and a language pill.",
+      "html": "<nav class=\"ds-bar\"><strong class=\"ds-brand\">Faculty</strong><div class=\"ds-nav\"><a class=\"on\" href=\"#\">Story</a><a href=\"#\">Doors</a><a href=\"#\">Scan</a></div><div class=\"ds-lang\"><button aria-pressed=\"true\">AR</button><button aria-pressed=\"false\">FR</button><button aria-pressed=\"false\">EN</button></div></nav>",
+      "css": ".ds-bar { display: flex; align-items: center; gap: 1.6rem; height: 4.4rem; padding-inline: 1.6rem; background: #f3ead9; color: #10281f; box-shadow: 0 1px 0 rgba(16,40,31,0.14), 0 10px 24px -16px rgba(16,40,31,0.4); font-family: 'Readex Pro', system-ui, sans-serif; } .ds-brand { font: 600 1.02rem/1.2 'Reem Kufi', 'Readex Pro', sans-serif; } .ds-nav { display: flex; gap: 0.3rem; margin-inline: auto; } .ds-nav a { position: relative; text-decoration: none; color: inherit; padding: 0.35rem 0.8rem; font-size: 0.92rem; border-radius: 0.5rem; } .ds-nav a::after { content: ''; position: absolute; inset-inline: 0.8rem; bottom: 0.05rem; height: 3px; background: #8a5a12; border-radius: 3px; transform: scaleX(0); transition: transform 0.4s cubic-bezier(0.16,1,0.3,1); } .ds-nav a.on::after, .ds-nav a:hover::after { transform: scaleX(1); } .ds-nav a:focus-visible { outline: 3px solid #8a5a12; outline-offset: 3px; } .ds-lang { display: flex; border: 1.5px solid currentColor; border-radius: 99px; overflow: hidden; } .ds-lang button { background: none; border: 0; color: inherit; padding: 0.22rem 0.75rem; font: 600 0.82rem/1.5 'Readex Pro', sans-serif; cursor: pointer; } .ds-lang button[aria-pressed='true'] { background: #10281f; color: #f3ead9; }"
+    },
+    {
+      "name": "Green Chip",
+      "kind": "chip",
+      "refersTo": "chip-green",
+      "description": "Outcome pill on the rose terrace.",
+      "html": "<span class=\"ds-chip\">Numbered, never erased</span>",
+      "css": ".ds-chip { display: inline-block; background: #0f4426; color: #f3ead9; font: 600 0.95rem/1 'Readex Pro', system-ui, sans-serif; padding: 0.7rem 1.25rem; border-radius: 99px; }"
+    },
+    {
+      "name": "Readout Card",
+      "kind": "card",
+      "refersTo": "readout",
+      "description": "Lime paper with plaster corners where the scanned card's fields land.",
+      "html": "<div class=\"ds-readout\"><p class=\"ds-readout-title\">Visitor</p><dl class=\"ds-fields\"><div><dt>Name</dt><dd>Specimen</dd></div><div><dt>Document</dt><dd class=\"mono\">000000000</dd></div></dl><p class=\"ds-status\">Read in seconds</p></div>",
+      "css": ".ds-readout { max-width: 29rem; background: #f3ead9; color: #10281f; border-radius: 1.1rem 0.4rem 1.1rem 0.4rem; padding: 1rem 1.3rem 0.9rem; box-shadow: 0 22px 30px -18px rgba(16,40,31,0.55); font-family: 'Readex Pro', system-ui, sans-serif; } .ds-readout-title { margin: 0 0 0.6rem; font: 600 0.95rem/1.2 'Reem Kufi', 'Readex Pro', sans-serif; color: #0f4426; } .ds-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1.4rem; margin: 0; } .ds-fields dt { font-size: 0.74rem; color: #16703a; } .ds-fields dd { margin: 0; font: 600 1.02rem/1.6rem 'Readex Pro', sans-serif; border-bottom: 1.5px dashed rgba(16,40,31,0.28); } .ds-fields dd.mono { font: 500 0.95rem/1.6rem 'Overpass Mono', ui-monospace, monospace; } .ds-status { margin: 0.7rem 0 0; font-size: 0.84rem; font-weight: 600; color: #16703a; display: flex; align-items: center; gap: 0.5rem; } .ds-status::before { content: ''; width: 0.62rem; height: 0.62rem; border-radius: 50%; background: #16703a; }"
+    },
+    {
+      "name": "Arch Door",
+      "kind": "custom",
+      "refersTo": "door",
+      "description": "Signature arch-headed door, one per paper register; rises on hover and selection.",
+      "html": "<div class=\"ds-doors\"><button class=\"ds-door\" style=\"--tone:#c9735f\" aria-selected=\"true\"><svg viewBox=\"0 0 24 24\"><path d=\"M6 3h9l3 3v15H6z\"/><path d=\"M9 10h6M9 14h6\"/></svg><span>Visitors</span></button><button class=\"ds-door\" style=\"--tone:#a893c2\"><svg viewBox=\"0 0 24 24\"><path d=\"M4 6h16v12H4z\"/><path d=\"M4 7l8 6 8-6\"/></svg><span>Mail</span></button></div>",
+      "css": ".ds-doors { display: flex; align-items: flex-end; gap: 1rem; padding: 2rem; background: #35607a; } .ds-door { width: 8rem; height: 10rem; display: flex; flex-direction: column; justify-content: space-between; align-items: center; background: var(--tone); color: #10281f; border: 0; padding: 1.5rem 0.5rem 1rem; cursor: pointer; border-radius: 50% 50% 0.4rem 0.4rem / 26% 26% 0.4rem 0.4rem; box-shadow: 0 14px 20px -12px rgba(8,20,30,0.7), inset 0 -10px 0 rgba(16,40,31,0.12); transition: transform 0.45s cubic-bezier(0.16,1,0.3,1), box-shadow 0.45s; } .ds-door svg { width: 2.2rem; height: 2.2rem; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; } .ds-door span { font: 600 0.88rem/1.3 'Readex Pro', sans-serif; } .ds-door:hover { transform: translateY(-0.5rem); } .ds-door[aria-selected='true'] { transform: translateY(-0.9rem); outline: 3px solid #f3ead9; outline-offset: 5px; } .ds-door:focus-visible { outline: 3px solid #f3ead9; outline-offset: 5px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Plaster Ksar",
+    "overview": "The landing page is the ksar of M'zab seen from the valley, built from layered paper-cut plaster. Each section is a terrace in its own house colour, sitting on the one below behind a stepped silhouette, and the visitor climbs from sky-wash morning at the hero to indigo night at the close. One physical object, a 3D specimen identity card, lives on a fixed WebGL canvas and travels between DOM slots as the page scrolls, being read.\n\nSurfaces are matte and flat. Depth comes from stacked layers, soft offset shadows with negative spread, and a fine multiply grain laid over everything. The only shine in the world belongs to the card's clearcoat laminate and its holographic M'zab star. The dark-glow security look and the SaaS section stack are rejected.\n\nScope boundary. This world covers the landing page only (landing/). The Electron app in src/renderer keeps its own older look (the green and red colours in brand.ts, the Cairo font). This system does not replace it, and app screens should not take tokens from this file unless someone explicitly decides to migrate them.",
+    "keyCharacteristics": [
+      "Stacked house-colour terraces joined by a tiled stepped edge (56px tall, 480px repeat).",
+      "Arch niches and asymmetric plaster corners, never right-angle boilerplate.",
+      "Matte layers, soft offset shadows, plaster grain (multiply, 0.55 opacity); no glows.",
+      "One persistent WebGL card: neutral tone mapping, clearcoat laminate, bevelled green core.",
+      "Arabic first and RTL; inline-logical properties throughout; FR and EN switchable."
+    ],
+    "rules": [
+      { "name": "The Red Reads Rule", "body": "Algerian red means \"being read\" or \"corrected\": scan line, active step, strike-through, the register rule. It is never decoration and never a section ground.", "section": "colors" },
+      { "name": "The Terrace Ground Rule", "body": "Every full section owns one house colour as its ground (sky gradient, rose, wash blue, ochre, lime-wash, faculty green, night), in that climbing order. Two adjacent terraces never share a ground.", "section": "colors" },
+      { "name": "The Script Height Rule", "body": "Arabic runs get taller line heights (1.3 headlines, 1.7 body). Tightened leading and negative tracking apply only under html:not([lang='ar']).", "section": "typography" },
+      { "name": "The Two Hands Rule", "body": "Aref Ruqaa belongs to the paper ledger and Overpass Mono to machine data. Neither is used for interface text.", "section": "typography" },
+      { "name": "The Shine Belongs To The Card Rule", "body": "Only the WebGL card has gloss: neutral tone mapping (exposure 1.05), print roughness 0.6 under clearcoat 0.6, a bevelled green core under clearcoat 1, a soft light band that slides with the tilt, and a hue-shifting eight-point star hologram. DOM surfaces stay matte.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do give each new terrace one house colour ground and seat it on the stepped terrace edge in the colour of the section above.",
+      "Do use soft offset shadows with negative spread and the plaster grain for depth.",
+      "Do switch --focus to lime-wash on any dark terrace.",
+      "Do write layout with inline-logical properties and test RTL first.",
+      "Do keep text on wash grounds at 4.5:1 or better by deepening the ground (as the doors went to #35607a), not by lightening the text."
+    ],
+    "donts": [
+      "Don't add glows, neon, or dark-glow security styling; the night terrace is matte indigo with lit windows, not light bloom.",
+      "Don't use Algerian red as a fill, ground, or decoration outside reading and correction.",
+      "Don't give DOM surfaces gloss or gradients other than the hero sky; shine belongs to the card.",
+      "Don't apply this landing world's tokens to the Electron app in src/renderer without an explicit migration decision.",
+      "Don't use Aref Ruqaa or Overpass Mono for interface text."
+    ]
+  }
+}

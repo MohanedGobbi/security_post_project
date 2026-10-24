@@ -107,7 +107,8 @@ npm run dev:demo
 ```
 
 `npm run build:demo` builds it into `demo-dist/`. On Vercel, import the repository: `vercel.json` already sets
-the install command, build command and output folder. Sample PINs are shown in the bar at the bottom:
+the install command, build command and output folder. The site Vercel publishes is the presentation landing page
+([landing/](landing/README.md)), with this demo embedded at `/demo/app/` (old `/app/` links redirect there). Sample PINs are shown in the bar at the bottom:
 administrator `1234`, team leaders `2580` and `1357`, guard `5678`.
 
 ## Privacy and security
