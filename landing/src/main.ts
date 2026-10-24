@@ -155,11 +155,12 @@ function initMotion(): void {
 initScroll()
 setLang(initialLang(), false)
 applyI18n()
+// ScrollTriggers must be created in page order: the pinned story adds scroll length that every later trigger has to see
+const story = initStory()
 initDoors()
 initFacts()
 initWalls()
 initDemo()
-const story = initStory()
 initPresent(story)
 initMotion()
 void bootCard()
