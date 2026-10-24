@@ -7,6 +7,7 @@
   "cleanUrls": false,
   "redirects": [
     { "source": "/app", "destination": "/demo/app/", "permanent": false },
+    { "source": "/app/", "destination": "/demo/app/", "permanent": false },
     { "source": "/app/:path*", "destination": "/demo/app/:path*", "permanent": false }
   ],
   "headers": [
