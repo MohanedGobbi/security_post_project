@@ -1,22 +1,43 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install && npm --prefix landing ci",
-  "buildCommand": "npm --prefix landing run site",
-  "outputDirectory": "landing/dist",
+  "installCommand": "ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install && npm --prefix landing-guard ci",
+  "buildCommand": "npm --prefix landing-guard run site",
+  "outputDirectory": "landing-guard/dist",
   "cleanUrls": false,
   "redirects": [
-    { "source": "/app", "destination": "/demo/app/", "permanent": false },
-    { "source": "/app/", "destination": "/demo/app/", "permanent": false },
-    { "source": "/app/:path*", "destination": "/demo/app/:path*", "permanent": false }
+    {
+      "source": "/app",
+      "destination": "/demo/app/",
+      "permanent": false
+    },
+    {
+      "source": "/app/",
+      "destination": "/demo/app/",
+      "permanent": false
+    },
+    {
+      "source": "/app/:path*",
+      "destination": "/demo/app/:path*",
+      "permanent": false
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "no-referrer" },
-        { "key": "Permissions-Policy", "value": "camera=(self), microphone=(), geolocation=()" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(self), microphone=(), geolocation=()"
+        }
       ]
     }
   ]

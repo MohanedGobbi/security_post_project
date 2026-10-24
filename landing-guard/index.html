@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>برنامج إدارة الأمن بالكلية</title>
+  <meta name="description" content="برنامج إدارة الأمن بالكلية: سجلات مكتب الأمن الداخلي بكلية الحقوق والعلوم السياسية، جامعة غرداية. صُنع بواسطة ROWD Tech." />
+  <meta name="theme-color" content="#cfe0e6" />
+  <link rel="icon" href="./brand/faculty.png" />
+  <script>document.documentElement.classList.add('js')</script>
+</head>
+<body>
+  <a class="skip" href="#shift" data-i18n="nav.skip">تخطَّ إلى المحتوى</a>
+  <canvas id="gl" aria-hidden="true"></canvas>
+
+  <header class="bar" id="bar">
+    <a class="bar-brand" href="#watch">
+      <img src="./brand/university.png" alt="" width="40" height="33" />
+      <img src="./brand/faculty.png" alt="" width="38" height="33" />
+      <span data-i18n="nav.brand">برنامج إدارة الأمن بالكلية</span>
+    </a>
+    <nav class="bar-nav" aria-label="sections">
+      <a href="#shift" data-i18n="nav.shift">المناوبة</a>
+      <a href="#registers" data-i18n="nav.registers">السجلات</a>
+      <a href="#gate" data-i18n="nav.gate">البوابة</a>
+      <a href="#audit" data-i18n="nav.audit">التدقيق</a>
+      <a href="#demo" data-i18n="nav.demo">التجربة</a>
+    </nav>
+    <div class="bar-tools">
+      <div class="lang" role="group" aria-label="language">
+        <button type="button" data-lang="ar" lang="ar">العربية</button>
+        <button type="button" data-lang="fr" lang="fr">FR</button>
+        <button type="button" data-lang="en" lang="en">EN</button>
+      </div>
+      <button type="button" class="btn-present" id="presentBtn" data-i18n="nav.present">ابدأ العرض</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="watch" class="scene-sec hero" data-slide data-shot="0">
+      <div class="panel panel-hero">
+        <h1 data-i18n="hero.h1"></h1>
+        <p class="lead" data-i18n="hero.sub"></p>
+        <div class="actions">
+          <button type="button" class="btn btn-solid" id="presentBtn2" data-i18n="nav.present">ابدأ العرض</button>
+          <a class="btn btn-line" href="#demo" data-i18n="hero.try">جرّب البرنامج</a>
+        </div>
+      </div>
+      <div class="ticker" aria-label="sample">
+        <span class="ticker-label" data-i18n="hero.live">من السجل · عيّنة</span>
+        <div class="ticker-track"><ul id="ticker"></ul></div>
+      </div>
+    </section>
+
+    <section id="shift" class="scene-sec" data-slide data-shot="1">
+      <div class="panel">
+        <h2 data-i18n="shift.h"></h2>
+        <p data-i18n="shift.p"></p>
+        <ul class="roles">
+          <li><span class="pin" aria-hidden="true">••••</span><div><h3 data-i18n="role.guard.h"></h3><p data-i18n="role.guard.p"></p></div></li>
+          <li><span class="pin" aria-hidden="true">••••</span><div><h3 data-i18n="role.leader.h"></h3><p data-i18n="role.leader.p"></p></div></li>
+          <li><span class="pin" aria-hidden="true">••••</span><div><h3 data-i18n="role.admin.h"></h3><p data-i18n="role.admin.p"></p></div></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="registers" class="scene-sec" data-slide data-shot="2">
+      <div class="panel">
+        <h2 data-i18n="reg.h"></h2>
+        <p data-i18n="reg.p"></p>
+        <div class="chips" id="chips" role="tablist" aria-label="registers"></div>
+        <div class="reg-detail" id="regDetail" role="tabpanel" aria-live="polite">
+          <h3 id="regName"></h3>
+          <p id="regBlurb"></p>
+          <ul id="regFields"></ul>
+        </div>
+        <p class="note" data-i18n="reg.print"></p>
+      </div>
+    </section>
+
+    <section id="gate" class="scene-sec" data-slide data-shot="3">
+      <div class="panel">
+        <h2 data-i18n="gate.h"></h2>
+        <p data-i18n="gate.p"></p>
+        <ul class="checks">
+          <li data-i18n="gate.l1"></li>
+          <li data-i18n="gate.l2"></li>
+          <li data-i18n="gate.l3"></li>
+          <li data-i18n="gate.l4"></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="audit" class="scene-sec" data-slide data-shot="4">
+      <div class="panel panel-wide">
+        <h2 data-i18n="audit.h"></h2>
+        <p data-i18n="audit.p"></p>
+        <div class="log">
+          <p class="log-head" data-i18n="audit.title"></p>
+          <ol>
+            <li><b>17</b><span>08:55</span><span>محفظة سوداء، المدرج 1</span></li>
+            <li class="was"><b>18</b><span>09:15</span><span>محفظة سوداء، <s>المدرج 3</s></span></li>
+            <li class="fix"><b>18 ت</b><span>09:42</span><span>محفظة سوداء، المدرج 2<small data-i18n="audit.corr"></small></span></li>
+            <li><b>19</b><span>10:05</span><span>مفاتيح سيارة، موقف الأساتذة</span></li>
+          </ol>
+        </div>
+        <ul class="facts" id="facts"></ul>
+      </div>
+    </section>
+
+    <section id="demo" class="scene-sec demo" data-slide data-shot="5">
+      <div class="panel panel-demo">
+        <div class="demo-head">
+          <h2 data-i18n="demo.h"></h2>
+          <p data-i18n="demo.sub"></p>
+          <a class="btn btn-solid" href="./demo/app/index.html" target="_blank" rel="noopener" data-i18n="demo.open"></a>
+        </div>
+        <div class="device-screen" id="deviceScreen">
+          <iframe id="demoFrame" title="demo" data-src="./demo/app/index.html" loading="lazy"></iframe>
+          <p class="device-missing" id="demoMissing" hidden data-i18n="demo.missing"></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="close" class="scene-sec close" data-slide data-shot="6">
+      <div class="panel panel-close">
+        <div class="close-logos">
+          <img src="./brand/university.png" alt="Université de Ghardaïa" width="96" height="78" />
+          <img src="./brand/faculty.png" alt="Faculté de droit et des sciences politiques" width="90" height="78" />
+        </div>
+        <h2 data-i18n="close.h"></h2>
+        <p data-i18n="close.org"></p>
+        <div class="next">
+          <h3 data-i18n="close.nexth"></h3>
+          <ul>
+            <li data-i18n="close.n1"></li>
+            <li data-i18n="close.n2"></li>
+            <li data-i18n="close.n3"></li>
+          </ul>
+        </div>
+        <p class="made"><span data-i18n="close.made"></span><img src="./brand/rowd-wordmark.png" alt="ROWD Tech" height="28" /></p>
+      </div>
+    </section>
+  </main>
+
+  <div class="hud" id="hud" hidden>
+    <button type="button" id="hudPrev" data-i18n-aria="pres.prev" aria-label="Previous"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+    <ol id="hudDots"></ol>
+    <button type="button" id="hudNext" data-i18n-aria="pres.next" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button type="button" id="hudExit" data-i18n="pres.exit">خروج</button>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

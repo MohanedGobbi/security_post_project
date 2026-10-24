@@ -1,0 +1,27 @@
+{
+  "name": "faculty-security-landing-guard",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "demo": "vite build --config ../demo/vite.config.ts --base ./ --outDir ../landing-guard/public/demo --emptyOutDir",
+    "site": "npm run demo && npm run build",
+    "serve": "node serve.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fontsource/alexandria": "^5.3.0",
+    "@fontsource/martian-mono": "^5.3.0",
+    "@fontsource/tajawal": "^5.3.0",
+    "gsap": "^3.15.0",
+    "lenis": "^1.3.27",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  }
+}

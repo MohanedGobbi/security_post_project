@@ -11,3 +11,5 @@ release-linux/
 landing/dist/
 landing/public/demo/
 .impeccable/review/
+landing-guard/dist/
+landing-guard/public/demo/
