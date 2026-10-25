@@ -16,4 +16,4 @@ FORM: One persistent three.js scene behind all sections; scroll moves the camera
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
 
 ## Assets
-Guard: three.js example model Xbot.glb (Mixamo character, from github.com/mrdoob/three.js examples/models/gltf), recoloured as a navy uniform with an authored cap, badge and radio. Everything else is modelled in code.
+Guard: Quaternius SWAT character (CC0, poly.pizza), recoloured navy with a gloss visor and an authored gold badge; neutral idle, wave on the shift section, head turned to the cursor.

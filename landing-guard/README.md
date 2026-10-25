@@ -1,7 +1,7 @@
 # Landing page B: the morning gate
 
 A second, security-first presentation page, kept beside the first one in `landing/`. The whole page is one 3D scene
-of the faculty gate in the morning: the guard stands by his booth and turns his head toward the cursor, the security
+of the faculty gate in the morning: the guard stands by his booth in tactical gear and turns his head toward the cursor, the security
 camera on the booth roof follows it too, the camera moves from the guard to the register shelf inside the booth
 (hover or pick a ledger), to the barrier that lifts for a visitor, and up over the whole post. Arabic first, French and English.
 
@@ -21,6 +21,7 @@ http://localhost:4173 (the page must be served over http, not opened as a file).
 **Start presentation** or `P` goes slide by slide.
 
 ## The guard model
-`public/models/guard.glb` is `Xbot.glb` from the three.js examples (github.com/mrdoob/three.js, examples/models/gltf),
-a Mixamo character with its idle and nod animations. The page recolours it as a navy uniform and adds a cap, a badge and a radio
-in code. Mixamo characters may be used in projects; check Adobe's Mixamo terms before reusing the file on its own.
+`public/models/guard.glb` is the **SWAT** character by Quaternius (CC0, public domain), downloaded from poly.pizza
+(https://poly.pizza/m/Btfn3G5Xv4). The page recolours the tactical suit to the faculty security navy, gives the visor a gloss and
+adds a gold badge in code; it uses the character's neutral idle and its wave (when the shift section arrives), and turns his head
+toward the cursor. The character's weapon and combat animations are not used.

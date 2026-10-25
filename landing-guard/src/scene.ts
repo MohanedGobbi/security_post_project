@@ -272,27 +272,40 @@ export async function createScene(canvas: HTMLCanvasElement, bookNames: string[]
   guard.rotation.y = -0.32
   world.add(guard)
   let mixer: THREE.AnimationMixer | null = null
-  let nodAction: THREE.AnimationAction | null = null
+  let idleAction: THREE.AnimationAction | null = null
+  let waveAction: THREE.AnimationAction | null = null
   const bones: { spine?: THREE.Bone; neck?: THREE.Bone; head?: THREE.Bone } = {}
+  // rest pose of the bones we turn; restored every frame so the look-at never accumulates
+  const rest = new Map<THREE.Bone, THREE.Quaternion>()
   new GLTFLoader().load('./models/guard.glb', (gltf) => {
     const model = gltf.scene
+    // the officer: Quaternius' SWAT character (CC0), recoloured to the navy of the faculty's security team
     model.traverse((o) => {
       const m = o as THREE.SkinnedMesh
       if (m.isMesh) {
         m.castShadow = true
         m.receiveShadow = true
         const name = (m.material as THREE.Material).name
-        m.material = name.includes('Joints') ? mat('#121c2e', 0.5, { metalness: 0.25 }) : mat('#24406e', 0.62)
+        m.material =
+          name === 'Swat' ? mat('#22395f', 0.7)
+          : name === 'Swat_Black' ? mat('#0f1724', 0.55, { metalness: 0.15 })
+          : name === 'Visor' ? mat('#0b1018', 0.12, { metalness: 0.6 })
+          : mat('#8d5f3c', 0.7)
       }
       if ((o as THREE.Bone).isBone) {
-        if (o.name === 'mixamorigSpine2') bones.spine = o as THREE.Bone
-        if (o.name === 'mixamorigNeck') bones.neck = o as THREE.Bone
-        if (o.name === 'mixamorigHead') bones.head = o as THREE.Bone
+        if (o.name === 'Chest') bones.spine = o as THREE.Bone
+        if (o.name === 'Neck') bones.neck = o as THREE.Bone
+        if (o.name === 'Head') bones.head = o as THREE.Bone
       }
     })
+    // stand him at a guard's height, feet on the ground
+    const size = new THREE.Box3().setFromObject(model)
+    const k = 1.82 / Math.max(0.01, size.max.y - size.min.y)
+    model.scale.multiplyScalar(k)
+    model.position.y -= size.min.y * k
     guard.add(model)
     model.updateMatrixWorld(true)
-    // uniform details, sized in metres whatever the bone scale is
+    // the gold badge on the chest, sized in metres whatever the bone scale is
     const attach = (bone: THREE.Bone | undefined, obj: THREE.Object3D, x: number, y: number, z: number): void => {
       if (!bone) return
       const ws = new THREE.Vector3()
@@ -301,34 +314,26 @@ export async function createScene(canvas: HTMLCanvasElement, bookNames: string[]
       obj.position.set(x / ws.x, y / ws.x, z / ws.x)
       bone.add(obj)
     }
-    const cap = new THREE.Group()
-    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.118, 0.108, 0.085, 28), mat('#14223d', 0.6))
-    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.022, 28), mat('#0a0f18', 0.4))
-    band.position.y = -0.03
-    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.012, 28, 1, false, -Math.PI / 2, Math.PI), mat('#0a0f18', 0.35))
-    brim.position.set(0, -0.04, 0.035)
-    brim.scale.set(1, 1, 0.8)
-    const capBadge = new THREE.Mesh(new THREE.CircleGeometry(0.022, 20), mat('#e0a640', 0.35, { metalness: 0.8 }))
-    capBadge.position.set(0, 0.0, 0.119)
-    cap.add(crown, band, brim, capBadge)
-    attach(bones.head, cap, 0, 0.165, 0.01)
     const shield = new THREE.Shape()
     shield.moveTo(0, 0.035); shield.lineTo(0.028, 0.025); shield.lineTo(0.024, -0.015); shield.lineTo(0, -0.04); shield.lineTo(-0.024, -0.015); shield.lineTo(-0.028, 0.025); shield.closePath()
     const badge = new THREE.Mesh(new THREE.ExtrudeGeometry(shield, { depth: 0.006, bevelEnabled: false }), mat('#e0a640', 0.35, { metalness: 0.8 }))
-    attach(bones.spine, badge, 0.085, 0.13, 0.12)
-    const radio = box(0.05, 0.1, 0.03, mat('#0b0f14', 0.5), 0, 0, 0)
-    attach(bones.spine, radio, -0.09, 0.12, 0.115)
+    attach(bones.spine, badge, 0.09, 0.06, 0.16)
 
+    for (const b of [bones.spine, bones.neck, bones.head]) if (b) rest.set(b, b.quaternion.clone())
     mixer = new THREE.AnimationMixer(model)
-    const idle = gltf.animations.find((a) => a.name === 'idle')
-    if (idle) mixer.clipAction(idle).play()
-    const agree = gltf.animations.find((a) => a.name === 'agree')
-    if (agree) {
-      THREE.AnimationUtils.makeClipAdditive(agree)
-      nodAction = mixer.clipAction(agree)
-      nodAction.blendMode = THREE.AdditiveAnimationBlendMode
-      nodAction.setLoop(THREE.LoopOnce, 1)
-      nodAction.clampWhenFinished = false
+    const clip = (n: string): THREE.AnimationClip | undefined => gltf.animations.find((c) => c.name.endsWith('|' + n))
+    const idleClip = clip('Idle_Neutral') ?? clip('Idle')
+    const waveClip = clip('Wave')
+    if (idleClip) idleAction = mixer.clipAction(idleClip).play()
+    if (waveClip) {
+      waveAction = mixer.clipAction(waveClip)
+      waveAction.setLoop(THREE.LoopOnce, 1)
+      waveAction.clampWhenFinished = true
+      mixer.addEventListener('finished', (e) => {
+        if (e.action !== waveAction) return
+        idleAction?.reset().fadeIn(0.45).play()
+        waveAction?.fadeOut(0.45)
+      })
     }
   })
 
@@ -443,6 +448,8 @@ export async function createScene(canvas: HTMLCanvasElement, bookNames: string[]
 
     // the guard: idle, then the head (and a little of the chest) turns to what the cursor is doing
     if (mixer) {
+      // the idle clip does not key every bone, so start each frame from the rest pose before adding the look
+      rest.forEach((q, b) => b.quaternion.copy(q))
       mixer.update(dt)
       guard.updateMatrixWorld(true)
       if (bones.head) {
@@ -464,7 +471,7 @@ export async function createScene(canvas: HTMLCanvasElement, bookNames: string[]
     renderer.render(scene, camera)
   })
 
-  if (import.meta.env.DEV) (window as unknown as { __guard: unknown }).__guard = { bones, lookAt, guard }
+  if (import.meta.env.DEV) (window as unknown as { __guard: unknown }).__guard = { bones, lookAt, guard, clock: () => t, mixer: () => mixer }
 
   // clicks on the shelf pick a book
   addEventListener('click', (e) => {
@@ -477,7 +484,11 @@ export async function createScene(canvas: HTMLCanvasElement, bookNames: string[]
     setShot: (s) => { shotTarget = s },
     setBarrier: (b) => { barrier = b },
     selectBook: (i) => { selected = i },
-    nod: () => { if (nodAction && !reduced) nodAction.reset().play() },
+    nod: () => {
+      if (!waveAction || reduced) return
+      waveAction.reset().setEffectiveWeight(1).fadeIn(0.35).play()
+      idleAction?.fadeOut(0.35)
+    },
     onBook: (hv, ck) => { hoverFn = hv; clickFn = ck },
     shelfActive: () => Math.abs(shotTarget - 2) < 0.35
   }
