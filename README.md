@@ -9,7 +9,6 @@ Security management program of the **Faculty of Law and Political Science, Unive
 and custody handovers, lost items, letters, events and more. Arabic first (right to left), French and English.
 It runs on a Windows PC at the security office and works without a network.
 
-- [PLAN_FACULTY.md](PLAN_FACULTY.md): what the faculty asked for, and the delivery phases.
 - [HANDOFF.md](HANDOFF.md): architecture, status, what is and is not tested.
 
 ## What it does
