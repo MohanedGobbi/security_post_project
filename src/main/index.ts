@@ -5,7 +5,6 @@ import { autoSafetyCopy, setRecovery } from './backup'
 import { applyRetention, audit, isFreshInstall, openDb, resetDatabase } from './db'
 import { registerIpc } from './ipc'
 import { seedFaculty } from './seed'
-import { shutdownScanner, warmUpScanner } from './scan'
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -16,6 +15,8 @@ function createWindow(): void {
     show: false,
     backgroundColor: '#0f1720',
     title: 'برنامج إدارة الأمن بالكلية',
+    // Linux: the window's own icon (top bar, dock, Alt+Tab); Windows takes it from the executable
+    ...(process.platform === 'linux' ? { icon: join(app.isPackaged ? process.resourcesPath : join(app.getAppPath(), 'resources'), 'icon.png') } : {}),
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -89,10 +90,9 @@ if (!app.requestSingleInstanceLock()) {
     if (Object.values(purged).some(Boolean)) audit(null, 'retention_purge', '', null, JSON.stringify(purged))
     registerIpc()
     createWindow()
-    warmUpScanner()
   })
 
   app.on('window-all-closed', () => {
-    shutdownScanner().finally(() => app.quit())
+    app.quit()
   })
 }

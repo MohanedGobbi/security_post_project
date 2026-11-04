@@ -28,10 +28,10 @@ export interface Section { title: string; columns: Column<never>[]; rows: unknow
 export const section = <T>(title: string, columns: Column<T>[], rows: T[]): Section => ({ title, columns: columns as Column<never>[], rows })
 export const tr = (lang: Lang) => (k: string, vars?: Record<string, string | number>): string => translate(lang, k, vars)
 
-/** The faculty's and the university's logos, as data addresses so a printout needs no files next to it */
+/** The faculty's, the university's and AFAK's logos, as data addresses so a printout needs no files next to it */
 const logoUris = (): string[] => {
   const dir = join(app.isPackaged ? process.resourcesPath : join(app.getAppPath(), 'resources'), 'brand')
-  return ['ghardaia-law-faculty.png', 'ghardaia-university.png'].flatMap((f) => {
+  return ['ghardaia-law-faculty.png', 'ghardaia-university.png', 'afak.png'].flatMap((f) => {
     try {
       return [`data:image/png;base64,${readFileSync(join(dir, f)).toString('base64')}`]
     } catch {
@@ -222,11 +222,21 @@ export function reportHtml(lang: Lang, title: string, subtitle: string, sections
   </body></html>`
 }
 
+/** The fine print at the bottom of every printed page: who made the program, and the page number */
+function finePrint(lang: Lang): string {
+  return `<div style="width:100%;padding:0 12mm;font-family:Tahoma,Arial,sans-serif;font-size:7px;color:#777;display:flex;justify-content:space-between"
+    dir="${isRtl(lang) ? 'rtl' : 'ltr'}"><span>${esc(translate(lang, 'print.finePrint'))}</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>`
+}
+
 export async function htmlToPdf(html: string, landscape = true): Promise<Buffer> {
+  const lang = (html.match(/<html lang="(w+)"/)?.[1] ?? 'ar') as Lang
   const win = new BrowserWindow({ show: false, webPreferences: { sandbox: true, javascript: false } })
   try {
     await win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
-    return await win.webContents.printToPDF({ landscape, pageSize: 'A4', printBackground: true, preferCSSPageSize: true })
+    return await win.webContents.printToPDF({
+      landscape, pageSize: 'A4', printBackground: true, preferCSSPageSize: true,
+      displayHeaderFooter: true, headerTemplate: '<span></span>', footerTemplate: finePrint(lang)
+    })
   } finally {
     win.destroy()
   }
@@ -322,6 +332,8 @@ export async function writeWorkbook(parent: BrowserWindow | null, defaultName: s
     for (let n = 2; used.has(name.toLowerCase()); n++) name = `${base} ${n}`
     used.add(name.toLowerCase())
     const ws = wb.addWorksheet(name, { views: [{ state: 'frozen', ySplit: 1, rightToLeft: isRtl(lang) }] })
+    // the same fine print as the PDFs, at the foot of every printed page of the sheet
+    ws.headerFooter.oddFooter = `&L&8${translate(lang, 'print.finePrint')}&R&8&P / &N`
     const cols = sec.columns as Column<unknown>[]
     ws.columns = cols.map((c) => {
       const longest = sec.rows.reduce<number>((m, r) => Math.max(m, c.iso ? 16 : Math.min(60, c.value(r).length)), 0)

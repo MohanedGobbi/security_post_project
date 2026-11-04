@@ -42,7 +42,8 @@
     "expected": "Expected visitors",
     "registers": "Registers",
     "admin": "Administration",
-    "students": "Students"
+    "students": "Students",
+    "studentProblems": "Student problems"
   },
   "lang": {
     "ar": "العربية",
@@ -135,7 +136,9 @@
     "autoReading": "Reading the card…",
     "autoDone": "Card read. Press Scan to read another.",
     "autoTrouble": "Hard to read: hold the card flatter and steady, reduce glare, or press Scan.",
-    "scanOkText": "Text read from the card. There is no check on it: compare every field with the card."
+    "scanOkText": "Text read from the card. There is no check on it: compare every field with the card.",
+    "takeCardPhoto": "Photograph the card",
+    "cardPhotoHelp": "Hold the card flat inside the frame, then take the photo. Both sides can be taken (3 pictures at most)."
   },
   "idType": {
     "national_id": "National ID card",
@@ -679,8 +682,8 @@
     },
     "opt": {
       "idScan": {
-        "name": "ID card scanning",
-        "desc": "Webcam and image import to fill the visitor form from the card."
+        "name": "ID card photo",
+        "desc": "A photo of the visitor's card, kept with the visit (nothing is read from it)."
       },
       "visitorPhoto": {
         "name": "Visitor photo",
@@ -951,7 +954,8 @@
     "field": "Field",
     "value": "Value",
     "before": "Before",
-    "after": "After"
+    "after": "After",
+    "finePrint": "Made by ROWD Tech · in partnership with AFAK"
   },
   "students": {
     "title": "Students",
@@ -1078,5 +1082,38 @@
     "restartTitle": "Restart the program",
     "restartHelp": "Closes and opens the program again, reloading the data.",
     "restart": "Restart"
+  },
+  "problems": {
+    "title": "Student problems",
+    "intro": "A student who forgot or lost their card: scan the QR code of the digital card on their phone, or find them in the student list.",
+    "scan": "Scan the QR code",
+    "scanAgain": "Next student: scan a QR code",
+    "scanHint": "Ask the student to hold the digital card's QR code up to the camera.",
+    "searchLabel": "Or search the student list",
+    "waiting": "Scan the QR code of the digital card, or pick the student from the search.",
+    "verdict": {
+      "match": "In the student list, and the details match",
+      "mismatch": "In the student list, but some details differ: check before letting them in",
+      "notFound": "No matching student in the student list"
+    },
+    "byName": "found by name only, without the card number",
+    "field": "Field",
+    "fromQr": "In the QR code",
+    "inList": "In the student list",
+    "notInQr": "not in the code",
+    "qrText": "QR code text, as read",
+    "repeat": "{{n}} problem(s) recorded for this student in the last 90 days",
+    "manual": "Not in the list? Type the card number and the name, then record.",
+    "name": "Student name",
+    "problem": "Problem",
+    "forgot": "Forgot the card",
+    "lost": "Lost the card",
+    "other": "Other",
+    "note": "Note (optional)",
+    "record": "Record in the student problems register",
+    "needStudent": "Type the student's card number and name.",
+    "recent": "Last 24 hours",
+    "none": "Nothing yet.",
+    "noRegister": "The student problems register is switched off. An administrator switches it on in Administration → Registers."
   }
 }

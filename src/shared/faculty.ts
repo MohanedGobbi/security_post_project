@@ -20,7 +20,7 @@ export const FACULTY = {
   } as Features,
 
   /** register templates (registerTemplates.ts) opened at the first start, and again for any added by a later version */
-  registerTemplates: ['shift', 'custody', 'incidents', 'lost_found', 'letters', 'events', 'reports', 'maintenance', 'official_visits', 'evacuation', 'alarms'],
+  registerTemplates: ['shift', 'custody', 'incidents', 'lost_found', 'letters', 'events', 'reports', 'maintenance', 'official_visits', 'evacuation', 'alarms', 'student_problems'],
 
   /**
    * The first two accounts. The PINs below are only a starting point: the administrator changes them in

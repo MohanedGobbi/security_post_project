@@ -232,7 +232,6 @@ textarea { resize: vertical; }
   position: absolute; border: 3px dashed #ffffffcc; border-radius: 14px; max-height: 95%;
   box-shadow: 0 0 0 9999px rgb(0 0 0 / 35%); pointer-events: none;
 }
-.mrz-zone { position: absolute; inset-inline: 6%; bottom: 7%; height: 26%; border: 2px solid #4ade80aa; border-radius: 6px; }
 .camera-missing { color: #c9d6e6; text-align: center; padding: 24px; }
 .camera-busy {
   position: absolute; inset: auto 0 0 0; background: rgb(15 42 68 / 90%); color: #fff; padding: 10px;
@@ -244,7 +243,7 @@ textarea { resize: vertical; }
 .camera-panel .hint { margin: 8px 0; }
 .camera-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .camera-actions .primary { flex: 1 1 100%; }
-.ocr-lines { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; max-height: 260px; overflow: auto; }
+.camera-view.flash { outline: 4px solid var(--accent); outline-offset: -4px; }
 .visitor-form { position: relative; }
 .form-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .visitor-photo { width: 84px; height: 84px; border-radius: 10px; object-fit: cover; border: 2px solid var(--line); }
@@ -570,16 +569,23 @@ h2.spaced { margin-top: 18px; }
 .builder-preview .register-head h3 { margin: 0; }
 .warn-row td { background: var(--warn-soft); }
 
-/* ---------- automatic card reading ---------- */
-.camera-view { position: relative; }
-.auto-badge {
-  position: absolute; inset-inline: 12px; bottom: 12px; padding: 6px 12px; border-radius: 10px; font-size: 0.9rem; font-weight: 600;
-  background: rgb(15 23 32 / 72%); color: #fff; text-align: center; pointer-events: none;
-}
-.auto-badge.reading { background: rgb(22 112 58 / 88%); }
-.auto-badge.trouble { background: rgb(178 106 0 / 90%); }
-.auto-badge.done { background: rgb(13 138 78 / 92%); }
-.auto-toggle { margin: 6px 0 0; }
+/* ---------- student problems ---------- */
+.problems-search { margin-top: 16px; }
+.problems-recent-title { margin: 20px 0 8px; font-size: 1rem; }
+.log-table.compact td { padding: 5px 8px; font-size: 0.85rem; }
+.log-table.compare { margin: 4px 0 12px; }
+.log-table.compare tbody tr { cursor: default; }
+.log-table.compare tbody tr:hover { background: none; }
+.log-table.compare tr.bad td { background: var(--danger-soft); }
+.problems-empty { display: grid; place-items: center; align-content: center; gap: 10px; min-height: 340px; color: var(--ink-2); text-align: center; }
+.problem-choice { border: 0; padding: 0; margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+.problem-choice legend { font-weight: 600; margin-bottom: 6px; }
+.problem-choice .chip { padding: 8px 16px; font-size: 0.95rem; }
+.qr-text { margin: 0 0 12px; }
+.qr-text pre { white-space: pre-wrap; word-break: break-all; background: var(--surface-2); padding: 8px 10px; border-radius: 8px; max-height: 160px; overflow: auto; font-size: 0.85rem; }
+
+/* ---------- made by (end of every page) ---------- */
+.app-footer { margin: 40px 0 4px; opacity: 0.8; }
 .camera-busy small { margin-inline-start: 8px; opacity: 0.8; }
 
 /* ---------- pictures of the ID card ---------- */

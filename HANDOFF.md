@@ -4,6 +4,11 @@ Written 20 October 2026, last commit `f947bbb` on `main` (pushed to https://gith
 Read this first, then `README.md` (features, how to run).
 On the `university-linux` branch the planning and design files (`PLAN_FACULTY.md`, `DESIGN.md`, `PRODUCT.md`, `.impeccable/`) and the scanner test bench
 (`tools/scan-test/`) were removed; they stay on `main`, where the references to them below still apply.
+Also on this branch (5 Nov 2026), at the client's request: **ID card reading is gone** (MRZ, Windows OCR, Tesseract and their models): the guard
+photographs the card and types the details, so the scanner sections below describe `main` only. New: the **Student problems** page
+(`StudentProblemsPage.tsx`, `src/main/studentProblems.ts`, `src/shared/studentQr.ts`) reads the QR of a digital student card as text and
+matches it with the directory, and the `student_problems` register records it. AFAK's logo is on the screens and printouts, and every PDF
+and Excel page ends with the fine print `print.finePrint`.
 
 ## 1. What this is
 The security-office program of the **Faculty of Law and Political Science, University of Ghardaia** (مكتب الأمن الداخلي للكلية,

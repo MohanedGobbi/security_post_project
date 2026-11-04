@@ -96,6 +96,26 @@ export function suggestStudents(q: { name: string; idNumber: string }): StudentM
   return out.slice(0, 5)
 }
 
+/** Active students whose card number or national number is this one */
+export function studentsByNumber(n: string): Student[] {
+  const h = hashOf(clean(n))
+  if (!h) return []
+  return (conn().prepare('SELECT * FROM students WHERE (student_no_hash = ? OR id_hash = ?) AND active = 1').all(h, h) as unknown as StudentDb[]).map(toStudent)
+}
+
+/** Active students whose name (Arabic or Latin) is at least `min` alike to this one, best first */
+export function studentsByName(name: string, min: number, max = 5): { student: Student; score: number }[] {
+  if (normName(name).replace(/ /g, '').length < 3) return []
+  const db = conn()
+  const rows = db.prepare('SELECT id, full_name, full_name_alt FROM students WHERE active = 1').all() as unknown as { id: number; full_name: string; full_name_alt: string }[]
+  return rows
+    .map((r) => ({ id: r.id, score: Math.max(nameSimilarity(name, r.full_name), r.full_name_alt ? nameSimilarity(name, r.full_name_alt) : 0) }))
+    .filter((r) => r.score >= min)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, max)
+    .map((r) => ({ student: toStudent(db.prepare('SELECT * FROM students WHERE id = ?').get(r.id) as unknown as StudentDb), score: r.score }))
+}
+
 export const studentCount = (): number => (conn().prepare('SELECT COUNT(*) AS n FROM students WHERE active = 1').get() as { n: number }).n
 
 function cleanInput(i: StudentInput): StudentInput {

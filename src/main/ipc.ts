@@ -4,7 +4,7 @@ import { app, BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent } f
 import type {
   BadgeSettings, CheckInInput, CheckStatus, CustomFieldInput, ExpectedInput, DeliveryInput, ExportRange, IncidentInput, KeyItemInput, Lang, LendInput, NoteCategory,
   Features, Module, RangeQuery, Role, SearchQuery, Settings, User, VehicleInInput, WatchHit, WatchInput,
-  AuditQuery, LevelInput, Permission, StudentInput, ScanOptions, EntryInputValues, EntryQuery, FieldInput, RegisterDefInput
+  AuditQuery, LevelInput, Permission, StudentInput, EntryInputValues, EntryQuery, FieldInput, RegisterDefInput
 } from '@shared/types'
 import { ALL_ON, PROFILES } from '@shared/features'
 import { can } from '@shared/permissions'
@@ -12,8 +12,9 @@ import { LANGS } from '@shared/i18n'
 import * as db from './db'
 import { DEFAULT_PINS } from '@shared/faculty'
 import { verifyPin } from './crypto'
-import { analyzeImage, barcodeTexts, readFront, readText } from './scan'
+import { barcodeTexts } from './scan'
 import * as students from './students'
+import * as studentProblems from './studentProblems'
 import * as backup from './backup'
 import { exportAuditPdf, exportAuditXlsx, exportEntryXlsx, exportRegisterXlsx, exportStudentsPdf, exportStudentsXlsx, exportVisitXlsx, exportEntryPdf, exportRegisterPdf, exportVisitPdf, registersSections } from './printouts'
 import { exportCheckpointLabels, exportInsideXlsx, exportEvacuation, exportExcel, exportPdf, exportShiftReport } from './export'
@@ -43,6 +44,7 @@ const PERMISSION_OF: Record<string, Permission> = {
   'visits:lookup': 'visitors', 'visits:checkIn': 'visitors', 'visits:checkOut': 'visitors', 'visits:insideNow': 'visitors', 'visits:suggestions': 'visitors',
   'visits:search': 'history', 'visits:get': 'history',
   'students:list': 'students', 'students:suggest': 'students', 'students:count': 'students',
+  'studentProblems:checkQr': 'students', 'studentProblems:search': 'students',
   'students:save': 'studentsEdit', 'students:setActive': 'studentsEdit', 'students:import': 'studentsEdit', 'students:template': 'studentsEdit',
   'students:pdf': 'exports',
   'exports:pdf': 'exports', 'exports:excel': 'exports', 'exports:registerPdf': 'exports', 'exports:entryPdf': 'exports', 'exports:visitPdf': 'exports',
@@ -360,9 +362,6 @@ export function registerIpc(): void {
   })
 
   // ---------- scanning ----------
-  handle('scan:analyze', 'user', (_u, image: Uint8Array, opts?: ScanOptions) => analyzeImage(image, opts ?? {}))
-  handle('scan:readText', 'user', (_u, image: Uint8Array) => readText(image))
-  handle('scan:readFront', 'user', (_u, image: Uint8Array) => readFront(image))
   handle('scan:barcodes', 'user', (_u, image: Uint8Array) => barcodeTexts(image))
 
   // ---------- students ----------
@@ -372,6 +371,8 @@ export function registerIpc(): void {
       .map((m) => (can(u, 'studentsEdit') ? m : { ...m, student: { ...m.student, idNumber: '', phone: '', birthDate: '' } })))
   handle('students:suggest', 'user', (_u, q: { name: string; idNumber: string }) => students.suggestStudents({ name: String(q?.name ?? ''), idNumber: String(q?.idNumber ?? '') }))
   handle('students:count', 'user', () => students.studentCount())
+  handle('studentProblems:checkQr', 'user', (_u, text: string) => studentProblems.checkQr(String(text ?? '')))
+  handle('studentProblems:search', 'user', (_u, text: string) => studentProblems.searchStudents(String(text ?? '')))
   handle('students:save', 'user', (u, input: StudentInput) => {
     const id = students.saveStudent(input)
     db.audit(u.id, input.id ? 'student_update' : 'student_add', 'student', id)

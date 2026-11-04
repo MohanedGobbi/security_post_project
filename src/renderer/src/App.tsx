@@ -25,13 +25,15 @@ import KeysPage from './pages/KeysPage'
 import ExpectedPage from './pages/ExpectedPage'
 import SettingsPage from './pages/SettingsPage'
 import StudentsPage from './pages/StudentsPage'
+import StudentProblemsPage from './pages/StudentProblemsPage'
+import rowdLogo from './assets/brands/rowd-tech.png'
 import RecoveryPage from './pages/RecoveryPage'
 import PrintMenu from './components/PrintMenu'
 import EndShiftDialog from './components/EndShiftDialog'
 import Icon, { type IconName } from './components/Icon'
 import BrandMark from './components/BrandMark'
 
-export type Page = 'home' | 'in' | 'out' | 'expected' | 'vehicles' | 'deliveries' | 'incidents' | 'patrols' | 'keys' | 'notes' | 'registers' | 'students' | 'admin' | 'log' | 'watchlist' | 'settings'
+export type Page = 'home' | 'in' | 'out' | 'expected' | 'vehicles' | 'deliveries' | 'incidents' | 'patrols' | 'keys' | 'notes' | 'registers' | 'students' | 'problems' | 'admin' | 'log' | 'watchlist' | 'settings'
 
 interface Toast { id: number; text: string; kind: 'ok' | 'error' }
 
@@ -69,7 +71,7 @@ export const pageOn = (page: Page, f: Features): boolean => {
 }
 
 /** What a level must allow to open a page (the main process checks the same on every call) */
-const PAGE_PERMISSION: Partial<Record<Page, Permission>> = { in: 'visitors', out: 'visitors', log: 'history', students: 'students' }
+const PAGE_PERMISSION: Partial<Record<Page, Permission>> = { in: 'visitors', out: 'visitors', log: 'history', students: 'students', problems: 'students' }
 
 /** A page the account may open: its module is on, its level allows it, and the Administration page is for administrators */
 export const pageAllowed = (page: Page, f: Features, user: User | null): boolean => {
@@ -92,6 +94,7 @@ const NAV: { page: Page; key: string; icon: IconName; shortcut?: string }[] = [
   { page: 'notes', key: 'nav.notes', icon: 'note', shortcut: 'F7' },
   { page: 'registers', key: 'nav.registers', icon: 'book' },
   { page: 'students', key: 'nav.students', icon: 'user' },
+  { page: 'problems', key: 'nav.studentProblems', icon: 'qr' },
   { page: 'admin', key: 'nav.admin', icon: 'users' },
   { page: 'log', key: 'nav.log', icon: 'list', shortcut: 'F8' },
   { page: 'watchlist', key: 'nav.watchlist', icon: 'eye' },
@@ -314,10 +317,12 @@ export default function App(): ReactNode {
             {page === 'notes' && <NotesPage />}
             {page === 'registers' && <RegistersPage />}
             {page === 'students' && <StudentsPage />}
+            {page === 'problems' && <StudentProblemsPage />}
             {page === 'admin' && user.role === 'admin' && <AdminPage />}
             {page === 'log' && <LogPage />}
             {page === 'watchlist' && <WatchlistPage />}
             {page === 'settings' && <SettingsPage />}
+            <footer className="made-by app-footer"><img src={rowdLogo} alt="" /><span>{t('login.madeBy')}</span></footer>
           </main>
         </div>
       </div>

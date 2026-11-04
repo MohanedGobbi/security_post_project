@@ -34,12 +34,13 @@ const PATHS = {
   tool: 'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z',
   star: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z',
   megaphone: 'M3 11l18-5v12L3 14zM11.6 16.8a3 3 0 1 1-5.8-1.6',
-  door: 'M13 4h3a2 2 0 0 1 2 2v14M2 20h3M13 20h9M10 12v.01M13 4.6v16.8L5 20V5.6l8-1.6z'
+  door: 'M13 4h3a2 2 0 0 1 2 2v14M2 20h3M13 20h9M10 12v.01M13 4.6v16.8L5 20V5.6l8-1.6z',
+  qr: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM20 14v3h1M14 20h3M20 20h1v1h-1z'
 } as const
 
 /** Icons an administrator can give a register (light line icons, no details) */
 export const REGISTER_ICONS = ['book', 'search', 'mail', 'flag', 'users', 'clipboard', 'bell', 'tool', 'star', 'megaphone', 'door',
-  'alert', 'key', 'enter', 'car', 'box', 'shield', 'clock', 'calendar', 'note', 'eye', 'camera'] as const
+  'alert', 'key', 'enter', 'car', 'box', 'shield', 'clock', 'calendar', 'note', 'eye', 'camera', 'qr'] as const
 
 /** a register's stored icon name, or the book when it is unknown */
 export const registerIcon = (name: string): IconName => ((REGISTER_ICONS as readonly string[]).includes(name) ? name as IconName : 'book')

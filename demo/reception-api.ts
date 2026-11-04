@@ -1,8 +1,8 @@
 // window.api for the browser demo of the reception app: same contract as the Electron main process,
-// backed by the demo store instead of SQLite, OCR and printers.
+// backed by the demo store instead of SQLite and printers.
 import type {
   ActivityItem, AlertItem, Api, BadgeSettings, Checkpoint, DeliveryRow, ExpectedVisitor, Features, IncidentRow, KeyItem, KeyLoan, Lang,
-  PatrolRound, PatrolRoundDetail, PersonFields, RangeQuery, RegisterDef, RegisterEntry, Role, ScanResult, SearchQuery, ShiftRow, ShiftSummary, User, VehicleRow, VisitDetail,
+  PatrolRound, PatrolRoundDetail, QrStudentFields, RangeQuery, RegisterDef, RegisterEntry, Role, SearchQuery, ShiftRow, ShiftSummary, User, VehicleRow, VisitDetail,
   VisitRow, WatchHit, WatchRow
 } from '@shared/types'
 import { formatDateTime, translate } from '@shared/i18n'
@@ -12,7 +12,9 @@ import {
   db, dayBounds, fail, nextId, nowIso, photos, refresh, save, today, wait,
   type DEntry, type DExpected, type DLoan, type DRound, type DShift, type DUser, type DVisit
 } from './store'
-import { MAX_CARD_PICTURES, type Student } from '@shared/types'
+import { MAX_CARD_PICTURES, type Student, type StudentCheck } from '@shared/types'
+import { compareStudent, readStudentQr } from '@shared/studentQr'
+import { nameSimilarity } from '@shared/names'
 import { BUILTIN_LEVELS } from '@shared/permissions'
 import { cleanDefinition, cleanStep, cleanValue, type ValueResolvers } from '@shared/registers'
 import { templatesFor } from '@shared/registerTemplates'
@@ -135,16 +137,6 @@ function checkCustom(entity: 'visit' | 'vehicle' | 'delivery', values: Record<st
   }
   return out
 }
-
-/** Sample cards returned by "Scan card" in turn: a new visitor, a watchlisted person, a returning visitor */
-const SAMPLE_CARDS: Partial<PersonFields>[] = [
-  { fullName: 'Anna Maria Eriksson', idType: 'passport', idNumber: 'L898902C3', nationality: 'SWE', birthDate: '1974-08-12', sex: 'F' },
-  // on the watchlist: shows the refusal
-  { fullName: F.watch.name, idType: 'national_id', idNumber: F.watch.idNumber, nationality: F.nationality, birthDate: '1990-03-02', sex: 'M' },
-  // came yesterday: shows the returning-visitor fill
-  { fullName: F.visits[6].name, idType: 'national_id', idNumber: sampleId(7), nationality: F.nationality, birthDate: '1996-06-14', sex: 'F' }
-]
-let sampleIndex = 0
 
 // ---------- shifts / activity ----------
 function summary(from: string, to: string): ShiftSummary {
@@ -295,6 +287,16 @@ const DEMO_STUDENTS: Student[] = [
   { id: 1, studentNo: '20230001', idNumber: '', fullName: 'Khadidja Benyoucef', fullNameAlt: 'خديجة بن يوسف', birthDate: '2003-06-14', phone: '', level: 'L2', department: 'حقوق', notes: '', active: true },
   { id: 2, studentNo: '20220417', idNumber: '', fullName: 'Rachid Bahaz', fullNameAlt: 'رشيد باحاز', birthDate: '2002-03-02', phone: '', level: 'L3', department: 'علوم سياسية', notes: '', active: true }
 ]
+
+const NO_QR: QrStudentFields = { studentNo: '', fullName: '', birthDate: '', level: '', department: '' }
+
+/** a student next to what the QR said, with the entries of the student problems register about them in the last 90 days */
+function checkOf(student: Student, by: StudentCheck['by'], score: number, found = NO_QR): StudentCheck {
+  const reg = db().registers.find((r) => r.key === 'student_problems')
+  const since = new Date(Date.now() - 90 * 86_400_000).toISOString()
+  const recentProblems = reg ? db().entries.filter((e) => e.registerId === reg.id && e.createdAt >= since && String(e.values.student_no ?? '') === student.studentNo).length : 0
+  return { student, by, score, fields: compareStudent(found, student), recentProblems }
+}
 
 export const demoApi: Api = {
   auth: {
@@ -646,25 +648,27 @@ export const demoApi: Api = {
   },
 
   scan: {
-    async analyze(image): Promise<ScanResult> {
-      const codes = image.length ? await readQr(image) : []
-      const empty: ScanResult = { source: 'none', fields: {}, valid: false, rawMrz: [], barcodes: codes.map((text) => ({ format: 'QRCode', text })), lines: [] }
-      if (codes.some((c) => c.startsWith('SECREG-'))) return empty
-      // the desktop app reads the MRZ / barcode with offline OCR; the demo fills a sample card
-      await wait(900)
-      const fields = SAMPLE_CARDS[sampleIndex++ % SAMPLE_CARDS.length]
-      return { ...empty, source: 'mrz', fields, valid: true }
-    },
-    async readText() {
-      await wait(800)
-      return F.cardText
-    },
-    async readFront(): Promise<ScanResult> {
-      await wait(800)
-      return { source: 'none', fields: {}, valid: false, rawMrz: [], barcodes: [], lines: F.cardText }
-    },
     async barcodes(image) {
       return readQr(image)
+    }
+  },
+
+  studentProblems: {
+    async checkQr(text) {
+      const { fields, numbers } = readStudentQr(text)
+      const byNumber = DEMO_STUDENTS.filter((s) => numbers.includes(s.studentNo))
+      const matches = byNumber.length
+        ? byNumber.map((s) => checkOf(s, 'number', 1, { ...fields, studentNo: fields.studentNo || s.studentNo }))
+        : fields.fullName
+          ? DEMO_STUDENTS.map((s) => ({ s, score: Math.max(nameSimilarity(fields.fullName, s.fullName), nameSimilarity(fields.fullName, s.fullNameAlt)) }))
+            .filter((x) => x.score >= 0.8).map((x) => checkOf(x.s, 'name', x.score, fields))
+          : []
+      return { text, found: fields, matches }
+    },
+    async search(text) {
+      const q = text.trim().toLowerCase()
+      if (q.length < 2) return []
+      return DEMO_STUDENTS.filter((s) => `${s.fullName} ${s.fullNameAlt} ${s.studentNo}`.toLowerCase().includes(q)).map((s) => checkOf(s, 'name', 1))
     }
   },
 

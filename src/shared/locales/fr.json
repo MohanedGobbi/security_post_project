@@ -42,7 +42,8 @@
     "expected": "Visiteurs attendus",
     "registers": "Registres",
     "admin": "Administration",
-    "students": "Étudiants"
+    "students": "Étudiants",
+    "studentProblems": "Problèmes d’étudiants"
   },
   "lang": {
     "ar": "العربية",
@@ -135,7 +136,9 @@
     "autoReading": "Lecture de la carte…",
     "autoDone": "Carte lue. Appuyez sur Scanner pour en lire une autre.",
     "autoTrouble": "Lecture difficile : tenez la carte plus à plat et immobile, évitez les reflets, ou appuyez sur Scanner.",
-    "scanOkText": "Texte lu sur la carte. Aucune vérification n’est possible : comparez chaque champ avec la carte."
+    "scanOkText": "Texte lu sur la carte. Aucune vérification n’est possible : comparez chaque champ avec la carte.",
+    "takeCardPhoto": "Photographier la carte",
+    "cardPhotoHelp": "Tenez la carte à plat dans le cadre, puis prenez la photo. Les deux faces peuvent être prises (3 photos au plus)."
   },
   "idType": {
     "national_id": "Carte d’identité nationale",
@@ -679,8 +682,8 @@
     },
     "opt": {
       "idScan": {
-        "name": "Scan de la pièce d’identité",
-        "desc": "Caméra et import d’image pour remplir le formulaire depuis la carte."
+        "name": "Photo de la pièce d’identité",
+        "desc": "Une photo de la carte du visiteur, gardée avec la visite (rien n’y est lu)."
       },
       "visitorPhoto": {
         "name": "Photo du visiteur",
@@ -951,7 +954,8 @@
     "field": "Champ",
     "value": "Valeur",
     "before": "Avant",
-    "after": "Après"
+    "after": "Après",
+    "finePrint": "Réalisé par ROWD Tech · en partenariat avec AFAK"
   },
   "students": {
     "title": "Étudiants",
@@ -1078,5 +1082,38 @@
     "restartTitle": "Redémarrer le programme",
     "restartHelp": "Ferme et rouvre le programme en rechargeant les données.",
     "restart": "Redémarrer"
+  },
+  "problems": {
+    "title": "Problèmes d’étudiants",
+    "intro": "Un étudiant qui a oublié ou perdu sa carte : scannez le QR code de sa carte numérique sur son téléphone, ou cherchez-le dans la liste des étudiants.",
+    "scan": "Scanner le QR code",
+    "scanAgain": "Étudiant suivant : scanner un QR code",
+    "scanHint": "Demandez à l’étudiant de présenter le QR code de sa carte numérique à la caméra.",
+    "searchLabel": "Ou chercher dans la liste des étudiants",
+    "waiting": "Scannez le QR code de la carte numérique, ou choisissez l’étudiant dans la recherche.",
+    "verdict": {
+      "match": "Dans la liste des étudiants, et les informations concordent",
+      "mismatch": "Dans la liste, mais certaines informations diffèrent : vérifiez avant de le laisser entrer",
+      "notFound": "Aucun étudiant correspondant dans la liste"
+    },
+    "byName": "trouvé par le nom seulement, sans le numéro de carte",
+    "field": "Champ",
+    "fromQr": "Dans le QR code",
+    "inList": "Dans la liste",
+    "notInQr": "absent du code",
+    "qrText": "Texte du QR code, tel que lu",
+    "repeat": "{{n}} problème(s) enregistré(s) pour cet étudiant ces 90 derniers jours",
+    "manual": "Pas dans la liste ? Tapez le numéro de carte et le nom, puis enregistrez.",
+    "name": "Nom de l’étudiant",
+    "problem": "Problème",
+    "forgot": "A oublié sa carte",
+    "lost": "A perdu sa carte",
+    "other": "Autre",
+    "note": "Remarque (facultatif)",
+    "record": "Enregistrer dans le registre des problèmes d’étudiants",
+    "needStudent": "Tapez le numéro de carte et le nom de l’étudiant.",
+    "recent": "Dernières 24 heures",
+    "none": "Rien pour l’instant.",
+    "noRegister": "Le registre des problèmes d’étudiants est désactivé. Un administrateur l’active dans Administration → Registres."
   }
 }

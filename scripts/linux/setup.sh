@@ -166,12 +166,12 @@ ok "build (out/)"
 
 chmod +x "$ROOT"/scripts/linux/*.sh
 if [[ $MENU -eq 1 ]]; then
-  write_desktop_entry "${XDG_DATA_HOME:-$HOME/.local/share}/applications/faculty-security.desktop"
+  write_desktop_entry "${XDG_DATA_HOME:-$HOME/.local/share}/applications/security-register.desktop"
   ok "applications menu entry: Faculty Security"
 fi
 if [[ $AUTOSTART -eq 1 ]]; then
-  write_desktop_entry "${XDG_CONFIG_HOME:-$HOME/.config}/autostart/faculty-security.desktop"
-  ok "starts when $USER logs in (remove ~/.config/autostart/faculty-security.desktop to stop that)"
+  write_desktop_entry "${XDG_CONFIG_HOME:-$HOME/.config}/autostart/security-register.desktop"
+  ok "starts when $USER logs in (remove ~/.config/autostart/security-register.desktop to stop that)"
 fi
 
 cat <<EOF
