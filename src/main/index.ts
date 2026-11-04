@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { app, BrowserWindow, dialog, Menu, session, shell } from 'electron'
+import { app, BrowserWindow, dialog, Menu, safeStorage, session, shell } from 'electron'
 import { initKey, replaceKey } from './crypto'
 import { autoSafetyCopy, setRecovery } from './backup'
 import { applyRetention, audit, isFreshInstall, openDb, resetDatabase } from './db'
@@ -65,6 +65,8 @@ if (!app.requestSingleInstanceLock()) {
     session.defaultSession.setPermissionCheckHandler((_wc, permission) => permission === 'media')
 
     const keyState = initKey()
+    // Linux: which keyring protects the data key ("basic_text" means none; see README.md, section Linux). Goes to the start.sh log.
+    if (process.platform === 'linux') console.log(`[faculty-security] data key protection: ${safeStorage.getSelectedStorageBackend()}`)
     openDb()
     if (keyState === 'lost') {
       if (isFreshInstall()) {

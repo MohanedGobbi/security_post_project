@@ -97,7 +97,28 @@ npm run dist
 ```
 
 builds the Windows installer into `release/` on a Windows PC. The Debian package cannot be built on Windows directly; run `npm run dist:linux` on Linux, or inside a Linux
-container (for example Docker with the `electronuserland/builder` image), with the repository copied in and `npm ci` run there.
+container (for example Docker with the `node:24-bookworm` image), with the repository copied in and `npm ci` run there.
+
+## Linux
+The scripts are in `scripts/linux/`; run them as the person who uses the program, not as root (they ask for sudo).
+
+| Script | What it does |
+|---|---|
+| `setup.sh` | Installs the libraries Electron needs, Node.js (asks first), the npm packages and the sandbox fix, builds, adds a menu entry (`--autostart`: open at login) |
+| `start.sh` | Rebuilds and opens the program from the source folder; log in `~/.local/state/faculty-security/start.log` |
+| `build-packages.sh` | Builds `release/FacultySecurity-0.1.0-amd64.deb` (`--rpm`, `--appimage`, `--all` for the others) |
+| `kit/` | The install kit's scripts: `install.sh` (installs the `.deb` next to it), `check-pc.sh` (checks the PC, changes nothing), `uninstall.sh`, `00-START-HERE.txt` |
+
+- **The data key.** On Linux it is protected by the desktop keyring (GNOME keyring or KDE Wallet). Started from a terminal, the program prints
+  `[faculty-security] data key protection: …`: `gnome_libsecret` or `kwallet…` is good, `basic_text` means no keyring was found (install
+  `gnome-keyring` before the first real start). The keyring is chosen at the first start; if it changes later the program opens in recovery
+  mode and asks for a backup file. `start.sh` can fix the choice with `SECREG_PASSWORD_STORE` (`gnome-libsecret`, `kwallet5`, `kwallet6`, `basic`)
+  in `~/.config/faculty-security.env`.
+- **The sandbox.** Ubuntu 23.10 and newer block Electron's sandbox for programs run from a source folder; `setup.sh` makes `chrome-sandbox`
+  setuid root (the standard fix) and has to run again after every `npm ci`. The `.deb` sets it up by itself, with an AppArmor profile on Ubuntu 24.04.
+  `SECREG_NO_SANDBOX=1` runs without it (last resort). An AppImage cannot use the sandbox on Ubuntu 24.04: prefer the `.deb`.
+- **Other `start.sh` settings** (in `~/.config/faculty-security.env`): `SECREG_SKIP_BUILD=1` (open the last build), `SECREG_FLAGS` (more Electron
+  flags, for example `--disable-gpu` or `--ozone-platform=x11`), `SECREG_DATA_DIR`.
 
 ## Web demo (Vercel)
 A browser-only demo (the same screens, sample data in Arabic, nothing sent anywhere) lives in `demo/`.

@@ -1032,7 +1032,7 @@
   },
   "recovery": {
     "title": "Les données ne peuvent pas être ouvertes",
-    "text": "Ces données ont été créées par un autre compte Windows ou sur un autre PC : leur clé de chiffrement ne peut pas être ouverte ici.",
+    "text": "Ces données ont été créées par un autre compte utilisateur ou sur un autre PC : leur clé de chiffrement ne peut pas être ouverte ici.",
     "help": "Restaurez un fichier de sauvegarde (.secbak) fait avec le programme, avec son mot de passe.",
     "choose": "Choisir le fichier de sauvegarde…"
   },
@@ -1049,7 +1049,7 @@
     "restoreWarn": "Tout ce qui est dans le programme est remplacé par la sauvegarde, puis le programme redémarre. Une copie de sécurité des données actuelles est faite avant.",
     "restarting": "Redémarrage du programme…",
     "copiesTitle": "Copies de sécurité sur ce PC",
-    "copiesIntro": "Le programme en fait une chaque jour et avant tout ce qui efface ou restaure (les 14 dernières quotidiennes et 10 des autres sont gardées). Elles restent sur ce PC, pour ce compte Windows.",
+    "copiesIntro": "Le programme en fait une chaque jour et avant tout ce qui efface ou restaure (les 14 dernières quotidiennes et 10 des autres sont gardées). Elles restent sur ce PC, pour ce compte utilisateur.",
     "noCopies": "Aucune copie de sécurité",
     "openFolder": "Ouvrir le dossier",
     "when": "Faite le",

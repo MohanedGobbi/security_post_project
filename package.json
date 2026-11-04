@@ -74,7 +74,17 @@
       "icon": "tools/linux-icon.png",
       "maintainer": "ROWD Tech <noreply@example.com>",
       "synopsis": "Faculty security management program",
-      "artifactName": "${productName}-${version}-amd64.${ext}"
+      "artifactName": "${productName}-${version}-amd64.${ext}",
+      "desktop": {
+        "entry": {
+          "Name": "Faculty Security",
+          "Name[ar]": "برنامج إدارة الأمن بالكلية",
+          "Name[fr]": "Sécurité de la faculté",
+          "Comment": "Faculty security management program",
+          "Comment[ar]": "برنامج إدارة الأمن بالكلية - كلية الحقوق والعلوم السياسية، جامعة غرداية",
+          "Keywords": "security;visitors;registers;أمن;زوار;سجلات;"
+        }
+      }
     }
   },
   "dependencies": {

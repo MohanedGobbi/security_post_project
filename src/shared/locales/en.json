@@ -1032,7 +1032,7 @@
   },
   "recovery": {
     "title": "The data cannot be opened",
-    "text": "These data were created by another Windows account or on another PC, so their encryption key cannot be opened here.",
+    "text": "These data were created by another user account or on another PC, so their encryption key cannot be opened here.",
     "help": "Restore a backup file (.secbak) made from the program, with its password.",
     "choose": "Choose the backup file…"
   },
@@ -1049,7 +1049,7 @@
     "restoreWarn": "Everything now in the program is replaced by the backup, then the program restarts. A safety copy of the current data is made first.",
     "restarting": "Restarting the program…",
     "copiesTitle": "Safety copies on this PC",
-    "copiesIntro": "The program makes one by itself every day and before anything that erases or restores (the last 14 daily ones and 10 of the others are kept). They stay on this PC, for this Windows account.",
+    "copiesIntro": "The program makes one by itself every day and before anything that erases or restores (the last 14 daily ones and 10 of the others are kept). They stay on this PC, for this user account.",
     "noCopies": "No safety copy yet",
     "openFolder": "Open the folder",
     "when": "Made",
