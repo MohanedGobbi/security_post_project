@@ -1085,12 +1085,12 @@
   },
   "problems": {
     "title": "Student problems",
-    "intro": "A student who forgot or lost their card: scan the QR code of the digital card on their phone, or find them in the student list.",
+    "intro": "A student who forgot or lost their card: scan the QR code of the digital card on their phone with the reader or the webcam, or search them by name.",
     "scan": "Scan the QR code",
     "scanAgain": "Next student: scan a QR code",
     "scanHint": "Ask the student to hold the digital card's QR code up to the camera.",
     "searchLabel": "Or search the student list",
-    "waiting": "Scan the QR code of the digital card, or pick the student from the search.",
+    "waiting": "Scan the digital card's QR code with the reader or the webcam, or search the student by name.",
     "verdict": {
       "match": "In the student list, and the details match",
       "mismatch": "In the student list, but some details differ: check before letting them in",
@@ -1114,6 +1114,13 @@
     "needStudent": "Type the student's card number and name.",
     "recent": "Last 24 hours",
     "none": "Nothing yet.",
-    "noRegister": "The student problems register is switched off. An administrator switches it on in Administration → Registers."
+    "noRegister": "The student problems register is switched off. An administrator switches it on in Administration → Registers.",
+    "fieldLabel": "Scan the card",
+    "fieldPlaceholder": "Scan with the reader, or type a name or card number",
+    "fieldHint": "This field is always ready: a QR or barcode reader plugged into the PC types into it by itself.",
+    "useCamera": "Scan with the webcam",
+    "byCode": "recognised from their digital card's code",
+    "newCode": "A new digital card code: find the student by name and pick them, and the code is saved so they are found at once next time.",
+    "willLearn": "Their digital card's code will be saved with this student when you record."
   }
 }

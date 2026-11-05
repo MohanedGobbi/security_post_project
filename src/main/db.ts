@@ -90,6 +90,14 @@ CREATE TABLE IF NOT EXISTS students (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS students_no ON students(student_no_hash) WHERE student_no_hash IS NOT NULL;
 CREATE INDEX IF NOT EXISTS students_idhash ON students(id_hash);
+-- codes a student's card gives that are not in the directory (the registration code in the QR of a digital card):
+-- learnt the first time the guard finds the student by name, so the next scan finds them at once. Keyed hashes only.
+CREATE TABLE IF NOT EXISTS student_codes (
+  code_hash TEXT PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS notes (
   id INTEGER PRIMARY KEY,
   time TEXT NOT NULL,

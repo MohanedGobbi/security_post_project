@@ -288,6 +288,12 @@ const DEMO_STUDENTS: Student[] = [
   { id: 2, studentNo: '20220417', idNumber: '', fullName: 'Rachid Bahaz', fullNameAlt: 'رشيد باحاز', birthDate: '2002-03-02', phone: '', level: 'L3', department: 'علوم سياسية', notes: '', active: true }
 ]
 
+/** card codes learnt for a student in this browser (the program keeps them in its student_codes table) */
+const CODES_KEY = 'secreg-demo-student-codes'
+function learntCodes(): Record<string, number> {
+  try { return JSON.parse(localStorage.getItem(CODES_KEY) ?? '{}') as Record<string, number> } catch { return {} }
+}
+
 const NO_QR: QrStudentFields = { studentNo: '', fullName: '', birthDate: '', level: '', department: '' }
 
 /** a student next to what the QR said, with the entries of the student problems register about them in the last 90 days */
@@ -655,20 +661,29 @@ export const demoApi: Api = {
 
   studentProblems: {
     async checkQr(text) {
-      const { fields, numbers } = readStudentQr(text)
-      const byNumber = DEMO_STUDENTS.filter((s) => numbers.includes(s.studentNo))
-      const matches = byNumber.length
-        ? byNumber.map((s) => checkOf(s, 'number', 1, { ...fields, studentNo: fields.studentNo || s.studentNo }))
-        : fields.fullName
-          ? DEMO_STUDENTS.map((s) => ({ s, score: Math.max(nameSimilarity(fields.fullName, s.fullName), nameSimilarity(fields.fullName, s.fullNameAlt)) }))
-            .filter((x) => x.score >= 0.8).map((x) => checkOf(x.s, 'name', x.score, fields))
-          : []
-      return { text, found: fields, matches }
+      const { fields, numbers, codes } = readStudentQr(text)
+      const known = learntCodes()
+      const byCode = codes.map((c) => DEMO_STUDENTS.find((st) => st.id === known[c])).filter((st): st is Student => !!st)
+      const byNumber = DEMO_STUDENTS.filter((st) => numbers.includes(st.studentNo) && !byCode.includes(st))
+      const matches = [
+        ...byCode.map((st) => checkOf(st, 'code', 1, fields)),
+        ...byNumber.map((st) => checkOf(st, 'number', 1, { ...fields, studentNo: fields.studentNo || st.studentNo }))
+      ]
+      if (!matches.length && fields.fullName) {
+        matches.push(...DEMO_STUDENTS.map((st) => ({ st, score: Math.max(nameSimilarity(fields.fullName, st.fullName), nameSimilarity(fields.fullName, st.fullNameAlt)) }))
+          .filter((x) => x.score >= 0.8).map((x) => checkOf(x.st, 'name', x.score, fields)))
+      }
+      return { text: text.trim(), found: fields, code: codes[0] ?? '', matches }
     },
     async search(text) {
       const q = text.trim().toLowerCase()
       if (q.length < 2) return []
-      return DEMO_STUDENTS.filter((s) => `${s.fullName} ${s.fullNameAlt} ${s.studentNo}`.toLowerCase().includes(q)).map((s) => checkOf(s, 'name', 1))
+      return DEMO_STUDENTS.filter((st) => `${st.fullName} ${st.fullNameAlt} ${st.studentNo}`.toLowerCase().includes(q)).map((st) => checkOf(st, 'name', 1))
+    },
+    async learnCode(studentId, code) {
+      const known = learntCodes()
+      for (const c of readStudentQr(code).codes.concat(code)) known[c] = studentId
+      try { localStorage.setItem(CODES_KEY, JSON.stringify(known)) } catch { /* private window */ }
     }
   },
 

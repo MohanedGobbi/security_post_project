@@ -70,7 +70,8 @@ const api: Api = {
   },
   studentProblems: {
     checkQr: call('studentProblems:checkQr'),
-    search: call('studentProblems:search')
+    search: call('studentProblems:search'),
+    learnCode: call('studentProblems:learnCode')
   },
   scan: {
     barcodes: call('scan:barcodes')

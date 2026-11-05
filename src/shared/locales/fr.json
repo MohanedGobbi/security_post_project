@@ -1085,12 +1085,12 @@
   },
   "problems": {
     "title": "Problèmes d’étudiants",
-    "intro": "Un étudiant qui a oublié ou perdu sa carte : scannez le QR code de sa carte numérique sur son téléphone, ou cherchez-le dans la liste des étudiants.",
+    "intro": "Un étudiant qui a oublié ou perdu sa carte : scannez le QR code de sa carte numérique sur son téléphone, avec le lecteur ou la caméra, ou cherchez-le par son nom.",
     "scan": "Scanner le QR code",
     "scanAgain": "Étudiant suivant : scanner un QR code",
     "scanHint": "Demandez à l’étudiant de présenter le QR code de sa carte numérique à la caméra.",
     "searchLabel": "Ou chercher dans la liste des étudiants",
-    "waiting": "Scannez le QR code de la carte numérique, ou choisissez l’étudiant dans la recherche.",
+    "waiting": "Scannez le QR code de la carte numérique avec le lecteur ou la caméra, ou cherchez l’étudiant par son nom.",
     "verdict": {
       "match": "Dans la liste des étudiants, et les informations concordent",
       "mismatch": "Dans la liste, mais certaines informations diffèrent : vérifiez avant de le laisser entrer",
@@ -1114,6 +1114,13 @@
     "needStudent": "Tapez le numéro de carte et le nom de l’étudiant.",
     "recent": "Dernières 24 heures",
     "none": "Rien pour l’instant.",
-    "noRegister": "Le registre des problèmes d’étudiants est désactivé. Un administrateur l’active dans Administration → Registres."
+    "noRegister": "Le registre des problèmes d’étudiants est désactivé. Un administrateur l’active dans Administration → Registres.",
+    "fieldLabel": "Scanner la carte",
+    "fieldPlaceholder": "Scannez avec le lecteur, ou tapez un nom ou un numéro de carte",
+    "fieldHint": "Ce champ est toujours prêt : un lecteur QR ou code-barres branché au PC y écrit tout seul.",
+    "useCamera": "Scanner avec la caméra",
+    "byCode": "reconnu par le code de sa carte numérique",
+    "newCode": "Nouveau code de carte numérique : cherchez l’étudiant par son nom et choisissez-le, le code sera gardé pour le reconnaître directement la prochaine fois.",
+    "willLearn": "Le code de sa carte numérique sera gardé avec cet étudiant à l’enregistrement."
   }
 }

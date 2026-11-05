@@ -44,7 +44,7 @@ const PERMISSION_OF: Record<string, Permission> = {
   'visits:lookup': 'visitors', 'visits:checkIn': 'visitors', 'visits:checkOut': 'visitors', 'visits:insideNow': 'visitors', 'visits:suggestions': 'visitors',
   'visits:search': 'history', 'visits:get': 'history',
   'students:list': 'students', 'students:suggest': 'students', 'students:count': 'students',
-  'studentProblems:checkQr': 'students', 'studentProblems:search': 'students',
+  'studentProblems:checkQr': 'students', 'studentProblems:search': 'students', 'studentProblems:learnCode': 'students',
   'students:save': 'studentsEdit', 'students:setActive': 'studentsEdit', 'students:import': 'studentsEdit', 'students:template': 'studentsEdit',
   'students:pdf': 'exports',
   'exports:pdf': 'exports', 'exports:excel': 'exports', 'exports:registerPdf': 'exports', 'exports:entryPdf': 'exports', 'exports:visitPdf': 'exports',
@@ -373,6 +373,7 @@ export function registerIpc(): void {
   handle('students:count', 'user', () => students.studentCount())
   handle('studentProblems:checkQr', 'user', (_u, text: string) => studentProblems.checkQr(String(text ?? '')))
   handle('studentProblems:search', 'user', (_u, text: string) => studentProblems.searchStudents(String(text ?? '')))
+  handle('studentProblems:learnCode', 'user', (u, studentId: number, code: string) => studentProblems.learnCode(studentId, code, u.id))
   handle('students:save', 'user', (u, input: StudentInput) => {
     const id = students.saveStudent(input)
     db.audit(u.id, input.id ? 'student_update' : 'student_add', 'student', id)

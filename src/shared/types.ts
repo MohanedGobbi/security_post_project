@@ -614,8 +614,8 @@ export interface FieldCheck { key: StudentCheckKey; fromQr: string; inList: stri
 
 export interface StudentCheck {
   student: Student
-  /** found by the card / national number, or only by an alike name */
-  by: 'number' | 'name'
+  /** found by a card code learnt before, by the card / national number, or only by an alike name */
+  by: 'code' | 'number' | 'name'
   score: number
   fields: FieldCheck[]
   /** entries of the student problems register for this student in the last 90 days */
@@ -626,6 +626,8 @@ export interface QrCheck {
   /** the QR as text, exactly as read */
   text: string
   found: QrStudentFields
+  /** the card code in the QR that is not a number of the directory (a digital card's registration code); '' when none */
+  code: string
   matches: StudentCheck[]
 }
 
@@ -811,6 +813,8 @@ export interface Api {
     checkQr(text: string): Promise<QrCheck>
     /** students found by a typed name or card number, for when the QR cannot be read */
     search(text: string): Promise<StudentCheck[]>
+    /** remembers a card code for a student found by search, so the next scan of that card finds them */
+    learnCode(studentId: number, code: string): Promise<void>
   }
   scan: {
     /** the texts of the QR codes / barcodes in a picture */

@@ -27,11 +27,14 @@ It runs on a Windows PC at the security office and works without a network.
 - **Student directory** (Students page): import the faculty's Excel / CSV list, search by name (Arabic or Latin, any spelling
   close enough) or card number, see who is inside.
 - **Student problems** (its own page and home tile): a student who forgot or lost their card shows the digital card on their phone.
-  The webcam reads its QR code as text; the program looks for a card number or a name in it, finds the student in the directory and
-  shows the QR's fields next to the directory's (card number, name, birth date, level, department), with a verdict: matching,
-  different, or not in the list. A search by name or number replaces the QR when it cannot be read. The guard records the problem
-  (forgot, lost, other) in the **student problems register** (numbered, never erased, printable like the others); a student with
-  earlier problems in the last 90 days is flagged. Student matching happens only on this page.
+  Its QR code is read as text by the webcam (the whole frame and its centre enlarged, with a beep) or by a USB QR / barcode reader,
+  which types into the scan field: that field always has the focus. The program looks in the text for a card code, a card number or
+  a name, finds the student in the directory and shows the QR's fields next to the directory's, with a verdict: matching, different,
+  or not in the list. The Algerian digital card's QR holds only a registration code (`/checkInscription/<uuid>`): the first time, the
+  guard finds the student by name, and the code is saved with them (`student_codes`, keyed hash) so the next scan finds them at once.
+  The guard records the problem (forgot, lost, other) in the **student problems register** (numbered, never erased, printable like the
+  others), and the page clears itself for the next student; a student with earlier problems in the last 90 days is flagged.
+  Student matching happens only on this page.
 - **Print button** in the top bar (and Ctrl+P): one place to print or export the inside list, any register, the period report, the student list or the audit trail.
   Each is available as a **PDF** and as an **Excel** file (real date cells, filters, right-to-left sheets for Arabic) to work on in a spreadsheet.
   The student sheet of a level that maintains the directory can be corrected in Excel and imported back.

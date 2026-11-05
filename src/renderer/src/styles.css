@@ -420,7 +420,9 @@ label.invalid > input, label.invalid > select { border-color: var(--danger); box
 .issue-note { color: var(--danger); font-weight: 600; }
 .issue-form { grid-column: 1 / -1; display: flex; gap: 8px; }
 .qr-scanner { display: grid; gap: 8px; margin: 10px 0; padding: 12px; border: 2px dashed var(--accent); border-radius: 12px; }
-.qr-scanner .photo-cam { max-height: 260px; }
+.qr-scanner .photo-cam { max-height: 260px; position: relative; }
+/* where to hold the code: the centre of the frame is also read enlarged */
+.qr-target { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 38%; aspect-ratio: 1; border: 3px solid #ffffffcc; border-radius: 12px; box-shadow: 0 0 0 9999px rgb(0 0 0 / 28%); pointer-events: none; }
 
 /* keys */
 .key-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
@@ -570,7 +572,10 @@ h2.spaced { margin-top: 18px; }
 .warn-row td { background: var(--warn-soft); }
 
 /* ---------- student problems ---------- */
-.problems-search { margin-top: 16px; }
+.scan-field { margin: 14px 0 0; font-weight: 600; }
+.scan-field input { font-size: 1.15rem; padding: 12px 14px; border-width: 2px; border-color: var(--accent); }
+.problems-page .hint { margin: 4px 0 12px; }
+.student-card { line-height: 1.7; }
 .problems-recent-title { margin: 20px 0 8px; font-size: 1rem; }
 .log-table.compact td { padding: 5px 8px; font-size: 0.85rem; }
 .log-table.compare { margin: 4px 0 12px; }

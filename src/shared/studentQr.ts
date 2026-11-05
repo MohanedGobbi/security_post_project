@@ -62,8 +62,44 @@ export function isoDate(s: string): string {
   return ''
 }
 
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi
+const IS_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** a link or a path ("…/checkInscription/c194b40e-…"): its letters are not a name */
+export const looksLikeLink = (text: string): boolean => {
+  const t = text.trim()
+  return /^(https?:\/\/|www\.|\/)/i.test(t) || (/[/?&=]/.test(t) && !/\s/.test(t))
+}
+
+/**
+ * The codes a card gives that are not a number of the directory: the registration code of a digital card
+ * (its QR is "…/checkInscription/<uuid>"), or a long token of letters and digits read by a scanner (UN3001…).
+ * The program learns which student each one belongs to (see studentProblems.ts).
+ */
+export function cardCodes(text: string): string[] {
+  const t = text.trim()
+  const out = (t.match(UUID) ?? []).map((u) => u.toLowerCase())
+  for (const tok of t.split(/[/?&=#\s,;|]+/)) {
+    if (tok.length >= 8 && tok.length <= 64 && /\d/.test(tok) && /[a-z]/i.test(tok) && !tok.includes('.') && !IS_UUID.test(tok)) out.push(tok.toUpperCase())
+  }
+  // the whole text, when it is one short code (a barcode, a typed code)
+  if (!out.length && /^[A-Z0-9-]{6,40}$/i.test(t) && /\d/.test(t)) out.push(t.toUpperCase())
+  return [...new Set(out)]
+}
+
+/** long digit runs, and their ends: a printed number like UN3001202622239294218 may hold the card number at its end */
+function numbersIn(text: string, studentNo: string): string[] {
+  const runs = [studentNo.replace(/\D/g, ''), ...(text.replace(UUID, ' ').match(/\d{6,24}/g) ?? [])].filter((n) => n.length >= 6)
+  const out: string[] = []
+  for (const r of runs) {
+    out.push(r)
+    if (r.length >= 10) for (let n = Math.min(16, r.length - 1); n >= 8; n--) out.push(r.slice(-n))
+  }
+  return [...new Set(out)]
+}
+
 /** What the QR says about the student. */
-export function readStudentQr(text: string): { fields: QrStudentFields; numbers: string[] } {
+export function readStudentQr(text: string): { fields: QrStudentFields; numbers: string[]; codes: string[] } {
   const f: QrStudentFields = { studentNo: '', fullName: '', birthDate: '', level: '', department: '' }
   let first = ''
   let last = ''
@@ -77,13 +113,12 @@ export function readStudentQr(text: string): { fields: QrStudentFields; numbers:
     else f[a] ||= v.trim()
   }
   if (!f.fullName && (first || last)) f.fullName = [last, first].filter(Boolean).join(' ')
-  // plain text without fields: the letters in it may be the name
-  if (!pairs.length && !f.fullName) {
+  // plain text without fields (and not a link): the letters in it may be the name
+  if (!pairs.length && !f.fullName && !looksLikeLink(text)) {
     const letters = text.replace(/[^\p{L}\s]+/gu, ' ').replace(/\s+/g, ' ').trim()
     if (letters.split(' ').length >= 2 && letters.length <= 80) f.fullName = letters
   }
-  const numbers = [...new Set([f.studentNo.replace(/\D/g, ''), ...(text.match(/\d{6,20}/g) ?? [])].filter((n) => n.length >= 6))]
-  return { fields: f, numbers }
+  return { fields: f, numbers: numbersIn(text, f.studentNo), codes: cardCodes(text) }
 }
 
 const same = (a: string, b: string): boolean => normName(a) === normName(b) || (!!normName(a) && !!normName(b) && (normName(a).includes(normName(b)) || normName(b).includes(normName(a))))
