@@ -57,7 +57,6 @@ const PERMISSION_OF: Record<string, Permission> = {
 const MODULE_WRITES: Record<string, Module> = {
   'vehicles:checkIn': 'vehicles', 'vehicles:checkOut': 'vehicles',
   'deliveries:add': 'deliveries', 'deliveries:pickUp': 'deliveries',
-  'incidents:add': 'incidents', 'incidents:close': 'incidents',
   'patrols:start': 'patrols', 'patrols:check': 'patrols', 'patrols:finish': 'patrols', 'patrols:addCheckpoint': 'patrols',
   'keys:lend': 'keys', 'keys:giveBack': 'keys', 'keys:addItem': 'keys',
   'notes:add': 'notes',

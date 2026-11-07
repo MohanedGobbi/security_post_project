@@ -14,7 +14,7 @@ import VisitorInPage from './pages/VisitorInPage'
 import CheckOutPage from './pages/CheckOutPage'
 import VehiclesPage from './pages/VehiclesPage'
 import DeliveriesPage from './pages/DeliveriesPage'
-import IncidentsPage from './pages/IncidentsPage'
+import IncidentsPage, { QuickIncidentDialog } from './pages/IncidentsPage'
 import NotesPage from './pages/NotesPage'
 import RegistersPage from './pages/RegistersPage'
 import AdminPage from './pages/AdminPage'
@@ -76,6 +76,7 @@ const PAGE_PERMISSION: Partial<Record<Page, Permission>> = { in: 'visitors', out
 
 /** A page the account may open: its module is on, its level allows it, and the Administration page is for administrators */
 export const pageAllowed = (page: Page, f: Features, user: User | null): boolean => {
+  if (page === 'incidents') return true
   if (!pageOn(page, f)) return false
   if (page === 'admin') return user?.role === 'admin'
   const p = PAGE_PERMISSION[page]
@@ -144,6 +145,7 @@ export default function App(): ReactNode {
   const [toasts, setToasts] = useState<Toast[]>([])
   const [ending, setEnding] = useState(false)
   const [printing, setPrinting] = useState(false)
+  const [quickIncident, setQuickIncident] = useState(false)
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [features, setFeatures] = useState<Features>(ALL_ON)
   const pendingExpected = useRef<ExpectedVisitor | null>(null)
@@ -242,6 +244,9 @@ export default function App(): ReactNode {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
         e.preventDefault()
         setPrinting(true)
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
+        e.preventDefault()
+        setQuickIncident(true)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -279,6 +284,9 @@ export default function App(): ReactNode {
             </div>
           </div>
           <div className="topbar-end">
+            <button type="button" className="quick-incident-top-btn" onClick={() => setQuickIncident(true)} title="Ctrl+I">
+              <Icon name="alert" size={18} /> <span>{t('incidents.quick')}</span>
+            </button>
             {alerts.length > 0 && (
               <button type="button" className="alert-bell" onClick={() => setPage('home')} aria-label={t('alert.title')}>
                 <Icon name="alert" size={18} /> {alerts.length}
@@ -330,6 +338,7 @@ export default function App(): ReactNode {
         </div>
       </div>
       {printing && <PrintMenu onClose={() => setPrinting(false)} onAll={() => { setPrinting(false); setPage('reports') }} />}
+      {quickIncident && <QuickIncidentDialog onClose={() => { setQuickIncident(false); refreshAlerts(); }} />}
       {ending && <EndShiftDialog onClose={() => setEnding(false)} onEnded={logout} />}
       {toastLayer}
     </Ctx.Provider>

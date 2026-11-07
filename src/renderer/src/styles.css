@@ -646,3 +646,91 @@ button.primary.danger { background: var(--danger); border-color: var(--danger); 
 .report-entry input { width: 90px; }
 .report-actions { display: flex; flex-direction: column; gap: 6px; }
 .row-print { width: 1%; white-space: nowrap; }
+
+/* ---------- quick incident access ---------- */
+.quick-incident-top-btn {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius);
+  box-shadow: 0 0 10px rgba(198, 40, 40, 0.35);
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.quick-incident-top-btn:hover {
+  background: #a91b1b;
+  border-color: #a91b1b;
+  transform: translateY(-1px);
+}
+.quick-incident-top-btn:active {
+  transform: translateY(0);
+}
+.quick-incident-card {
+  max-width: 800px;
+}
+.quick-incident-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+.quick-incident-header h2 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--danger);
+}
+.type-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+.type-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: start;
+}
+.type-pill.active {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+  color: var(--danger);
+  font-weight: 700;
+}
+.preset-locations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 8px;
+}
+.preset-location-chip {
+  font-size: 0.8rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.preset-location-chip:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+

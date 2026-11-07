@@ -9,9 +9,25 @@ import PromptDialog from '../components/PromptDialog'
 import Icon from '../components/Icon'
 import { errorText } from '../util'
 
-const TYPES: IncidentType[] = ['theft', 'intrusion', 'damage', 'fire_alarm', 'medical', 'fight', 'suspicious', 'lost_found', 'safety', 'other']
+const TYPES: { type: IncidentType; icon: string }[] = [
+  { type: 'fire_alarm', icon: '🚨' },
+  { type: 'fight', icon: '🥊' },
+  { type: 'medical', icon: '🚑' },
+  { type: 'intrusion', icon: '🚪' },
+  { type: 'theft', icon: '💰' },
+  { type: 'damage', icon: '⚠️' },
+  { type: 'suspicious', icon: '👁️' },
+  { type: 'lost_found', icon: '🎒' },
+  { type: 'safety', icon: '🦺' },
+  { type: 'other', icon: '📝' }
+]
+
 const SEVERITIES: Severity[] = ['low', 'medium', 'high']
 const MAX_PHOTOS = 8
+
+const PRESET_LOCATIONS = [
+  'gate', 'amphi', 'courtyard', 'adminLoc', 'library', 'parking'
+] as const
 
 /** value for <input type="datetime-local"> in local time */
 const localNow = (): string => {
@@ -21,6 +37,193 @@ const localNow = (): string => {
 }
 
 const EMPTY = { type: 'other' as IncidentType, severity: 'medium' as Severity, location: '', description: '', peopleInvolved: '', actionTaken: '' }
+
+/** Shared incident form body — used both by IncidentsPage and QuickIncidentDialog */
+export function IncidentForm({ onSaved }: { onSaved?(): void }): ReactNode {
+  const { t } = useTranslation()
+  const { toast } = useApp()
+  const [f, setF] = useState(EMPTY)
+  const [occurredAt, setOccurredAt] = useState(localNow())
+  const [photos, setPhotos] = useState<Uint8Array[]>([])
+  const [busy, setBusy] = useState(false)
+  const set = (k: keyof typeof EMPTY, v: string): void => setF((cur) => ({ ...cur, [k]: v }))
+
+  const selectType = (type: IncidentType): void => {
+    // smart auto-severity recommendation for urgent incident types
+    let sev = f.severity
+    if (type === 'fire_alarm' || type === 'fight' || type === 'medical') {
+      sev = 'high'
+    } else if (type === 'intrusion' || type === 'theft') {
+      sev = 'medium'
+    }
+    setF((cur) => ({ ...cur, type, severity: sev }))
+  }
+
+  const submit = async (e?: FormEvent): Promise<void> => {
+    e?.preventDefault()
+    if (!f.description.trim() || busy) return
+    setBusy(true)
+    try {
+      await window.api.incidents.add({ ...f, occurredAt: new Date(occurredAt).toISOString(), photos })
+      toast(t('incidents.saved'))
+      setF(EMPTY)
+      setPhotos([])
+      setOccurredAt(localNow())
+      onSaved?.()
+    } catch (err) {
+      toast(errorText(err, t), 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent): void => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault()
+      submit()
+    }
+  }
+
+  return (
+    <form onSubmit={submit} onKeyDown={handleKeyDown} className="quick-incident-form">
+      <div className="field-group">
+        <span className="field-label">{t('incidents.type')}</span>
+        <div className="type-choice-grid">
+          {TYPES.map((x) => (
+            <button
+              key={x.type}
+              type="button"
+              className={`type-pill ${f.type === x.type ? 'active' : ''}`}
+              onClick={() => selectType(x.type)}
+            >
+              <span>{x.icon}</span>
+              <strong>{t(`incidentType.${x.type}`)}</strong>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="row2">
+        <div>
+          <label>{t('incidents.severity')}</label>
+          <div className="seg" role="radiogroup" aria-label={t('incidents.severity')}>
+            {SEVERITIES.map((s) => (
+              <button
+                key={s}
+                type="button"
+                role="radio"
+                aria-checked={f.severity === s}
+                className={`seg-btn sev-${s} ${f.severity === s ? 'on' : ''}`}
+                onClick={() => set('severity', s)}
+              >
+                {t(`severity.${s}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <label>
+          {t('incidents.occurredAt')}
+          <input type="datetime-local" value={occurredAt} max={localNow()} onChange={(e) => setOccurredAt(e.target.value)} />
+        </label>
+      </div>
+
+      <div className="field-group">
+        <label>{t('incidents.location')}</label>
+        <div className="preset-locations">
+          {PRESET_LOCATIONS.map((locKey) => {
+            const locName = t(`incidents.${locKey}`)
+            return (
+              <button
+                key={locKey}
+                type="button"
+                className="preset-location-chip"
+                onClick={() => set('location', locName)}
+              >
+                {locName}
+              </button>
+            )
+          })}
+        </div>
+        <input
+          value={f.location}
+          onChange={(e) => set('location', e.target.value)}
+          placeholder={t('incidents.location')}
+          dir="auto"
+        />
+      </div>
+
+      <label className="req">
+        {t('incidents.description')}
+        <textarea
+          rows={4}
+          value={f.description}
+          onChange={(e) => set('description', e.target.value)}
+          placeholder={t('incidents.description')}
+          dir="auto"
+          autoFocus
+        />
+      </label>
+
+      <div className="row2">
+        <label>
+          {t('incidents.people')}
+          <textarea
+            rows={2}
+            value={f.peopleInvolved}
+            onChange={(e) => set('peopleInvolved', e.target.value)}
+            placeholder={t('incidents.people')}
+            dir="auto"
+          />
+        </label>
+        <label>
+          {t('incidents.action')}
+          <textarea
+            rows={2}
+            value={f.actionTaken}
+            onChange={(e) => set('actionTaken', e.target.value)}
+            placeholder={t('incidents.action')}
+            dir="auto"
+          />
+        </label>
+      </div>
+
+      <h3>{t('incidents.photos')}</h3>
+      <PhotoPicker photos={photos} onChange={setPhotos} max={MAX_PHOTOS} />
+
+      <div className="actions" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 }}>
+        <span className="hint">{t('incidents.pressCtrlEnter')}</span>
+        <button type="submit" className="primary big" disabled={busy || !f.description.trim()}>
+          <Icon name="alert" /> {t('incidents.save')}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+/**
+ * Quick-access modal: record an incident from any page without navigating away.
+ * Triggered by the 🚨 button in the topbar (or Ctrl+I).
+ */
+export function QuickIncidentDialog({ onClose }: { onClose(): void }): ReactNode {
+  const { t } = useTranslation()
+  return (
+    <div
+      className="modal"
+      role="dialog"
+      aria-modal
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+    >
+      <div className="card modal-card wide quick-incident-card">
+        <div className="quick-incident-header">
+          <h2><Icon name="alert" /> {t('incidents.quickTitle')}</h2>
+          <button type="button" className="icon-btn" onClick={onClose} aria-label={t('common.close')}>✕</button>
+        </div>
+        <IncidentForm onSaved={onClose} />
+      </div>
+    </div>
+  )
+}
 
 export function IncidentDialog({ id, onClose, onChanged }: { id: number; onClose(): void; onChanged?(): void }): ReactNode {
   const { t } = useTranslation()
@@ -43,8 +246,13 @@ export function IncidentDialog({ id, onClose, onChanged }: { id: number; onClose
   ] : []
 
   return (
-    <div className="modal" role="dialog" aria-modal onClick={(e) => e.target === e.currentTarget && onClose()}
-      onKeyDown={(e) => e.key === 'Escape' && !closing && onClose()}>
+    <div
+      className="modal"
+      role="dialog"
+      aria-modal
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onKeyDown={(e) => e.key === 'Escape' && !closing && onClose()}
+    >
       <div className="card modal-card wide">
         <h2>{t('incidents.details')} #{id}</h2>
         {!i ? <p>{t('common.loading')}</p> : (
@@ -70,7 +278,11 @@ export function IncidentDialog({ id, onClose, onChanged }: { id: number; onClose
       </div>
       {big && <div className="lightbox" onClick={() => setBig(null)}><img src={big} alt="" /></div>}
       {closing && (
-        <PromptDialog title={t('incidents.closeTitle')} label={t('incidents.resolution')} confirmLabel={t('incidents.close')} multiline
+        <PromptDialog
+          title={t('incidents.closeTitle')}
+          label={t('incidents.resolution')}
+          confirmLabel={t('incidents.close')}
+          multiline
           onClose={() => setClosing(false)}
           onConfirm={async (resolution) => {
             await window.api.incidents.close(id, resolution)
@@ -78,7 +290,8 @@ export function IncidentDialog({ id, onClose, onChanged }: { id: number; onClose
             setClosing(false)
             load()
             onChanged?.()
-          }} />
+          }}
+        />
       )}
     </div>
   )
@@ -86,13 +299,8 @@ export function IncidentDialog({ id, onClose, onChanged }: { id: number; onClose
 
 export default function IncidentsPage(): ReactNode {
   const { t } = useTranslation()
-  const { toast } = useApp()
-  const [f, setF] = useState(EMPTY)
-  const [occurredAt, setOccurredAt] = useState(localNow())
-  const [photos, setPhotos] = useState<Uint8Array[]>([])
   const [open, setOpen] = useState<IncidentRow[]>([])
   const [detail, setDetail] = useState<number | null>(null)
-  const [busy, setBusy] = useState(false)
   const lang = currentLang()
 
   const load = useCallback(() => {
@@ -100,57 +308,12 @@ export default function IncidentsPage(): ReactNode {
   }, [])
   useEffect(load, [load])
 
-  const set = (k: keyof typeof EMPTY, v: string): void => setF((cur) => ({ ...cur, [k]: v }))
-
-  const submit = async (e: FormEvent): Promise<void> => {
-    e.preventDefault()
-    setBusy(true)
-    try {
-      await window.api.incidents.add({ ...f, occurredAt: new Date(occurredAt).toISOString(), photos })
-      toast(t('incidents.saved'))
-      setF(EMPTY)
-      setPhotos([])
-      setOccurredAt(localNow())
-      load()
-    } catch (err) {
-      toast(errorText(err, t), 'error')
-    } finally {
-      setBusy(false)
-    }
-  }
-
   return (
     <div className="split-page">
-      <form className="card" onSubmit={submit}>
-        <h1>{t('incidents.titleNew')}</h1>
-        <div className="row2">
-          <label>{t('incidents.type')}
-            <select value={f.type} onChange={(e) => set('type', e.target.value)}>
-              {TYPES.map((x) => <option key={x} value={x}>{t(`incidentType.${x}`)}</option>)}
-            </select>
-          </label>
-          <label>{t('incidents.occurredAt')}<input type="datetime-local" value={occurredAt} max={localNow()} onChange={(e) => setOccurredAt(e.target.value)} /></label>
-        </div>
-        <div className="seg" role="radiogroup" aria-label={t('incidents.severity')}>
-          {SEVERITIES.map((s) => (
-            <button key={s} type="button" role="radio" aria-checked={f.severity === s} className={`seg-btn sev-${s} ${f.severity === s ? 'on' : ''}`}
-              onClick={() => set('severity', s)}>{t(`severity.${s}`)}</button>
-          ))}
-        </div>
-        <label>{t('incidents.location')}<input value={f.location} onChange={(e) => set('location', e.target.value)} dir="auto" /></label>
-        <label className="req">{t('incidents.description')}
-          <textarea rows={4} value={f.description} onChange={(e) => set('description', e.target.value)} dir="auto" autoFocus />
-        </label>
-        <div className="row2">
-          <label>{t('incidents.people')}<textarea rows={2} value={f.peopleInvolved} onChange={(e) => set('peopleInvolved', e.target.value)} dir="auto" /></label>
-          <label>{t('incidents.action')}<textarea rows={2} value={f.actionTaken} onChange={(e) => set('actionTaken', e.target.value)} dir="auto" /></label>
-        </div>
-        <h3>{t('incidents.photos')}</h3>
-        <PhotoPicker photos={photos} onChange={setPhotos} max={MAX_PHOTOS} />
-        <div className="actions">
-          <button className="primary big" disabled={busy || !f.description.trim()}><Icon name="alert" /> {t('incidents.save')}</button>
-        </div>
-      </form>
+      <div className="card">
+        <h1>{t('incidents.quickTitle')}</h1>
+        <IncidentForm onSaved={load} />
+      </div>
 
       <section className="card">
         <div className="section-head">

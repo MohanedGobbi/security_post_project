@@ -13,7 +13,7 @@ export const FACULTY = {
   /** their paper books become registers; incidents, parcels (letters) and keys are registers too */
   features: {
     modules: {
-      vehicles: false, deliveries: false, incidents: false, patrols: false, keys: false, notes: false,
+      vehicles: false, deliveries: false, incidents: true, patrols: false, keys: false, notes: false,
       watchlist: true, shifts: true, preregistration: false, badges: false
     },
     idScan: true, visitorPhoto: false, requireIdNumber: true, badgeNumbers: false

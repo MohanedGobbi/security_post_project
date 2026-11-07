@@ -941,7 +941,6 @@ export const demoApi: Api = {
 
   incidents: {
     async add(input) {
-      need('incidents')
       if (!input.description.trim()) fail('error.textRequired')
       const id = nextId()
       db().incidents.push({ id, type: input.type, severity: input.severity, occurredAt: new Date(input.occurredAt).toISOString(), createdAt: nowIso(),
@@ -951,7 +950,6 @@ export const demoApi: Api = {
       return done(id)
     },
     async close(id, resolution) {
-      need('incidents')
       const i = db().incidents.find((x) => x.id === id)
       if (!i) fail('error.notFound')
       if (i?.closedAt) fail('error.alreadyClosed')
