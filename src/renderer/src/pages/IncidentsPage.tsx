@@ -6,20 +6,20 @@ import { useApp } from '../App'
 import { currentLang } from '../i18n'
 import PhotoPicker, { useImageUrls } from '../components/PhotoPicker'
 import PromptDialog from '../components/PromptDialog'
-import Icon from '../components/Icon'
+import Icon, { type IconName } from '../components/Icon'
 import { errorText } from '../util'
 
-const TYPES: { type: IncidentType; icon: string }[] = [
-  { type: 'fire_alarm', icon: '🚨' },
-  { type: 'fight', icon: '🥊' },
-  { type: 'medical', icon: '🚑' },
-  { type: 'intrusion', icon: '🚪' },
-  { type: 'theft', icon: '💰' },
-  { type: 'damage', icon: '⚠️' },
-  { type: 'suspicious', icon: '👁️' },
-  { type: 'lost_found', icon: '🎒' },
-  { type: 'safety', icon: '🦺' },
-  { type: 'other', icon: '📝' }
+const TYPES: { type: IncidentType; icon: IconName }[] = [
+  { type: 'fire_alarm', icon: 'bell' },
+  { type: 'fight', icon: 'alert' },
+  { type: 'medical', icon: 'alert' },
+  { type: 'intrusion', icon: 'door' },
+  { type: 'theft', icon: 'eye' },
+  { type: 'damage', icon: 'tool' },
+  { type: 'suspicious', icon: 'search' },
+  { type: 'lost_found', icon: 'search' },
+  { type: 'safety', icon: 'shield' },
+  { type: 'other', icon: 'note' }
 ]
 
 const SEVERITIES: Severity[] = ['low', 'medium', 'high']
@@ -96,7 +96,7 @@ export function IncidentForm({ onSaved }: { onSaved?(): void }): ReactNode {
               className={`type-pill ${f.type === x.type ? 'active' : ''}`}
               onClick={() => selectType(x.type)}
             >
-              <span>{x.icon}</span>
+              <Icon name={x.icon} size={15} />
               <strong>{t(`incidentType.${x.type}`)}</strong>
             </button>
           ))}
@@ -202,7 +202,7 @@ export function IncidentForm({ onSaved }: { onSaved?(): void }): ReactNode {
 
 /**
  * Quick-access modal: record an incident from any page without navigating away.
- * Triggered by the 🚨 button in the topbar (or Ctrl+I).
+ * Triggered by the alert button in the topbar (or Ctrl+I).
  */
 export function QuickIncidentDialog({ onClose }: { onClose(): void }): ReactNode {
   const { t } = useTranslation()
