@@ -1,8 +1,8 @@
 // window.api for the browser demo of the reception app: same contract as the Electron main process,
-// backed by the demo store instead of SQLite, OCR and printers.
+// backed by the demo store instead of SQLite and printers.
 import type {
   ActivityItem, AlertItem, Api, BadgeSettings, Checkpoint, DeliveryRow, ExpectedVisitor, Features, IncidentRow, KeyItem, KeyLoan, Lang,
-  PatrolRound, PatrolRoundDetail, PersonFields, RangeQuery, RegisterDef, RegisterEntry, Role, ScanResult, SearchQuery, ShiftRow, ShiftSummary, User, VehicleRow, VisitDetail,
+  PatrolRound, PatrolRoundDetail, QrStudentFields, RangeQuery, RegisterDef, RegisterEntry, Role, SearchQuery, ShiftRow, ShiftSummary, User, VehicleRow, VisitDetail,
   VisitRow, WatchHit, WatchRow
 } from '@shared/types'
 import { formatDateTime, translate } from '@shared/i18n'
@@ -12,9 +12,12 @@ import {
   db, dayBounds, fail, nextId, nowIso, photos, refresh, save, today, wait,
   type DEntry, type DExpected, type DLoan, type DRound, type DShift, type DUser, type DVisit
 } from './store'
-import { MAX_CARD_PICTURES, type Student } from '@shared/types'
+import { MAX_CARD_PICTURES, type Student, type StudentCheck } from '@shared/types'
+import { compareStudent, readStudentQr } from '@shared/studentQr'
+import { nameSimilarity } from '@shared/names'
 import { BUILTIN_LEVELS } from '@shared/permissions'
-import { cleanDefinition, cleanStep, cleanValue, type ValueResolvers } from '@shared/registers'
+import { cleanDefinition, cleanStep, cleanValue, labelOf, valueText, type ValueResolvers } from '@shared/registers'
+import { detailHtml, esc } from '@shared/printTemplate'
 import { templatesFor } from '@shared/registerTemplates'
 import { qrDataUrl, qrSvg, readQr } from './qr'
 import { downloadCsv, openReport } from './report'
@@ -135,16 +138,6 @@ function checkCustom(entity: 'visit' | 'vehicle' | 'delivery', values: Record<st
   }
   return out
 }
-
-/** Sample cards returned by "Scan card" in turn: a new visitor, a watchlisted person, a returning visitor */
-const SAMPLE_CARDS: Partial<PersonFields>[] = [
-  { fullName: 'Anna Maria Eriksson', idType: 'passport', idNumber: 'L898902C3', nationality: 'SWE', birthDate: '1974-08-12', sex: 'F' },
-  // on the watchlist: shows the refusal
-  { fullName: F.watch.name, idType: 'national_id', idNumber: F.watch.idNumber, nationality: F.nationality, birthDate: '1990-03-02', sex: 'M' },
-  // came yesterday: shows the returning-visitor fill
-  { fullName: F.visits[6].name, idType: 'national_id', idNumber: sampleId(7), nationality: F.nationality, birthDate: '1996-06-14', sex: 'F' }
-]
-let sampleIndex = 0
 
 // ---------- shifts / activity ----------
 function summary(from: string, to: string): ShiftSummary {
@@ -295,6 +288,40 @@ const DEMO_STUDENTS: Student[] = [
   { id: 1, studentNo: '20230001', idNumber: '', fullName: 'Khadidja Benyoucef', fullNameAlt: 'خديجة بن يوسف', birthDate: '2003-06-14', phone: '', level: 'L2', department: 'حقوق', notes: '', active: true },
   { id: 2, studentNo: '20220417', idNumber: '', fullName: 'Rachid Bahaz', fullNameAlt: 'رشيد باحاز', birthDate: '2002-03-02', phone: '', level: 'L3', department: 'علوم سياسية', notes: '', active: true }
 ]
+
+/** the security office's equipment in this browser (the program keeps it in its equipment table) */
+const EQUIPMENT_KEY = 'secreg-demo-equipment'
+type DItem = { id: number; name: string; quantity: number; active: boolean }
+const SAMPLE_EQUIPMENT: [string, number][] = [['جهاز اتصال لاسلكي', 4], ['مفاتيح مكتب الأمن', 1], ['جهاز كشف المعادن اليدوي', 2], ['مصباح يدوي', 3], ['شاشة مراقبة الكاميرات', 1], ['علبة الإسعافات الأولية', 1]]
+function equipmentList(): DItem[] {
+  try {
+    const saved = localStorage.getItem(EQUIPMENT_KEY)
+    if (saved) return JSON.parse(saved) as DItem[]
+  } catch { /* private window */ }
+  return SAMPLE_EQUIPMENT.map(([name, quantity], i) => ({ id: i + 1, name, quantity, active: true }))
+}
+function saveEquipment(list: DItem[]): void {
+  try { localStorage.setItem(EQUIPMENT_KEY, JSON.stringify(list)) } catch { /* private window */ }
+}
+
+/** card codes learnt for a student in this browser (the program keeps them in its student_codes table) */
+const CODES_KEY = 'secreg-demo-student-codes'
+function learntCodes(): Record<string, number> {
+  try { return JSON.parse(localStorage.getItem(CODES_KEY) ?? '{}') as Record<string, number> } catch { return {} }
+}
+
+/** the signature boxes of a register printout, as in the program */
+const SIGNS = (l: Lang): string[] => ['print.signLeader', 'print.signHead', 'print.signDean'].map((k) => translate(l, k))
+
+const NO_QR: QrStudentFields = { studentNo: '', fullName: '', birthDate: '', level: '', department: '' }
+
+/** a student next to what the QR said, with the entries of the student problems register about them in the last 90 days */
+function checkOf(student: Student, by: StudentCheck['by'], score: number, found = NO_QR): StudentCheck {
+  const reg = db().registers.find((r) => r.key === 'student_problems')
+  const since = new Date(Date.now() - 90 * 86_400_000).toISOString()
+  const recentProblems = reg ? db().entries.filter((e) => e.registerId === reg.id && e.createdAt >= since && String(e.values.student_no ?? '') === student.studentNo).length : 0
+  return { student, by, score, fields: compareStudent(found, student), recentProblems }
+}
 
 export const demoApi: Api = {
   auth: {
@@ -645,26 +672,57 @@ export const demoApi: Api = {
     }
   },
 
+  equipment: {
+    async list() {
+      return equipmentList().filter((i) => i.active).map(({ id, name, quantity }) => ({ id, name, quantity }))
+    },
+    async add(item) {
+      const name = item.name.trim()
+      if (!name) fail('error.nameRequired')
+      const all = equipmentList()
+      if (all.some((i) => i.active && i.name.toLowerCase() === name.toLowerCase())) fail('error.equipmentExists')
+      const id = Math.max(0, ...all.map((i) => i.id)) + 1
+      saveEquipment([...all, { id, name, quantity: Math.max(1, Math.round(item.quantity) || 1), active: true }])
+      log('equipment_added', name)
+      return id
+    },
+    async remove(id) {
+      saveEquipment(equipmentList().map((i) => (i.id === id ? { ...i, active: false } : i)))
+      log('equipment_removed', String(id))
+    }
+  },
+
   scan: {
-    async analyze(image): Promise<ScanResult> {
-      const codes = image.length ? await readQr(image) : []
-      const empty: ScanResult = { source: 'none', fields: {}, valid: false, rawMrz: [], barcodes: codes.map((text) => ({ format: 'QRCode', text })), lines: [] }
-      if (codes.some((c) => c.startsWith('SECREG-'))) return empty
-      // the desktop app reads the MRZ / barcode with offline OCR; the demo fills a sample card
-      await wait(900)
-      const fields = SAMPLE_CARDS[sampleIndex++ % SAMPLE_CARDS.length]
-      return { ...empty, source: 'mrz', fields, valid: true }
-    },
-    async readText() {
-      await wait(800)
-      return F.cardText
-    },
-    async readFront(): Promise<ScanResult> {
-      await wait(800)
-      return { source: 'none', fields: {}, valid: false, rawMrz: [], barcodes: [], lines: F.cardText }
-    },
     async barcodes(image) {
       return readQr(image)
+    }
+  },
+
+  studentProblems: {
+    async checkQr(text) {
+      const { fields, numbers, codes } = readStudentQr(text)
+      const known = learntCodes()
+      const byCode = codes.map((c) => DEMO_STUDENTS.find((st) => st.id === known[c])).filter((st): st is Student => !!st)
+      const byNumber = DEMO_STUDENTS.filter((st) => numbers.includes(st.studentNo) && !byCode.includes(st))
+      const matches = [
+        ...byCode.map((st) => checkOf(st, 'code', 1, fields)),
+        ...byNumber.map((st) => checkOf(st, 'number', 1, { ...fields, studentNo: fields.studentNo || st.studentNo }))
+      ]
+      if (!matches.length && fields.fullName) {
+        matches.push(...DEMO_STUDENTS.map((st) => ({ st, score: Math.max(nameSimilarity(fields.fullName, st.fullName), nameSimilarity(fields.fullName, st.fullNameAlt)) }))
+          .filter((x) => x.score >= 0.8).map((x) => checkOf(x.st, 'name', x.score, fields)))
+      }
+      return { text: text.trim(), found: fields, code: codes[0] ?? '', matches }
+    },
+    async search(text) {
+      const q = text.trim().toLowerCase()
+      if (q.length < 2) return []
+      return DEMO_STUDENTS.filter((st) => `${st.fullName} ${st.fullNameAlt} ${st.studentNo}`.toLowerCase().includes(q)).map((st) => checkOf(st, 'name', 1))
+    },
+    async learnCode(studentId, code) {
+      const known = learntCodes()
+      for (const c of readStudentQr(code).codes.concat(code)) known[c] = studentId
+      try { localStorage.setItem(CODES_KEY, JSON.stringify(known)) } catch { /* private window */ }
     }
   },
 
@@ -686,7 +744,14 @@ export const demoApi: Api = {
     async remove() {},
     async import() { return null },
     async template() { return null },
-    async pdf() { window.print(); return null },
+    async pdf(_q, l) {
+      const t = (k: string): string => translate(l, k)
+      openReport(l, t('print.studentsTitle'), '', [{
+        title: t('print.studentsTitle'), head: [t('students.studentNo'), t('students.fullName'), t('students.fullNameAlt'), t('students.level'), t('students.department')],
+        rows: DEMO_STUDENTS.map((st) => [st.studentNo, st.fullName, st.fullNameAlt, st.level, st.department])
+      }], '', { printedBy: me().name })
+      return t('common.print')
+    },
     async xlsx() { return null }
   },
 
@@ -700,7 +765,7 @@ export const demoApi: Api = {
           rows: visits.reverse().map((v) => [formatDateTime(v.timeIn, r.lang), formatDateTime(v.timeOut, r.lang), v.fullName, v.company, v.host, v.guardIn]) },
         { title: t('export.notesTitle'), head: [t('activity.time'), t('notes.category'), t('notes.text')],
           rows: notes.reverse().map((n) => [formatDateTime(n.time, r.lang), t(`notes.cat.${n.category}`), n.text]) }
-      ])
+      ], '', { printedBy: me().name, signatures: SIGNS(r.lang) })
       return t('common.print')
     },
     async excel(r) {
@@ -710,11 +775,57 @@ export const demoApi: Api = {
         visits.reverse().map((v) => [formatDateTime(v.timeIn, r.lang), formatDateTime(v.timeOut, r.lang), v.fullName, v.idNumber, v.company, v.host, v.purpose]))
       return `register_${r.from}_${r.to}.csv`
     },
-    // the demo prints the visible page instead of building a PDF
-    async registerPdf(): Promise<string | null> { window.print(); return null },
-    async entryPdf(): Promise<string | null> { window.print(); return null },
-    async auditPdf(): Promise<string | null> { window.print(); return null },
-    async visitPdf(): Promise<string | null> { window.print(); return null },
+    // the demo opens the same printouts as the program, to print or save as PDF from the browser
+    async registerPdf(q, l): Promise<string | null> {
+      const t = (k: string): string => translate(l, k)
+      const reg = regOf(q.registerId)
+      const entries = await demoApi.registers.entries(q)
+      const yn = { yes: t('common.yes'), no: t('common.no') }
+      const fields = reg.fields.filter((x) => x.active && x.step === 'open')
+      openReport(l, labelOf(reg.labels, l), q.from && q.to ? `${q.from} → ${q.to}` : t('registers.recent'), [{
+        title: labelOf(reg.labels, l),
+        head: [t('registers.number'), t('registers.time'), ...fields.map((x) => labelOf(x.labels, l)), ...(reg.closeLabels ? [t('registers.status')] : []), t('print.recordedBy')],
+        rows: [...entries].reverse().map((e) => [String(e.number), formatDateTime(e.createdAt, l), ...fields.map((x) => valueText(x, e.values[x.key], yn)),
+          ...(reg.closeLabels ? [t(e.closedAt ? 'registers.closed' : 'registers.open')] : []), e.createdBy]),
+        timeCols: [1]
+      }], '', { printedBy: me().name, signatures: SIGNS(l) })
+      return t('common.print')
+    },
+    async entryPdf(entryId, l): Promise<string | null> {
+      const t = (k: string, v?: Record<string, string | number>): string => translate(l, k, v)
+      const e = db().entries.find((x) => x.id === entryId)
+      if (!e) fail('error.notFound')
+      const entry = e as DEntry
+      const reg = regOf(entry.registerId)
+      const yn = { yes: t('common.yes'), no: t('common.no') }
+      const pairs: [string, string][] = reg.fields.filter((x) => x.step === 'open' || entry.closedAt).map((x) => [labelOf(x.labels, l), valueText(x, entry.values[x.key], yn)])
+      const foot = `<div class="detail-foot"><div>${esc(t('registers.recordedBy', { name: entry.createdBy }))}<br>${esc(formatDateTime(entry.createdAt, l))}</div></div>`
+      openReport(l, labelOf(reg.labels, l), `${t('registers.details', { n: entry.number })} · ${formatDateTime(entry.createdAt, l)}`, [], detailHtml(pairs) + foot,
+        { printedBy: me().name, signatures: SIGNS(l), landscape: false })
+      return t('common.print')
+    },
+    async auditPdf(q, l): Promise<string | null> {
+      const t = (k: string): string => translate(l, k)
+      const rows = await demoApi.audit.list(q)
+      openReport(l, t('admin.audit'), `${q.from} → ${q.to}`, [{
+        title: t('admin.audit'), head: [t('audit.time'), t('audit.user'), t('audit.action'), t('audit.detail')],
+        rows: rows.map((r) => [formatDateTime(r.time, l), r.user ?? t('audit.system'), translate(l, `audit.actions.${r.action}`), [r.entity, r.detail].filter(Boolean).join(' ')]),
+        timeCols: [0]
+      }], '', { printedBy: me().name })
+      return t('common.print')
+    },
+    async visitPdf(visitId, l): Promise<string | null> {
+      const t = (k: string): string => translate(l, k)
+      const v = await demoApi.visits.get(visitId)
+      const pairs: [string, string][] = [
+        [t('visitor.fullName'), [v.fullName, v.fullNameAlt].filter(Boolean).join(' / ')], [t('visitor.idType'), t(`idType.${v.idType}`)],
+        [t('visitor.idNumber'), v.idNumber], [t('visitor.company'), v.company], [t('visitor.host'), v.host], [t('visitor.purpose'), v.purpose],
+        [t('visitor.timeIn'), `${formatDateTime(v.timeIn, l)} · ${v.guardIn}`], [t('visitor.timeOut'), v.timeOut ? `${formatDateTime(v.timeOut, l)} · ${v.guardOut ?? ''}` : '—'],
+        [t('visitor.notes'), v.notes]
+      ]
+      openReport(l, t('print.visitTitle'), `${v.fullName} · ${formatDateTime(v.timeIn, l)}`, [], detailHtml(pairs), { printedBy: me().name, landscape: false })
+      return t('common.print')
+    },
     async registerXlsx(): Promise<string | null> { return null },
     async entryXlsx(): Promise<string | null> { return null },
     async auditXlsx(): Promise<string | null> { return null },
@@ -726,7 +837,7 @@ export const demoApi: Api = {
       openReport(l, t('export.evacuationTitle'), formatDateTime(nowIso(), l), [{
         title: t('export.visitorsTitle'), head: [t('visitor.fullName'), t('visitor.company'), t('visitor.host'), t('visitor.timeIn'), t('visitor.badgeNo')],
         rows: rows.map((v) => [v.fullName, v.company, v.host, formatDateTime(v.timeIn, l), v.badgeNo])
-      }])
+      }], '', { printedBy: me().name })
       return t('common.print')
     },
     async shiftReport(shiftId, l) {

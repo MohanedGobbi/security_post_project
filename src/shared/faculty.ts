@@ -20,7 +20,10 @@ export const FACULTY = {
   } as Features,
 
   /** register templates (registerTemplates.ts) opened at the first start, and again for any added by a later version */
-  registerTemplates: ['shift', 'custody', 'incidents', 'lost_found', 'letters', 'events', 'reports', 'maintenance', 'official_visits', 'evacuation', 'alarms'],
+  registerTemplates: ['shift', 'custody', 'incidents', 'lost_found', 'letters', 'events', 'reports', 'maintenance', 'official_visits', 'evacuation', 'alarms', 'student_problems', 'equipment_check'],
+
+  /** the equipment of the security office the list starts with, from their custody book (they add and remove the rest) */
+  equipment: [['مفاتيح مكتب الأمن', 1], ['أجهزة الاتصال اللاسلكي', 1], ['أجهزة التفتيش (كشف المعادن)', 1], ['الكاميرات وشاشة المراقبة', 1]] as [string, number][],
 
   /**
    * The first two accounts. The PINs below are only a starting point: the administrator changes them in

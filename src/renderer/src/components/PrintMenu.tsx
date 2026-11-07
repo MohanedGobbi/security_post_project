@@ -12,7 +12,7 @@ type Period = 'today' | 'week' | 'month'
 const FROM: Record<Period, () => string> = { today: () => todayStr(), week: () => daysAgo(6), month: () => daysAgo(29) }
 
 /** One place to print anything: opened by the Print button of the top bar or Ctrl+P. */
-export default function PrintMenu({ onClose }: { onClose(): void }): ReactNode {
+export default function PrintMenu({ onClose, onAll }: { onClose(): void; /** opens the Reports page */ onAll(): void }): ReactNode {
   const { t } = useTranslation()
   const { toast, user, features } = useApp()
   const lang = currentLang()
@@ -90,6 +90,7 @@ export default function PrintMenu({ onClose }: { onClose(): void }): ReactNode {
             () => window.api.exports.auditXlsx({ from: FROM[period](), to: todayStr(), userId: null, action: '' }, lang))}
         </div>
         {features.modules.shifts && <p className="hint">{t('print.shiftHint')}</p>}
+        <button type="button" className="link" onClick={onAll}><Icon name="printer" size={16} /> {t('reports.all')}</button>
       </div>
     </div>
   )

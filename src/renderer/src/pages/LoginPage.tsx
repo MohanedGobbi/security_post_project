@@ -83,6 +83,7 @@ function PinOnlyLogin({ onDone, toast }: Props): ReactNode {
         <div className="org-logos">
           <img src={BRAND.logo} alt="" />
           <img src={BRAND.logo2} alt="" />
+          {BRAND.logo3 && <img src={BRAND.logo3} alt="" />}
         </div>
         <h1>{appTitle(i18n.language)}</h1>
         <p className="muted">{orgName(i18n.language)}</p>

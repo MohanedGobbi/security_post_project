@@ -603,26 +603,35 @@ export interface AlertItem {
   since: string | null
 }
 
-/** What one reading attempt does (the scan pipeline retries a frame in several versions) */
-export interface ScanOptions {
-  /** look for QR / barcodes first (default true) */
-  barcodes?: boolean
-  /** when no document validates, also run the multilingual text read for lines to pick from (default true) */
-  text?: boolean
+// ---------- equipment of the security office (checked present at every handover) ----------
+export interface EquipmentItem { id: number; name: string; quantity: number }
+
+// ---------- student problems (a student without their card shows the digital card on their phone) ----------
+export type StudentCheckKey = 'studentNo' | 'fullName' | 'birthDate' | 'level' | 'department'
+
+/** what the QR of a digital student card said, field by field (empty when it did not say) */
+export type QrStudentFields = Record<StudentCheckKey, string>
+
+/** one field of the QR next to the same field in the student directory; `same` is null when the QR does not give it */
+export interface FieldCheck { key: StudentCheckKey; fromQr: string; inList: string; same: boolean | null }
+
+export interface StudentCheck {
+  student: Student
+  /** found by a card code learnt before, by the card / national number, or only by an alike name */
+  by: 'code' | 'number' | 'name'
+  score: number
+  fields: FieldCheck[]
+  /** entries of the student problems register for this student in the last 90 days */
+  recentProblems: number
 }
 
-export interface ScanResult {
-  /** 'ocr': fields taken from the printed text of the card front (no check digits exist: the guard must verify every field) */
-  source: 'mrz' | 'barcode' | 'ocr' | 'none'
-  /** 'ocr' only: a name and a national number or birth date were read, so trying the machine-readable zone is not needed */
-  complete?: boolean
-  fields: Partial<PersonFields>
-  /** check digits all valid (MRZ only) */
-  valid: boolean
-  rawMrz: string[]
-  barcodes: { format: string; text: string }[]
-  /** text lines read from the card when the MRZ could not be fully read */
-  lines: string[]
+export interface QrCheck {
+  /** the QR as text, exactly as read */
+  text: string
+  found: QrStudentFields
+  /** the card code in the QR that is not a number of the directory (a digital card's registration code); '' when none */
+  code: string
+  matches: StudentCheck[]
 }
 
 // ---------- students (directory) ----------
@@ -802,11 +811,24 @@ export interface Api {
     getFeatures(): Promise<Features>
     setFeatures(f: Features): Promise<void>
   }
+  equipment: {
+    /** the equipment of the security office, as it is now */
+    list(): Promise<EquipmentItem[]>
+    /** team leaders and administrators: adds an item to the list */
+    add(item: { name: string; quantity: number }): Promise<number>
+    /** team leaders and administrators: takes an item off the list (old checks keep it) */
+    remove(id: number): Promise<void>
+  }
+  studentProblems: {
+    /** what the QR of a digital student card says, and the students of the directory it matches */
+    checkQr(text: string): Promise<QrCheck>
+    /** students found by a typed name or card number, for when the QR cannot be read */
+    search(text: string): Promise<StudentCheck[]>
+    /** remembers a card code for a student found by search, so the next scan of that card finds them */
+    learnCode(studentId: number, code: string): Promise<void>
+  }
   scan: {
-    analyze(image: Uint8Array, opts?: ScanOptions): Promise<ScanResult>
-    readText(image: Uint8Array): Promise<string[]>
-    /** fields from the printed text of a card front (Windows OCR, else Tesseract); for cards the machine-readable zone could not read */
-    readFront(image: Uint8Array): Promise<ScanResult>
+    /** the texts of the QR codes / barcodes in a picture */
     barcodes(image: Uint8Array): Promise<string[]>
   }
   students: {

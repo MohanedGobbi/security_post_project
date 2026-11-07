@@ -1,0 +1,61 @@
+FACULTY SECURITY MANAGEMENT - LINUX INSTALL KIT
+برنامج إدارة الأمن بالكلية - حزمة التثبيت على لينكس
+Faculty of Law and Political Science, University of Ghardaia
+Version 0.1.0 - November 2026 - Made by ROWD Tech, in partnership with AFAK
+
+=====================================================================
+ENGLISH
+=====================================================================
+
+What this is
+  Everything needed to install the faculty security program on the
+  security office PC (Ubuntu 24.04 recommended), train the team and
+  hand it over. The program works offline; all data stays encrypted on
+  that PC.
+
+Folders
+  1-Installer        the program (.deb) and the scripts
+  2-Installation     installation guide, checklist, handover form (print)
+  3-User-Manual      the user manual, Arabic and English
+  4-Presentations    deanship presentation and staff training (AR, EN)
+  5-Templates        student list templates for the import (Excel)
+  6-Source           source code of this version (to rebuild the package)
+
+Install in 3 commands (on the security office PC, in 1-Installer):
+  bash check-pc.sh        checks the PC, changes nothing
+  bash install.sh         installs the program (asks for the password)
+  then open "برنامج إدارة الأمن بالكلية" from the applications menu
+
+First login
+  administrator PIN 246810, team leader PIN 135790
+  Change both at once: Administration > Accounts > Change PIN
+
+Read 2-Installation/Installation-Guide-EN.pdf before going on site.
+
+=====================================================================
+العربية
+=====================================================================
+
+ما هذه الحزمة
+  كل ما يلزم لتثبيت برنامج الأمن على جهاز مكتب الأمن (يُنصح بنظام
+  Ubuntu 24.04)، وتكوين الفريق، والتسليم. يعمل البرنامج دون إنترنت
+  وتبقى كل البيانات مشفّرة على الجهاز.
+
+المجلدات
+  1-Installer        البرنامج (ملف deb.) وسكريبتات التثبيت
+  2-Installation     دليل التثبيت، قائمة المراجعة، محضر التسليم
+  3-User-Manual      دليل المستخدم بالعربية والإنجليزية
+  4-Presentations    عرض للعمادة وعرض تكوين الفريق
+  5-Templates        نموذج قائمة الطلبة للاستيراد (Excel)
+  6-Source           الشيفرة المصدرية لهذا الإصدار
+
+التثبيت (في مجلد 1-Installer، من نافذة الطرفية Terminal):
+  bash check-pc.sh
+  bash install.sh
+  ثم افتح «برنامج إدارة الأمن بالكلية» من قائمة التطبيقات
+
+أول دخول
+  المسؤول: 246810 - رئيس الفرقة: 135790
+  غيّرهما فورًا: الإدارة > الحسابات > تغيير الرمز
+
+الدعم التقني: ROWD Tech - Mohaned Gobbi - بالشراكة مع مؤسسة آفاق

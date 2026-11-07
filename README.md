@@ -2,14 +2,13 @@
 
 <img src="resources/brand/rowd-tech-wordmark.png" alt="ROWD Tech" height="48">
 
-**Made by ROWD Tech.**
+**Made by ROWD Tech, in partnership with AFAK** (مؤسسة آفاق للاستشارة والتكوين المتخصص والدراسات الاستراتيجية, a subsidiary of the University of Ghardaia).
 
 Security management program of the **Faculty of Law and Political Science, University of Ghardaia**
 (مكتب الأمن الداخلي للكلية). It replaces the paper registers of the security office: visitors, incidents, shift
 and custody handovers, lost items, letters, events and more. Arabic first (right to left), French and English.
 It runs on a Windows PC at the security office and works without a network.
 
-- [PLAN_FACULTY.md](PLAN_FACULTY.md): what the faculty asked for, and the delivery phases.
 - [HANDOFF.md](HANDOFF.md): architecture, status, what is and is not tested.
 
 ## What it does
@@ -24,10 +23,18 @@ It runs on a Windows PC at the security office and works without a network.
   - A team leader fills the shift and custody registers at the start of every shift, naming the outgoing
     leader (replacing the paper handover).
   - Guards see the last 24 hours; administrators see the whole history, and that viewing is logged.
-- **Visitors** with ID card scanning (see below), watchlist, people on site and exit.
+- **Visitors** with a photo of their ID card (see below), watchlist, people on site and exit.
 - **Student directory** (Students page): import the faculty's Excel / CSV list, search by name (Arabic or Latin, any spelling
-  close enough) or card number, see who is inside. At the gate, a typed or scanned name or card number that matches a student
-  is recognised and the form is filled from the directory, which also corrects what the card scan misread.
+  close enough) or card number, see who is inside.
+- **Student problems** (its own page and home tile): a student who forgot or lost their card shows the digital card on their phone.
+  Its QR code is read as text by the webcam (the whole frame and its centre enlarged, with a beep) or by a USB QR / barcode reader,
+  which types into the scan field: that field always has the focus. The program looks in the text for a card code, a card number or
+  a name, finds the student in the directory and shows the QR's fields next to the directory's, with a verdict: matching, different,
+  or not in the list. The Algerian digital card's QR holds only a registration code (`/checkInscription/<uuid>`): the first time, the
+  guard finds the student by name, and the code is saved with them (`student_codes`, keyed hash) so the next scan finds them at once.
+  The guard records the problem (forgot, lost, other) in the **student problems register** (numbered, never erased, printable like the
+  others), and the page clears itself for the next student; a student with earlier problems in the last 90 days is flagged.
+  Student matching happens only on this page.
 - **Print button** in the top bar (and Ctrl+P): one place to print or export the inside list, any register, the period report, the student list or the audit trail.
   Each is available as a **PDF** and as an **Excel** file (real date cells, filters, right-to-left sheets for Arabic) to work on in a spreadsheet.
   The student sheet of a level that maintains the directory can be corrected in Excel and imported back.
@@ -40,19 +47,13 @@ It runs on a Windows PC at the security office and works without a network.
   register and its fields, colour, help text, half-width fields, preview, order, on/off) and the **audit trail**.
 - **Reports and statistics** by day, week, month and year (in progress, phase E).
 
-## ID card scanning
-All reading is offline, on the PC. A webcam reads passports and ID cards through their machine-readable zone
-(MRZ), and QR codes. The camera reads **automatically** while a card is held in the frame; the Scan button and
-importing a photo work too. Each frame is tried in several enhanced versions until the check digits of the document
-validate. Cards without an MRZ (the front of an ID card, older cards, licences, student cards) are read from their printed
-text, Arabic and Latin, with the OCR built into Windows (offline; Tesseract if the Arabic OCR language is not installed): the form
-is filled from the labels (Nom, Prénom, اللقب, الاسم, …) and the 18-digit national number, and the guard checks every field.
-Nothing is sent over the internet.
-
-**Every scanned card is photographed.** The picture (color, about 100-300 KB) is kept with the visitor's entry, encrypted
-like the other personal data, up to 3 per entry (e.g. both sides of a card). The guard sees the pictures under the scanner and can
-remove one before saving; the log shows a mark on entries that have pictures, and the record shows them. They are deleted
-with their entry by the retention clean-up and never leave the PC.
+## ID card photos
+Nothing is read from ID cards. The guard holds the card in the frame and takes a photo (Space, or the button; importing a picture
+works too), then types the name and the ID number. The picture (color, about 100-300 KB) is kept with the visitor's entry, encrypted
+like the other personal data, up to 3 per entry (e.g. both sides of a card). The guard sees the pictures under the camera and can
+remove one before saving; the log shows a mark on entries that have pictures, and the record shows them. They are deleted with their
+entry by the retention clean-up and never leave the PC. The only thing the webcam reads is QR codes (the digital student card on
+the Student problems page).
 
 ## Run it
 Requires Node.js.
@@ -87,7 +88,7 @@ The ready-made installers are **not published in this repository**: `FacultySecu
 - **Windows:** run the `.exe`; it installs the program and adds a desktop and Start menu shortcut. It is not code-signed, so SmartScreen may show
   "Windows protected your PC": click **More info**, then **Run anyway**. Uninstalling keeps the data folder (`%APPDATA%FacultySecurity`).
 - **Debian / Ubuntu:** `sudo apt install ./FacultySecurity-0.1.0-amd64.deb`, then start it from the applications menu (the command is `security-register`).
-  Data folder: `~/.config/FacultySecurity`. The Windows OCR helper is not available there, so cards are read with Tesseract only (a little slower).
+  Data folder: `~/.config/FacultySecurity`.
   The Debian package was built but not tested on a real machine.
 
 To build them yourself (needs internet and a few minutes the first time):
@@ -97,7 +98,28 @@ npm run dist
 ```
 
 builds the Windows installer into `release/` on a Windows PC. The Debian package cannot be built on Windows directly; run `npm run dist:linux` on Linux, or inside a Linux
-container (for example Docker with the `electronuserland/builder` image), with the repository copied in and `npm ci` run there.
+container (for example Docker with the `node:24-bookworm` image), with the repository copied in and `npm ci` run there.
+
+## Linux
+The scripts are in `scripts/linux/`; run them as the person who uses the program, not as root (they ask for sudo).
+
+| Script | What it does |
+|---|---|
+| `setup.sh` | Installs the libraries Electron needs, Node.js (asks first), the npm packages and the sandbox fix, builds, adds a menu entry (`--autostart`: open at login) |
+| `start.sh` | Rebuilds and opens the program from the source folder; log in `~/.local/state/faculty-security/start.log` |
+| `build-packages.sh` | Builds `release/FacultySecurity-0.1.0-amd64.deb` (`--rpm`, `--appimage`, `--all` for the others) |
+| `kit/` | The install kit's scripts: `install.sh` (installs the `.deb` next to it), `check-pc.sh` (checks the PC, changes nothing), `uninstall.sh`, `00-START-HERE.txt` |
+
+- **The data key.** On Linux it is protected by the desktop keyring (GNOME keyring or KDE Wallet). Started from a terminal, the program prints
+  `[faculty-security] data key protection: …`: `gnome_libsecret` or `kwallet…` is good, `basic_text` means no keyring was found (install
+  `gnome-keyring` before the first real start). The keyring is chosen at the first start; if it changes later the program opens in recovery
+  mode and asks for a backup file. `start.sh` can fix the choice with `SECREG_PASSWORD_STORE` (`gnome-libsecret`, `kwallet5`, `kwallet6`, `basic`)
+  in `~/.config/faculty-security.env`.
+- **The sandbox.** Ubuntu 23.10 and newer block Electron's sandbox for programs run from a source folder; `setup.sh` makes `chrome-sandbox`
+  setuid root (the standard fix) and has to run again after every `npm ci`. The `.deb` sets it up by itself, with an AppArmor profile on Ubuntu 24.04.
+  `SECREG_NO_SANDBOX=1` runs without it (last resort). An AppImage cannot use the sandbox on Ubuntu 24.04: prefer the `.deb`.
+- **Other `start.sh` settings** (in `~/.config/faculty-security.env`): `SECREG_SKIP_BUILD=1` (open the last build), `SECREG_FLAGS` (more Electron
+  flags, for example `--disable-gpu` or `--ozone-platform=x11`), `SECREG_DATA_DIR`.
 
 ## Web demo (Vercel)
 A browser-only demo (the same screens, sample data in Arabic, nothing sent anywhere) lives in `demo/`.
@@ -117,17 +139,17 @@ administrator `1234`, team leaders `2580` and `1357`, guard `5678`.
   on another PC or Windows account.
 - ID numbers are found through a keyed hash, so the clear number is never stored.
 - Every login, entry, view, correction and export is written to the audit trail.
-- All OCR runs locally. No data leaves the PC.
+- QR codes are read locally. No data leaves the PC.
 
 > Because the key is tied to the Windows account, back up by exporting (PDF/Excel). A raw copy of the
 > data folder cannot be restored on another machine.
 
 ## Project layout
 ```
-src/main/       Electron main process: database, encryption, registers, scanning (OCR/MRZ/barcodes), exports, IPC
+src/main/       Electron main process: database, encryption, registers, QR reading, student problems, exports, IPC
 src/preload/    the bridge exposing window.api to the UI
 src/renderer/   React UI (pages, components, styles); brand.ts = the faculty's name, logos, colours, settings
 src/shared/     types, AR/EN/FR texts, register rules and templates, shared by the app and the demo
-resources/tessdata/  offline OCR models (see NOTICE.md)
+resources/brand/     logos printed on documents (faculty, university, AFAK)
 demo/           web demo for Vercel (the app with its API answered in the browser), built into demo-dist
 ```

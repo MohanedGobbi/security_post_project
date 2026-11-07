@@ -108,8 +108,13 @@ const GHARDAIA_LAW: Flavor = {
   ],
   handover: 'ياسين بوعامر (سونلغاز) ما يزال في مخبر القانون الخاص منذ الصباح. مراسلتان موجهتان للعمادة في الانتظار. شخص مشبوه قرب موقف السيارات الشمالي: مسجل في سجل الحوادث وينتظر تأشير العمادة.',
   watch: { name: 'كريم بلعيد', idNumber: GHARDAIA.watch.idNumber, reason: 'سرقة عتاد معلوماتي في شهر مارس' },
-  registerKeys: ['shift', 'custody', 'incidents', 'lost_found', 'letters', 'events', 'reports', 'maintenance', 'official_visits', 'evacuation', 'alarms'],
+  registerKeys: ['shift', 'custody', 'incidents', 'lost_found', 'letters', 'events', 'reports', 'maintenance', 'official_visits', 'evacuation', 'alarms', 'student_problems', 'equipment_check'],
   samples: [
+    // a student came without her card yesterday: checked with the digital card on her phone
+    { register: 'student_problems', hoursAgo: 20, by: 2, values: () => ({
+      student_no: '20230001', student_name: 'خديجة بن يوسف', level_department: 'L2 · حقوق', problem: 'نسي بطاقته',
+      checked_by: 'البطاقة الرقمية (QR)', result: 'مطابق لقائمة الطلبة', qr_text: '', notes: ''
+    }) },
     // yesterday's handover: Omar took over from Youssef
     { register: 'shift', hoursAgo: 13, by: 3, values: (h) => ({
       outgoing: h.user(1), team_complete: 'no', absent_names: 'العون محمد التحق متأخرا بنصف ساعة'

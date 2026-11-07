@@ -4,6 +4,7 @@ import type { Features, Lang } from '@shared/types'
 import { FACULTY } from '@shared/faculty'
 import ghardaiaLogo from './assets/brands/ghardaia-university.png'
 import lawFacultyLogo from './assets/brands/ghardaia-law-faculty.png'
+import afakLogo from './assets/brands/afak.png'
 
 export interface Brand {
   id: string
@@ -15,6 +16,8 @@ export interface Brand {
   logo: string
   /** the university logo, next to the faculty logo on the login page and printed documents */
   logo2: string
+  /** AFAK (مؤسسة آفاق, a subsidiary of the University of Ghardaia), the program's partner: after the two logos */
+  logo3: string
   /** overrides of the CSS custom properties in styles.css */
   colors: Record<string, string>
   /** badge header colour */
@@ -56,10 +59,11 @@ export const BRAND: Brand = {
   colors: COLORS,
   badgeColor: '#0f4426',
   logo2: ghardaiaLogo,
+  logo3: afakLogo,
   defaultLang: 'ar',
   features: FACULTY.features,
   homeTilesOnly: true,
-  leaderStartRegisters: ['shift', 'custody']
+  leaderStartRegisters: ['shift', 'custody', 'equipment_check']
 }
 
 /** Applies the colours, the favicon and the window title; call once before rendering. */

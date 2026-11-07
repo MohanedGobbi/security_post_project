@@ -10,7 +10,7 @@ import Icon, { registerIcon, type IconName } from '../components/Icon'
 import { errorText } from '../util'
 import { BRAND } from '../brand'
 
-const TILES: { page: Page; key: string; icon: IconName; kbd: string; cls: string }[] = [
+const TILES: { page: Page; key: string; icon: IconName; kbd?: string; cls: string }[] = [
   { page: 'in', key: 'nav.visitorIn', icon: 'enter', kbd: 'F2', cls: 'tile-in' },
   { page: 'out', key: 'nav.visitorOut', icon: 'exit', kbd: 'F3', cls: 'tile-out' },
   { page: 'expected', key: 'nav.expected', icon: 'calendar', kbd: 'F12', cls: 'tile-expected' },
@@ -19,7 +19,9 @@ const TILES: { page: Page; key: string; icon: IconName; kbd: string; cls: string
   { page: 'incidents', key: 'nav.incidents', icon: 'alert', kbd: 'F6', cls: 'tile-incident' },
   { page: 'patrols', key: 'nav.patrols', icon: 'shield', kbd: 'F10', cls: 'tile-patrol' },
   { page: 'keys', key: 'nav.keys', icon: 'key', kbd: 'F11', cls: 'tile-key' },
-  { page: 'notes', key: 'nav.notes', icon: 'note', kbd: 'F7', cls: 'tile-note' }
+  { page: 'notes', key: 'nav.notes', icon: 'note', kbd: 'F7', cls: 'tile-note' },
+  { page: 'problems', key: 'nav.studentProblems', icon: 'qr', cls: 'tile-problems' },
+  { page: 'reports', key: 'nav.reports', icon: 'printer', cls: 'tile-reports' }
 ]
 
 export default function HomePage(): ReactNode {
@@ -32,7 +34,8 @@ export default function HomePage(): ReactNode {
 
   // each register is one more tile: its name and a light icon, nothing else
   useEffect(() => {
-    window.api.registers.list().then((rs) => setRegisters(rs.filter((r) => r.active))).catch(() => undefined)
+    // the student problems register is filled from its own page (its tile above), not from a register tile
+    window.api.registers.list().then((rs) => setRegisters(rs.filter((r) => r.active && r.key !== 'student_problems'))).catch(() => undefined)
   }, [])
 
   const load = useCallback(async () => {
@@ -67,7 +70,7 @@ export default function HomePage(): ReactNode {
         {TILES.filter((x) => pageAllowed(x.page, features, user)).map((x) => (
           <button key={x.page} type="button" className={`tile ${x.cls}`} onClick={() => go(x.page)}>
             <span className="tile-icon"><Icon name={x.icon} size={30} /></span>
-            <strong>{t(x.key)}</strong><kbd>{x.kbd}</kbd>
+            <strong>{t(x.key)}</strong>{x.kbd && <kbd>{x.kbd}</kbd>}
           </button>
         ))}
         {registers.map((r) => (

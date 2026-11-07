@@ -5,12 +5,14 @@ import Icon, { type IconName } from '../components/Icon'
 import RegisterBuilder from '../components/RegisterBuilder'
 import AuditLog from '../components/AuditLog'
 import SystemPanel from '../components/SystemPanel'
+import EquipmentCheck from '../components/EquipmentCheck'
 import { UserSettings } from './SettingsPage'
 
-type Tab = 'accounts' | 'registers' | 'audit' | 'system'
+type Tab = 'accounts' | 'registers' | 'equipment' | 'audit' | 'system'
 const TABS: { id: Tab; icon: IconName }[] = [
   { id: 'accounts', icon: 'users' },
   { id: 'registers', icon: 'book' },
+  { id: 'equipment', icon: 'tool' },
   { id: 'audit', icon: 'eye' },
   { id: 'system', icon: 'gear' }
 ]
@@ -18,7 +20,7 @@ const TABS: { id: Tab; icon: IconName }[] = [
 /** Where administrators land: accounts, registers and the audit trail; the other settings stay one click away. */
 export default function AdminPage(): ReactNode {
   const { t } = useTranslation()
-  const { go } = useApp()
+  const { go, toast } = useApp()
   const [tab, setTab] = useState<Tab>('accounts')
   return (
     <div className="admin-page">
@@ -40,6 +42,7 @@ export default function AdminPage(): ReactNode {
         </>
       )}
       {tab === 'registers' && <RegisterBuilder />}
+      {tab === 'equipment' && <section className="card"><EquipmentCheck toast={toast} /></section>}
       {tab === 'audit' && <AuditLog />}
       {tab === 'system' && <SystemPanel />}
     </div>

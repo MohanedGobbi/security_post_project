@@ -1,11 +1,10 @@
 import { join } from 'node:path'
-import { app, BrowserWindow, dialog, Menu, session, shell } from 'electron'
+import { app, BrowserWindow, dialog, Menu, safeStorage, session, shell } from 'electron'
 import { initKey, replaceKey } from './crypto'
 import { autoSafetyCopy, setRecovery } from './backup'
 import { applyRetention, audit, isFreshInstall, openDb, resetDatabase } from './db'
 import { registerIpc } from './ipc'
 import { seedFaculty } from './seed'
-import { shutdownScanner, warmUpScanner } from './scan'
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -16,6 +15,8 @@ function createWindow(): void {
     show: false,
     backgroundColor: '#0f1720',
     title: 'برنامج إدارة الأمن بالكلية',
+    // Linux: the window's own icon (top bar, dock, Alt+Tab); Windows takes it from the executable
+    ...(process.platform === 'linux' ? { icon: join(app.isPackaged ? process.resourcesPath : join(app.getAppPath(), 'resources'), 'icon.png') } : {}),
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -65,6 +66,8 @@ if (!app.requestSingleInstanceLock()) {
     session.defaultSession.setPermissionCheckHandler((_wc, permission) => permission === 'media')
 
     const keyState = initKey()
+    // Linux: which keyring protects the data key ("basic_text" means none; see README.md, section Linux). Goes to the start.sh log.
+    if (process.platform === 'linux') console.log(`[faculty-security] data key protection: ${safeStorage.getSelectedStorageBackend()}`)
     openDb()
     if (keyState === 'lost') {
       if (isFreshInstall()) {
@@ -87,10 +90,9 @@ if (!app.requestSingleInstanceLock()) {
     if (Object.values(purged).some(Boolean)) audit(null, 'retention_purge', '', null, JSON.stringify(purged))
     registerIpc()
     createWindow()
-    warmUpScanner()
   })
 
   app.on('window-all-closed', () => {
-    shutdownScanner().finally(() => app.quit())
+    app.quit()
   })
 }

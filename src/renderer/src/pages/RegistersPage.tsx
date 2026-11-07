@@ -61,6 +61,16 @@ function RegisterView({ reg, onBack }: { reg: RegisterDef; onBack(): void }): Re
   const [q, setQ] = useState({ from: daysAgo(30), to: todayStr(), text: '', openOnly: false })
   const [opened, setOpened] = useState<RegisterEntry | null>(null)
   const yesNo = useYesNo()
+  /** one entry printed alone, from its row */
+  const canPrint = can(user, 'exports')
+  const printOne = async (entryId: number): Promise<void> => {
+    try {
+      const path = await window.api.exports.entryPdf(entryId, lang)
+      if (path) toast(t('export.saved', { path }))
+    } catch (e) {
+      toast(errorText(e, t), 'error')
+    }
+  }
 
   const load = useCallback(() => {
     window.api.registers.entries({ registerId: reg.id, from: isAdmin ? q.from : '', to: isAdmin ? q.to : '', text: q.text, openOnly: q.openOnly })
@@ -113,6 +123,7 @@ function RegisterView({ reg, onBack }: { reg: RegisterDef; onBack(): void }): Re
                 <th>{t('registers.time')}</th>
                 {summaryFields.map((f) => <th key={f.key}>{labelOf(f.labels, lang)}</th>)}
                 {reg.closeLabels && <th>{t('registers.status')}</th>}
+                {canPrint && <th aria-label={t('print.button')} />}
               </tr>
             </thead>
             <tbody>
@@ -128,6 +139,12 @@ function RegisterView({ reg, onBack }: { reg: RegisterDef; onBack(): void }): Re
                   ))}
                   {reg.closeLabels && (
                     <td><span className={en.closedAt ? 'tag' : 'tag inside'}>{en.closedAt ? t('registers.closed') : t('registers.open')}</span></td>
+                  )}
+                  {canPrint && (
+                    <td className="row-print">
+                      <button type="button" className="link" title={t('reports.printEntry')} aria-label={t('reports.printEntry')}
+                        onClick={(ev) => { ev.stopPropagation(); printOne(en.id) }}><Icon name="printer" size={18} /></button>
+                    </td>
                   )}
                 </tr>
               ))}

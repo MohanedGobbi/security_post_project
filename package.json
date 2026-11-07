@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "description": "Faculty security management program (Faculty of Law and Political Science, University of Ghardaia)",
   "main": "./out/main/index.js",
+  "desktopName": "security-register.desktop",
   "author": {
     "name": "ROWD Tech",
     "email": "noreply@example.com"
@@ -31,8 +32,6 @@
       "package.json"
     ],
     "asarUnpack": [
-      "node_modules/tesseract.js-core/**",
-      "node_modules/@tesseract.js-data/**",
       "node_modules/zxing-wasm/**"
     ],
     "win": {
@@ -71,19 +70,25 @@
         }
       ],
       "category": "Office",
-      "icon": "tools/linux-icon.png",
+      "icon": "tools/linux-icons",
       "maintainer": "ROWD Tech <noreply@example.com>",
       "synopsis": "Faculty security management program",
-      "artifactName": "${productName}-${version}-amd64.${ext}"
+      "artifactName": "${productName}-${version}-amd64.${ext}",
+      "desktop": {
+        "entry": {
+          "Name": "Faculty Security",
+          "Name[ar]": "برنامج إدارة الأمن بالكلية",
+          "Name[fr]": "Sécurité de la faculté",
+          "Comment": "Faculty security management program",
+          "Comment[ar]": "برنامج إدارة الأمن بالكلية - كلية الحقوق والعلوم السياسية، جامعة غرداية",
+          "Keywords": "security;visitors;registers;أمن;زوار;سجلات;"
+        }
+      },
+      "syncDesktopName": true
     }
   },
   "dependencies": {
-    "@tesseract.js-data/ara": "^1.0.0",
-    "@tesseract.js-data/eng": "^1.0.0",
-    "@tesseract.js-data/fra": "^1.0.0",
     "exceljs": "^4.4.0",
-    "mrz": "^5.0.2",
-    "tesseract.js": "^7.0.0",
     "zxing-wasm": "^3.1.5"
   },
   "devDependencies": {

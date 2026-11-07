@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { MAX_CARD_PICTURES, type CustomField, type CustomValues, type ExpectedVisitor, type IdType, type PersonFields, type PersonLookup, type ScanResult, type Student, type StudentMatch, type WatchHit } from '@shared/types'
-import { QR_BADGE, QR_PREREG } from '@shared/qr'
+import { MAX_CARD_PICTURES, type CustomField, type CustomValues, type ExpectedVisitor, type IdType, type PersonFields, type PersonLookup, type WatchHit } from '@shared/types'
 import { formatDateTime } from '@shared/i18n'
 import { useApp } from '../App'
 import { currentLang } from '../i18n'
@@ -9,7 +8,6 @@ import CameraPanel from '../components/CameraPanel'
 import { CardPictures } from '../components/CardPictures'
 import Icon from '../components/Icon'
 import WatchAlert, { isBlocking } from '../components/WatchAlert'
-import { openExpectedByCode } from './ExpectedPage'
 import { CustomFieldInputs, missingRequired, useCustomFields } from '../components/CustomFields'
 import { bytesToUrl, errorText, todayStr } from '../util'
 
@@ -21,7 +19,6 @@ const EMPTY = {
 }
 type Form = typeof EMPTY
 type TextField = Exclude<keyof Form, 'idType'>
-const EXTRA_FIELDS: TextField[] = ['fullNameAlt', 'nationality', 'birthDate', 'sex', 'phone', 'company', 'vehiclePlate', 'notes']
 
 const normId = (s: string): string => s.toUpperCase().replace(/[\s\-.<\/]/g, '')
 
@@ -38,19 +35,12 @@ export default function VisitorInPage(): ReactNode {
   const [photo, setPhoto] = useState<Uint8Array | null>(null)
   const [status, setStatus] = useState<Status | null>(null)
   const [returning, setReturning] = useState<PersonLookup | null>(null)
-  const [lines, setLines] = useState<string[]>([])
-  /** pictures of the ID card taken by the scanner: saved with the entry */
+  /** photos of the ID card: saved with the entry */
   const [cards, setCards] = useState<Uint8Array[]>([])
-  const [barcodes, setBarcodes] = useState<string[]>([])
   const [suggest, setSuggest] = useState<{ hosts: string[]; purposes: string[] }>({ hosts: [], purposes: [] })
   const [busy, setBusy] = useState(false)
-  const lastField = useRef<TextField>('fullName')
   const lookedUp = useRef('')
   const [hits, setHits] = useState<WatchHit[]>([])
-  /** the student directory: the one this person is (same card or national number), and students with an alike name */
-  const [recognized, setRecognized] = useState<StudentMatch | null>(null)
-  const [studentHits, setStudentHits] = useState<StudentMatch[]>([])
-  const appliedStudent = useRef('')
   const [alertOpen, setAlertOpen] = useState(false)
   const [needPin, setNeedPin] = useState(false)
   const shownHits = useRef('')
@@ -72,8 +62,7 @@ export default function VisitorInPage(): ReactNode {
   const set = (k: keyof Form, v: string): void => setF((cur) => ({ ...cur, [k]: v }))
   const bind = (k: TextField) => ({
     value: f[k],
-    onChange: (e: { target: { value: string } }) => set(k, e.target.value),
-    onFocus: () => { lastField.current = k }
+    onChange: (e: { target: { value: string } }) => set(k, e.target.value)
   })
 
   // returning visitor: look the ID up shortly after it is typed or scanned
@@ -99,46 +88,6 @@ export default function VisitorInPage(): ReactNode {
     return () => clearTimeout(timer)
   }, [f.idNumber])
 
-  /** Fills the form from a student of the directory: the directory is right where a card scan or a typed name was not. */
-  const applyStudent = (s: Student): void => {
-    setF((cur) => {
-      const next = { ...cur }
-      next.fullName = s.fullName || s.fullNameAlt
-      next.fullNameAlt = s.fullName ? s.fullNameAlt : ''
-      if (!normId(cur.idNumber)) {
-        next.idNumber = s.studentNo || s.idNumber
-        if (s.studentNo) next.idType = 'student'
-      } else if (s.studentNo && normId(cur.idNumber) === normId(s.studentNo)) next.idType = 'student'
-      if (s.birthDate) next.birthDate = s.birthDate
-      if (s.phone && !cur.phone) next.phone = s.phone
-      if (!cur.company) next.company = [s.department, s.level].filter(Boolean).join(' · ')
-      return next
-    })
-    setMore(true)
-  }
-
-  // students: the same card / national number is applied by itself (once per student), alike names are only suggested
-  useEffect(() => {
-    const name = f.fullName.trim() || f.fullNameAlt.trim()
-    if (normId(f.idNumber).length < 4 && name.replace(/s/g, '').length < 3) { setRecognized(null); setStudentHits([]); return }
-    let stale = false
-    const timer = setTimeout(async () => {
-      const found = await window.api.students.suggest({ name, idNumber: f.idNumber }).catch(() => [] as StudentMatch[])
-      if (stale) return
-      const exact = found.find((h) => h.exact)
-      if (exact) {
-        const key = `${exact.student.id}:${normId(f.idNumber)}`
-        if (appliedStudent.current !== key) { appliedStudent.current = key; applyStudent(exact.student) }
-        setRecognized(exact)
-        setStudentHits([])
-      } else {
-        setRecognized(null)
-        setStudentHits(found)
-      }
-    }, 400)
-    return () => { stale = true; clearTimeout(timer) }
-  }, [f.fullName, f.fullNameAlt, f.idNumber])
-
   // watchlist: checked on the ID number, the name and the plate as they are scanned / typed
   useEffect(() => {
     const q = { idNumber: normId(f.idNumber), name: f.fullName, plate: f.vehiclePlate }
@@ -163,41 +112,6 @@ export default function VisitorInPage(): ReactNode {
       fullName: cur.fullName || e.fullName, company: cur.company || e.company, host: e.host || cur.host,
       purpose: e.purpose || cur.purpose, phone: cur.phone || e.phone
     }))
-  }
-
-  const applyScan = (r: ScanResult): void => {
-    // the visitor showed their pass (QR received at invitation) instead of an ID card
-    const pass = r.barcodes.find((b) => b.text.startsWith(QR_PREREG))
-    if (pass) {
-      void openExpectedByCode(pass.text, applyExpected, (key) => setStatus({ kind: 'error', text: t(key) }))
-      return
-    }
-    if (r.barcodes.some((b) => b.text.startsWith(QR_BADGE))) {
-      setStatus({ kind: 'warn', text: t('badge.isBadge') })
-      return
-    }
-    setBarcodes(r.source === 'none' ? r.barcodes.map((b) => b.text) : [])
-    setLines(r.lines)
-    if (r.source === 'none') {
-      setStatus({ kind: 'error', text: t('visitor.scanFailed') })
-      return
-    }
-    setF((cur) => {
-      const next = { ...cur }
-      for (const [k, v] of Object.entries(r.fields)) if (v) (next as Record<string, string>)[k] = v
-      return next
-    })
-    if (r.fields.nationality || r.fields.birthDate || r.fields.sex) setMore(true)
-    if (r.source === 'ocr') setStatus({ kind: 'warn', text: t('visitor.scanOkText') })
-    else if (!r.valid) setStatus({ kind: 'warn', text: t('visitor.scanCheckWarn') })
-    else setStatus({ kind: 'ok', text: t(r.source === 'mrz' ? 'visitor.scanOkMrz' : 'visitor.scanOkBarcode') })
-  }
-
-  const pickLine = (text: string): void => {
-    const k = lastField.current
-    set(k, text)
-    if (EXTRA_FIELDS.includes(k)) setMore(true)
-    document.getElementById(`f-${k}`)?.focus()
   }
 
   const save = async (supervisorPin?: string): Promise<void> => {
@@ -242,24 +156,14 @@ export default function VisitorInPage(): ReactNode {
       {useCamera && (
       <section className="card">
         <CameraPanel
-          onScan={applyScan}
           onCard={(jpeg) => setCards((cur) => [...cur, jpeg].slice(-MAX_CARD_PICTURES))}
           onPhoto={setPhoto}
-          onTextLines={(ls) => { setLines(ls); setStatus(null) }}
           onError={(m) => setStatus({ kind: 'error', text: errorText(m, t) })}
           hasPhoto={!!photo}
-          scan={features.idScan}
+          card={features.idScan}
           photo={features.visitorPhoto}
         />
         <CardPictures cards={cards} onRemove={(i) => setCards((cur) => cur.filter((_, k) => k !== i))} />
-        {(lines.length > 0 || barcodes.length > 0) && (
-          <div className="ocr-lines">
-            <p className="hint">{t(lines.length ? 'visitor.textHint' : 'visitor.barcodeHint')}</p>
-            <div className="chips">
-              {[...barcodes, ...lines].map((l, i) => <button key={i} type="button" className="chip line" dir="auto" onClick={() => pickLine(l)}>{l}</button>)}
-            </div>
-          </div>
-        )}
       </section>
       )}
 
@@ -282,19 +186,6 @@ export default function VisitorInPage(): ReactNode {
             <button type="button" className="link" onClick={() => setExpected(null)}>{t('common.cancel')}</button></div>
         )}
         {status && <div className={`banner ${status.kind}`}>{status.text}</div>}
-        {recognized && (
-          <div className="banner ok"><Icon name="user" /> {t('students.recognized')}: <strong dir="auto">{recognized.student.fullNameAlt || recognized.student.fullName}</strong>
-            {' · '}{[recognized.student.studentNo, recognized.student.level, recognized.student.department].filter(Boolean).join(' · ')}</div>
-        )}
-        {!recognized && studentHits.length > 0 && (
-          <div className="banner info student-hits"><Icon name="user" /> {t('students.maybe')}
-            {studentHits.slice(0, 3).map((h) => (
-              <button key={h.student.id} type="button" className="chip" dir="auto" onClick={() => applyStudent(h.student)} title={t('students.use')}>
-                {h.student.fullNameAlt || h.student.fullName} · {[h.student.studentNo, h.student.level].filter(Boolean).join(' · ')} ({Math.round(h.score * 100)}%)
-              </button>
-            ))}
-          </div>
-        )}
         {returning && (
           <div className={`banner ${returning.insideVisitId ? 'error' : 'info'}`}>
             {returning.insideVisitId ? (

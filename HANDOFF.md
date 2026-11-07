@@ -1,7 +1,14 @@
 # Handoff: برنامج إدارة الأمن بالكلية (faculty security program)
 
 Written 20 October 2026, last commit `f947bbb` on `main` (pushed to https://github.com/MohanedGobbi/security_post_project).
-Read this first. Then `README.md` (features, how to run) and `PLAN_FACULTY.md` (what the client asked for, the phases, the questions for the client).
+Read this first, then `README.md` (features, how to run).
+On the `university-linux` branch the planning and design files (`PLAN_FACULTY.md`, `DESIGN.md`, `PRODUCT.md`, `.impeccable/`) and the scanner test bench
+(`tools/scan-test/`) were removed; they stay on `main`, where the references to them below still apply.
+Also on this branch (5 Nov 2026), at the client's request: **ID card reading is gone** (MRZ, Windows OCR, Tesseract and their models): the guard
+photographs the card and types the details, so the scanner sections below describe `main` only. New: the **Student problems** page
+(`StudentProblemsPage.tsx`, `src/main/studentProblems.ts`, `src/shared/studentQr.ts`) reads the QR of a digital student card as text and
+matches it with the directory, and the `student_problems` register records it. AFAK's logo is on the screens and printouts, and every PDF
+and Excel page ends with the fine print `print.finePrint`.
 
 ## 1. What this is
 The security-office program of the **Faculty of Law and Political Science, University of Ghardaia** (مكتب الأمن الداخلي للكلية,
@@ -14,7 +21,6 @@ and University-of-Ghardaia versions were deleted on 20 Oct 2026.
 |---|---|---|---|
 | Desktop app | `src/` | Windows PC at the security office (Electron) | Registers, visitors with ID scanning, shifts, administration. Offline. |
 | Web demo | `demo/` | Vercel (static) | The real screens with their API answered in the browser, Arabic sample data, for showing the client. |
-| Test bench | `tools/scan-test/` | Windows, Python | Synthetic ID cards and a runner that measures the scanner on the real app. |
 
 ## 2. Run it, log in
 ```bash
@@ -59,7 +65,6 @@ src/renderer/src/ React UI: pages/, components/, styles.css, brand.ts (names, lo
 src/shared/       types.ts (Api), faculty.ts (first-start settings and accounts), registers.ts (rules), registerTemplates.ts, features.ts, locales/{ar,fr,en}.json
 resources/tessdata/  OCR models (licences in NOTICE.md)
 demo/             web demo: reception-api.ts (mock of window.api), store.ts, flavors.ts (sample data)
-tools/scan-test/  scanner test bench (README inside)
 vercel.json       Vercel build settings for the demo
 ```
 

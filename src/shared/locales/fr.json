@@ -21,7 +21,9 @@
     "optional": "facultatif",
     "yes": "Oui",
     "no": "Non",
-    "edit": "Modifier"
+    "edit": "Modifier",
+    "from": "Du",
+    "to": "Au"
   },
   "nav": {
     "home": "Accueil",
@@ -42,7 +44,9 @@
     "expected": "Visiteurs attendus",
     "registers": "Registres",
     "admin": "Administration",
-    "students": "Étudiants"
+    "students": "Étudiants",
+    "studentProblems": "Problèmes d’étudiants",
+    "reports": "Rapports"
   },
   "lang": {
     "ar": "العربية",
@@ -135,7 +139,9 @@
     "autoReading": "Lecture de la carte…",
     "autoDone": "Carte lue. Appuyez sur Scanner pour en lire une autre.",
     "autoTrouble": "Lecture difficile : tenez la carte plus à plat et immobile, évitez les reflets, ou appuyez sur Scanner.",
-    "scanOkText": "Texte lu sur la carte. Aucune vérification n’est possible : comparez chaque champ avec la carte."
+    "scanOkText": "Texte lu sur la carte. Aucune vérification n’est possible : comparez chaque champ avec la carte.",
+    "takeCardPhoto": "Photographier la carte",
+    "cardPhotoHelp": "Tenez la carte à plat dans le cadre, puis prenez la photo. Les deux faces peuvent être prises (3 photos au plus)."
   },
   "idType": {
     "national_id": "Carte d’identité nationale",
@@ -292,7 +298,8 @@
     "levelInUse": "Des comptes ont encore ce niveau : changez d’abord leur niveau",
     "backupPassword": "Mot de passe incorrect, ou fichier endommagé",
     "backupFile": "Ce n’est pas un fichier de sauvegarde de ce programme",
-    "backupPasswordShort": "Le mot de passe doit avoir 6 caractères au moins"
+    "backupPasswordShort": "Le mot de passe doit avoir 6 caractères au moins",
+    "equipmentExists": "Cette pièce est déjà dans la liste."
   },
   "photo": {
     "take": "Prendre une photo",
@@ -679,8 +686,8 @@
     },
     "opt": {
       "idScan": {
-        "name": "Scan de la pièce d’identité",
-        "desc": "Caméra et import d’image pour remplir le formulaire depuis la carte."
+        "name": "Photo de la pièce d’identité",
+        "desc": "Une photo de la carte du visiteur, gardée avec la visite (rien n’y est lu)."
       },
       "visitorPhoto": {
         "name": "Photo du visiteur",
@@ -843,7 +850,8 @@
     "accountsIntro": "Agents et chefs d’équipe se connectent avec leur seul code PIN : chaque code appartient à une personne.",
     "defaultPinTitle": "Changez les codes PIN de départ.",
     "defaultPinText": "Ces comptes ont encore le code PIN de départ : {{names}}. Utilisez « Changer le code » ci-dessous.",
-    "system": "Système"
+    "system": "Système",
+    "equipment": "Matériel"
   },
   "audit": {
     "intro": "Chaque connexion, inscription, consultation, export et modification, avec son auteur.",
@@ -917,7 +925,10 @@
       "backup_create": "Fichier de sauvegarde fait",
       "backup_restore": "Sauvegarde restaurée",
       "records_erase": "Données effacées",
-      "restart": "Programme redémarré"
+      "restart": "Programme redémarré",
+      "equipment_added": "Matériel ajouté",
+      "equipment_removed": "Matériel retiré",
+      "student_code_learnt": "Code de carte numérique gardé"
     }
   },
   "card": {
@@ -951,7 +962,13 @@
     "field": "Champ",
     "value": "Valeur",
     "before": "Avant",
-    "after": "Après"
+    "after": "Après",
+    "finePrint": "Réalisé par ROWD Tech · en partenariat avec AFAK",
+    "printedOn": "Imprimé le {{date}}",
+    "printedBy": "Par : {{name}}",
+    "signLeader": "Chef d’équipe",
+    "signHead": "Responsable de la sécurité",
+    "signDean": "Visa du décanat"
   },
   "students": {
     "title": "Étudiants",
@@ -1032,7 +1049,7 @@
   },
   "recovery": {
     "title": "Les données ne peuvent pas être ouvertes",
-    "text": "Ces données ont été créées par un autre compte Windows ou sur un autre PC : leur clé de chiffrement ne peut pas être ouverte ici.",
+    "text": "Ces données ont été créées par un autre compte utilisateur ou sur un autre PC : leur clé de chiffrement ne peut pas être ouverte ici.",
     "help": "Restaurez un fichier de sauvegarde (.secbak) fait avec le programme, avec son mot de passe.",
     "choose": "Choisir le fichier de sauvegarde…"
   },
@@ -1049,7 +1066,7 @@
     "restoreWarn": "Tout ce qui est dans le programme est remplacé par la sauvegarde, puis le programme redémarre. Une copie de sécurité des données actuelles est faite avant.",
     "restarting": "Redémarrage du programme…",
     "copiesTitle": "Copies de sécurité sur ce PC",
-    "copiesIntro": "Le programme en fait une chaque jour et avant tout ce qui efface ou restaure (les 14 dernières quotidiennes et 10 des autres sont gardées). Elles restent sur ce PC, pour ce compte Windows.",
+    "copiesIntro": "Le programme en fait une chaque jour et avant tout ce qui efface ou restaure (les 14 dernières quotidiennes et 10 des autres sont gardées). Elles restent sur ce PC, pour ce compte utilisateur.",
     "noCopies": "Aucune copie de sécurité",
     "openFolder": "Ouvrir le dossier",
     "when": "Faite le",
@@ -1078,5 +1095,89 @@
     "restartTitle": "Redémarrer le programme",
     "restartHelp": "Ferme et rouvre le programme en rechargeant les données.",
     "restart": "Redémarrer"
+  },
+  "problems": {
+    "title": "Problèmes d’étudiants",
+    "intro": "Un étudiant qui a oublié ou perdu sa carte : scannez le QR code de sa carte numérique sur son téléphone, avec le lecteur ou la caméra, ou cherchez-le par son nom.",
+    "scan": "Scanner le QR code",
+    "scanAgain": "Étudiant suivant : scanner un QR code",
+    "scanHint": "Demandez à l’étudiant de présenter le QR code de sa carte numérique à la caméra.",
+    "searchLabel": "Ou chercher dans la liste des étudiants",
+    "waiting": "Scannez le QR code de la carte numérique avec le lecteur ou la caméra, ou cherchez l’étudiant par son nom.",
+    "verdict": {
+      "match": "Dans la liste des étudiants, et les informations concordent",
+      "mismatch": "Dans la liste, mais certaines informations diffèrent : vérifiez avant de le laisser entrer",
+      "notFound": "Aucun étudiant correspondant dans la liste"
+    },
+    "byName": "trouvé par le nom seulement, sans le numéro de carte",
+    "field": "Champ",
+    "fromQr": "Dans le QR code",
+    "inList": "Dans la liste",
+    "notInQr": "absent du code",
+    "qrText": "Texte du QR code, tel que lu",
+    "repeat": "{{n}} problème(s) enregistré(s) pour cet étudiant ces 90 derniers jours",
+    "manual": "Pas dans la liste ? Tapez le numéro de carte et le nom, puis enregistrez.",
+    "name": "Nom de l’étudiant",
+    "problem": "Problème",
+    "forgot": "A oublié sa carte",
+    "lost": "A perdu sa carte",
+    "other": "Autre",
+    "note": "Remarque (facultatif)",
+    "record": "Enregistrer dans le registre des problèmes d’étudiants",
+    "needStudent": "Tapez le numéro de carte et le nom de l’étudiant.",
+    "recent": "Dernières 24 heures",
+    "none": "Rien pour l’instant.",
+    "noRegister": "Le registre des problèmes d’étudiants est désactivé. Un administrateur l’active dans Administration → Registres.",
+    "fieldLabel": "Scanner la carte",
+    "fieldPlaceholder": "Scannez avec le lecteur, ou tapez un nom ou un numéro de carte",
+    "fieldHint": "Ce champ est toujours prêt : un lecteur QR ou code-barres branché au PC y écrit tout seul.",
+    "useCamera": "Scanner avec la caméra",
+    "byCode": "reconnu par le code de sa carte numérique",
+    "newCode": "Nouveau code de carte numérique : cherchez l’étudiant par son nom et choisissez-le, le code sera gardé pour le reconnaître directement la prochaine fois.",
+    "willLearn": "Le code de sa carte numérique sera gardé avec cet étudiant à l’enregistrement."
+  },
+  "equipment": {
+    "title": "Matériel du poste de sécurité",
+    "checkTitle": "Inventaire du matériel",
+    "intro": "Le matériel du poste de sécurité, que le chef d’équipe coche à chaque passation. Ajoutez ce qu’il faut, retirez ce qui n’y est plus.",
+    "checkIntro": "Cochez chaque pièce : présente ou manquante. Pour une pièce manquante, écrivez une remarque. Le matériel peut être ajouté ou retiré au besoin.",
+    "empty": "Aucun matériel dans la liste. Ajoutez le matériel du poste ci-dessous.",
+    "present": "Présent",
+    "missing": "Manquant",
+    "allPresent": "Tout est présent",
+    "notePlaceholder": "Que s’est-il passé ? (ex. chez un agent, en panne, perdu)",
+    "newName": "Nouvelle pièce (ex. radio)",
+    "quantity": "Quantité",
+    "add": "Ajouter",
+    "remove": "Retirer de la liste",
+    "removeConfirm": "Retirer « {{name}} » de la liste du matériel ? Les inventaires précédents restent tels quels.",
+    "notes": "Remarques (facultatif)",
+    "needItems": "Ajoutez d’abord le matériel du poste.",
+    "needAll": "{{n}} pièce(s) pas encore cochée(s).",
+    "needNote": "Écrivez une remarque pour chaque pièce manquante.",
+    "missingCount": "Pièces manquantes : {{n}}"
+  },
+  "reports": {
+    "title": "Rapports",
+    "intro": "Tous les documents au même endroit, en un clic : un PDF avec l’en-tête de la faculté, et un fichier Excel.",
+    "all": "Tous les rapports",
+    "period": {
+      "today": "Aujourd’hui",
+      "week": "7 derniers jours",
+      "month": "30 derniers jours",
+      "thisMonth": "Ce mois-ci",
+      "custom": "Période choisie"
+    },
+    "oneRegister": "Un registre",
+    "oneEntry": "Une entrée, par son numéro",
+    "oneEntryHelp": "Choisissez le registre et tapez le numéro. Sans numéro : la dernière entrée.",
+    "lastHandover": "Dernière passation",
+    "lastHandoverHelp": "La dernière entrée du registre de permanence",
+    "lastEquipment": "Dernier inventaire du matériel",
+    "lastEquipmentHelp": "Le dernier inventaire du matériel du poste",
+    "studentProblems": "Problèmes d’étudiants",
+    "printEntry": "Imprimer cette entrée",
+    "noEntry": "Aucune entrée avec ce numéro (ou hors de ce que vous pouvez voir).",
+    "nothingYet": "Rien d’enregistré dans ce registre."
   }
 }

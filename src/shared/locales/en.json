@@ -21,7 +21,9 @@
     "optional": "optional",
     "yes": "Yes",
     "no": "No",
-    "edit": "Edit"
+    "edit": "Edit",
+    "from": "From",
+    "to": "To"
   },
   "nav": {
     "home": "Home",
@@ -42,7 +44,9 @@
     "expected": "Expected visitors",
     "registers": "Registers",
     "admin": "Administration",
-    "students": "Students"
+    "students": "Students",
+    "studentProblems": "Student problems",
+    "reports": "Reports"
   },
   "lang": {
     "ar": "العربية",
@@ -135,7 +139,9 @@
     "autoReading": "Reading the card…",
     "autoDone": "Card read. Press Scan to read another.",
     "autoTrouble": "Hard to read: hold the card flatter and steady, reduce glare, or press Scan.",
-    "scanOkText": "Text read from the card. There is no check on it: compare every field with the card."
+    "scanOkText": "Text read from the card. There is no check on it: compare every field with the card.",
+    "takeCardPhoto": "Photograph the card",
+    "cardPhotoHelp": "Hold the card flat inside the frame, then take the photo. Both sides can be taken (3 pictures at most)."
   },
   "idType": {
     "national_id": "National ID card",
@@ -292,7 +298,8 @@
     "levelInUse": "Accounts still have this level: change their level first",
     "backupPassword": "Wrong password, or the file is damaged",
     "backupFile": "This is not a backup file of this program",
-    "backupPasswordShort": "The password needs at least 6 characters"
+    "backupPasswordShort": "The password needs at least 6 characters",
+    "equipmentExists": "This item is already on the list."
   },
   "photo": {
     "take": "Take photo",
@@ -679,8 +686,8 @@
     },
     "opt": {
       "idScan": {
-        "name": "ID card scanning",
-        "desc": "Webcam and image import to fill the visitor form from the card."
+        "name": "ID card photo",
+        "desc": "A photo of the visitor's card, kept with the visit (nothing is read from it)."
       },
       "visitorPhoto": {
         "name": "Visitor photo",
@@ -843,7 +850,8 @@
     "accountsIntro": "Guards and team leaders log in with their own PIN only: each PIN belongs to one person.",
     "defaultPinTitle": "Change the starting PINs.",
     "defaultPinText": "These accounts still have the PIN they were created with: {{names}}. Use “Change PIN” below.",
-    "system": "System"
+    "system": "System",
+    "equipment": "Equipment"
   },
   "audit": {
     "intro": "Every login, entry, view, export and change, with who did it.",
@@ -917,7 +925,10 @@
       "backup_create": "Backup file made",
       "backup_restore": "Backup restored",
       "records_erase": "Records erased",
-      "restart": "Program restarted"
+      "restart": "Program restarted",
+      "equipment_added": "Equipment added",
+      "equipment_removed": "Equipment removed",
+      "student_code_learnt": "Digital card code saved"
     }
   },
   "card": {
@@ -951,7 +962,13 @@
     "field": "Field",
     "value": "Value",
     "before": "Before",
-    "after": "After"
+    "after": "After",
+    "finePrint": "Made by ROWD Tech · in partnership with AFAK",
+    "printedOn": "Printed on {{date}}",
+    "printedBy": "By: {{name}}",
+    "signLeader": "Team leader",
+    "signHead": "Head of security",
+    "signDean": "Deanship visa"
   },
   "students": {
     "title": "Students",
@@ -1032,7 +1049,7 @@
   },
   "recovery": {
     "title": "The data cannot be opened",
-    "text": "These data were created by another Windows account or on another PC, so their encryption key cannot be opened here.",
+    "text": "These data were created by another user account or on another PC, so their encryption key cannot be opened here.",
     "help": "Restore a backup file (.secbak) made from the program, with its password.",
     "choose": "Choose the backup file…"
   },
@@ -1049,7 +1066,7 @@
     "restoreWarn": "Everything now in the program is replaced by the backup, then the program restarts. A safety copy of the current data is made first.",
     "restarting": "Restarting the program…",
     "copiesTitle": "Safety copies on this PC",
-    "copiesIntro": "The program makes one by itself every day and before anything that erases or restores (the last 14 daily ones and 10 of the others are kept). They stay on this PC, for this Windows account.",
+    "copiesIntro": "The program makes one by itself every day and before anything that erases or restores (the last 14 daily ones and 10 of the others are kept). They stay on this PC, for this user account.",
     "noCopies": "No safety copy yet",
     "openFolder": "Open the folder",
     "when": "Made",
@@ -1078,5 +1095,89 @@
     "restartTitle": "Restart the program",
     "restartHelp": "Closes and opens the program again, reloading the data.",
     "restart": "Restart"
+  },
+  "problems": {
+    "title": "Student problems",
+    "intro": "A student who forgot or lost their card: scan the QR code of the digital card on their phone with the reader or the webcam, or search them by name.",
+    "scan": "Scan the QR code",
+    "scanAgain": "Next student: scan a QR code",
+    "scanHint": "Ask the student to hold the digital card's QR code up to the camera.",
+    "searchLabel": "Or search the student list",
+    "waiting": "Scan the digital card's QR code with the reader or the webcam, or search the student by name.",
+    "verdict": {
+      "match": "In the student list, and the details match",
+      "mismatch": "In the student list, but some details differ: check before letting them in",
+      "notFound": "No matching student in the student list"
+    },
+    "byName": "found by name only, without the card number",
+    "field": "Field",
+    "fromQr": "In the QR code",
+    "inList": "In the student list",
+    "notInQr": "not in the code",
+    "qrText": "QR code text, as read",
+    "repeat": "{{n}} problem(s) recorded for this student in the last 90 days",
+    "manual": "Not in the list? Type the card number and the name, then record.",
+    "name": "Student name",
+    "problem": "Problem",
+    "forgot": "Forgot the card",
+    "lost": "Lost the card",
+    "other": "Other",
+    "note": "Note (optional)",
+    "record": "Record in the student problems register",
+    "needStudent": "Type the student's card number and name.",
+    "recent": "Last 24 hours",
+    "none": "Nothing yet.",
+    "noRegister": "The student problems register is switched off. An administrator switches it on in Administration → Registers.",
+    "fieldLabel": "Scan the card",
+    "fieldPlaceholder": "Scan with the reader, or type a name or card number",
+    "fieldHint": "This field is always ready: a QR or barcode reader plugged into the PC types into it by itself.",
+    "useCamera": "Scan with the webcam",
+    "byCode": "recognised from their digital card's code",
+    "newCode": "A new digital card code: find the student by name and pick them, and the code is saved so they are found at once next time.",
+    "willLearn": "Their digital card's code will be saved with this student when you record."
+  },
+  "equipment": {
+    "title": "Security office equipment",
+    "checkTitle": "Equipment check",
+    "intro": "The equipment kept at the security office, which the team leader ticks at every handover. Add what is needed, remove what is no longer there.",
+    "checkIntro": "Tick each item: present or missing. For a missing item, write a note. Equipment can be added or removed when needed.",
+    "empty": "No equipment on the list yet. Add the security office equipment below.",
+    "present": "Present",
+    "missing": "Missing",
+    "allPresent": "All present",
+    "notePlaceholder": "What happened? (e.g. with a guard, broken, lost)",
+    "newName": "New item (e.g. two-way radio)",
+    "quantity": "Quantity",
+    "add": "Add",
+    "remove": "Remove from the list",
+    "removeConfirm": "Remove \"{{name}}\" from the equipment list? Earlier checks stay as they are.",
+    "notes": "Notes (optional)",
+    "needItems": "Add the security office equipment first.",
+    "needAll": "{{n}} item(s) not ticked yet.",
+    "needNote": "Write a note for each missing item.",
+    "missingCount": "Missing items: {{n}}"
+  },
+  "reports": {
+    "title": "Reports",
+    "intro": "Every document in one place, one click each: a PDF with the faculty header, and an Excel file to work on.",
+    "all": "All reports",
+    "period": {
+      "today": "Today",
+      "week": "Last 7 days",
+      "month": "Last 30 days",
+      "thisMonth": "This month",
+      "custom": "Custom period"
+    },
+    "oneRegister": "One register",
+    "oneEntry": "One entry, by its number",
+    "oneEntryHelp": "Choose the register and type the entry number. Without a number: the latest entry.",
+    "lastHandover": "Latest shift handover",
+    "lastHandoverHelp": "The latest entry of the shift register",
+    "lastEquipment": "Latest equipment check",
+    "lastEquipmentHelp": "The latest check of the security office equipment",
+    "studentProblems": "Student problems",
+    "printEntry": "Print this entry",
+    "noEntry": "No entry with this number (or it is outside what you may see).",
+    "nothingYet": "Nothing recorded in this register yet."
   }
 }

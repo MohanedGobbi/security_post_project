@@ -68,10 +68,17 @@ const api: Api = {
     getFeatures: call('settings:getFeatures'),
     setFeatures: call('settings:setFeatures')
   },
+  equipment: {
+    list: call('equipment:list'),
+    add: call('equipment:add'),
+    remove: call('equipment:remove')
+  },
+  studentProblems: {
+    checkQr: call('studentProblems:checkQr'),
+    search: call('studentProblems:search'),
+    learnCode: call('studentProblems:learnCode')
+  },
   scan: {
-    analyze: call('scan:analyze'),
-    readText: call('scan:readText'),
-    readFront: call('scan:readFront'),
     barcodes: call('scan:barcodes')
   },
   students: {

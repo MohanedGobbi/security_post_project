@@ -162,6 +162,34 @@ export const REGISTER_TEMPLATES: RegisterDefInput[] = [
     ]
   },
   {
+    // a student without their card (forgotten or lost) shows the digital card on their phone: checked against the directory
+    key: 'student_problems',
+    labels: L('سجل مشاكل الطلبة', 'Student problems', 'Problèmes d’étudiants'),
+    icon: 'qr', fillRoles: ALL, closeRoles: [], closeLabels: null, sort: 12, active: true,
+    fields: [
+      field('student_no', 'text', ['رقم بطاقة الطالب', 'Student card number', 'Numéro de carte d’étudiant'], { required: true }),
+      field('student_name', 'text', ['اسم ولقب الطالب', 'Student name', 'Nom de l’étudiant'], { required: true }),
+      field('level_department', 'text', ['المستوى والتخصص', 'Level and department', 'Niveau et spécialité']),
+      field('problem', 'select', ['المشكلة', 'Problem', 'Problème'], { required: true, options: ['نسي بطاقته', 'فقد بطاقته', 'أخرى'] }),
+      field('checked_by', 'select', ['طريقة التحقق', 'How it was checked', 'Vérification'], { required: true, options: ['البطاقة الرقمية (QR)', 'البحث في قائمة الطلبة'] }),
+      field('result', 'select', ['نتيجة التحقق', 'Result of the check', 'Résultat'], { required: true, options: ['مطابق لقائمة الطلبة', 'غير مطابق', 'غير موجود في القائمة'] }),
+      field('qr_text', 'longtext', ['نص رمز QR', 'QR code text', 'Texte du QR code'], { sensitive: true }),
+      field('notes', 'longtext', ['ملاحظات', 'Notes', 'Remarques'])
+    ]
+  },
+  {
+    // the equipment of the security office, ticked present at every handover (the list is kept in the equipment table)
+    key: 'equipment_check',
+    labels: L('سجل جرد عتاد مقر الأمن', 'Equipment check', 'Inventaire du matériel'),
+    icon: 'tool', fillRoles: LEADERS, closeRoles: [], closeLabels: null, sort: 13, active: true,
+    fields: [
+      field('items', 'longtext', ['العتاد والتأشير عليه', 'Equipment, item by item', 'Matériel, pièce par pièce'], { required: true }),
+      field('missing', 'longtext', ['العتاد غير الموجود', 'Equipment missing', 'Matériel manquant']),
+      field('missing_count', 'number', ['عدد العتاد غير الموجود', 'Number of missing items', 'Nombre de pièces manquantes']),
+      field('notes', 'longtext', ['ملاحظات', 'Notes', 'Remarques'])
+    ]
+  },
+  {
     key: 'alarms',
     labels: L('سجل إنذارات الحريق والطوارئ', 'Fire and emergency alarms', 'Alarmes incendie et urgences'),
     icon: 'bell', fillRoles: ALL, closeRoles: [], closeLabels: null, sort: 11, active: false,
