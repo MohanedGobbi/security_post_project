@@ -21,7 +21,9 @@
     "optional": "optional",
     "yes": "Yes",
     "no": "No",
-    "edit": "Edit"
+    "edit": "Edit",
+    "from": "From",
+    "to": "To"
   },
   "nav": {
     "home": "Home",
@@ -43,7 +45,8 @@
     "registers": "Registers",
     "admin": "Administration",
     "students": "Students",
-    "studentProblems": "Student problems"
+    "studentProblems": "Student problems",
+    "reports": "Reports"
   },
   "lang": {
     "ar": "العربية",
@@ -960,7 +963,12 @@
     "value": "Value",
     "before": "Before",
     "after": "After",
-    "finePrint": "Made by ROWD Tech · in partnership with AFAK"
+    "finePrint": "Made by ROWD Tech · in partnership with AFAK",
+    "printedOn": "Printed on {{date}}",
+    "printedBy": "By: {{name}}",
+    "signLeader": "Team leader",
+    "signHead": "Head of security",
+    "signDean": "Deanship visa"
   },
   "students": {
     "title": "Students",
@@ -1148,5 +1156,28 @@
     "needAll": "{{n}} item(s) not ticked yet.",
     "needNote": "Write a note for each missing item.",
     "missingCount": "Missing items: {{n}}"
+  },
+  "reports": {
+    "title": "Reports",
+    "intro": "Every document in one place, one click each: a PDF with the faculty header, and an Excel file to work on.",
+    "all": "All reports",
+    "period": {
+      "today": "Today",
+      "week": "Last 7 days",
+      "month": "Last 30 days",
+      "thisMonth": "This month",
+      "custom": "Custom period"
+    },
+    "oneRegister": "One register",
+    "oneEntry": "One entry, by its number",
+    "oneEntryHelp": "Choose the register and type the entry number. Without a number: the latest entry.",
+    "lastHandover": "Latest shift handover",
+    "lastHandoverHelp": "The latest entry of the shift register",
+    "lastEquipment": "Latest equipment check",
+    "lastEquipmentHelp": "The latest check of the security office equipment",
+    "studentProblems": "Student problems",
+    "printEntry": "Print this entry",
+    "noEntry": "No entry with this number (or it is outside what you may see).",
+    "nothingYet": "Nothing recorded in this register yet."
   }
 }

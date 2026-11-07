@@ -631,3 +631,18 @@ button.primary.danger { background: var(--danger); border-color: var(--danger); 
 .perm-list .check { align-items: flex-start; }
 .perm-list small { font-weight: 400; }
 .head-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-inline-start: auto; }
+
+/* ---------- reports ---------- */
+.reports-page .section-head h1 { display: flex; align-items: center; gap: 10px; }
+.report-period { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+.report-period .seg { margin: 0; }
+.report-dates { display: flex; gap: 10px; }
+.report-dates label { margin: 0; }
+.report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; }
+.report-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.report-card .grow { display: grid; gap: 4px; }
+.report-card select, .report-card input { margin-top: 2px; }
+.report-entry { display: flex; gap: 6px; }
+.report-entry input { width: 90px; }
+.report-actions { display: flex; flex-direction: column; gap: 6px; }
+.row-print { width: 1%; white-space: nowrap; }

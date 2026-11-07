@@ -21,7 +21,9 @@
     "optional": "facultatif",
     "yes": "Oui",
     "no": "Non",
-    "edit": "Modifier"
+    "edit": "Modifier",
+    "from": "Du",
+    "to": "Au"
   },
   "nav": {
     "home": "Accueil",
@@ -43,7 +45,8 @@
     "registers": "Registres",
     "admin": "Administration",
     "students": "Étudiants",
-    "studentProblems": "Problèmes d’étudiants"
+    "studentProblems": "Problèmes d’étudiants",
+    "reports": "Rapports"
   },
   "lang": {
     "ar": "العربية",
@@ -960,7 +963,12 @@
     "value": "Valeur",
     "before": "Avant",
     "after": "Après",
-    "finePrint": "Réalisé par ROWD Tech · en partenariat avec AFAK"
+    "finePrint": "Réalisé par ROWD Tech · en partenariat avec AFAK",
+    "printedOn": "Imprimé le {{date}}",
+    "printedBy": "Par : {{name}}",
+    "signLeader": "Chef d’équipe",
+    "signHead": "Responsable de la sécurité",
+    "signDean": "Visa du décanat"
   },
   "students": {
     "title": "Étudiants",
@@ -1148,5 +1156,28 @@
     "needAll": "{{n}} pièce(s) pas encore cochée(s).",
     "needNote": "Écrivez une remarque pour chaque pièce manquante.",
     "missingCount": "Pièces manquantes : {{n}}"
+  },
+  "reports": {
+    "title": "Rapports",
+    "intro": "Tous les documents au même endroit, en un clic : un PDF avec l’en-tête de la faculté, et un fichier Excel.",
+    "all": "Tous les rapports",
+    "period": {
+      "today": "Aujourd’hui",
+      "week": "7 derniers jours",
+      "month": "30 derniers jours",
+      "thisMonth": "Ce mois-ci",
+      "custom": "Période choisie"
+    },
+    "oneRegister": "Un registre",
+    "oneEntry": "Une entrée, par son numéro",
+    "oneEntryHelp": "Choisissez le registre et tapez le numéro. Sans numéro : la dernière entrée.",
+    "lastHandover": "Dernière passation",
+    "lastHandoverHelp": "La dernière entrée du registre de permanence",
+    "lastEquipment": "Dernier inventaire du matériel",
+    "lastEquipmentHelp": "Le dernier inventaire du matériel du poste",
+    "studentProblems": "Problèmes d’étudiants",
+    "printEntry": "Imprimer cette entrée",
+    "noEntry": "Aucune entrée avec ce numéro (ou hors de ce que vous pouvez voir).",
+    "nothingYet": "Rien d’enregistré dans ce registre."
   }
 }

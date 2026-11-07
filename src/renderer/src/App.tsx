@@ -26,6 +26,7 @@ import ExpectedPage from './pages/ExpectedPage'
 import SettingsPage from './pages/SettingsPage'
 import StudentsPage from './pages/StudentsPage'
 import StudentProblemsPage from './pages/StudentProblemsPage'
+import ReportsPage from './pages/ReportsPage'
 import rowdLogo from './assets/brands/rowd-tech.png'
 import RecoveryPage from './pages/RecoveryPage'
 import PrintMenu from './components/PrintMenu'
@@ -33,7 +34,7 @@ import EndShiftDialog from './components/EndShiftDialog'
 import Icon, { type IconName } from './components/Icon'
 import BrandMark from './components/BrandMark'
 
-export type Page = 'home' | 'in' | 'out' | 'expected' | 'vehicles' | 'deliveries' | 'incidents' | 'patrols' | 'keys' | 'notes' | 'registers' | 'students' | 'problems' | 'admin' | 'log' | 'watchlist' | 'settings'
+export type Page = 'home' | 'in' | 'out' | 'expected' | 'vehicles' | 'deliveries' | 'incidents' | 'patrols' | 'keys' | 'notes' | 'registers' | 'students' | 'problems' | 'reports' | 'admin' | 'log' | 'watchlist' | 'settings'
 
 interface Toast { id: number; text: string; kind: 'ok' | 'error' }
 
@@ -95,6 +96,7 @@ const NAV: { page: Page; key: string; icon: IconName; shortcut?: string }[] = [
   { page: 'registers', key: 'nav.registers', icon: 'book' },
   { page: 'students', key: 'nav.students', icon: 'user' },
   { page: 'problems', key: 'nav.studentProblems', icon: 'qr' },
+  { page: 'reports', key: 'nav.reports', icon: 'printer' },
   { page: 'admin', key: 'nav.admin', icon: 'users' },
   { page: 'log', key: 'nav.log', icon: 'list', shortcut: 'F8' },
   { page: 'watchlist', key: 'nav.watchlist', icon: 'eye' },
@@ -318,6 +320,7 @@ export default function App(): ReactNode {
             {page === 'registers' && <RegistersPage />}
             {page === 'students' && <StudentsPage />}
             {page === 'problems' && <StudentProblemsPage />}
+            {page === 'reports' && <ReportsPage />}
             {page === 'admin' && user.role === 'admin' && <AdminPage />}
             {page === 'log' && <LogPage />}
             {page === 'watchlist' && <WatchlistPage />}
@@ -326,7 +329,7 @@ export default function App(): ReactNode {
           </main>
         </div>
       </div>
-      {printing && <PrintMenu onClose={() => setPrinting(false)} />}
+      {printing && <PrintMenu onClose={() => setPrinting(false)} onAll={() => { setPrinting(false); setPage('reports') }} />}
       {ending && <EndShiftDialog onClose={() => setEnding(false)} onEnded={logout} />}
       {toastLayer}
     </Ctx.Provider>

@@ -20,7 +20,8 @@ const TILES: { page: Page; key: string; icon: IconName; kbd?: string; cls: strin
   { page: 'patrols', key: 'nav.patrols', icon: 'shield', kbd: 'F10', cls: 'tile-patrol' },
   { page: 'keys', key: 'nav.keys', icon: 'key', kbd: 'F11', cls: 'tile-key' },
   { page: 'notes', key: 'nav.notes', icon: 'note', kbd: 'F7', cls: 'tile-note' },
-  { page: 'problems', key: 'nav.studentProblems', icon: 'qr', cls: 'tile-problems' }
+  { page: 'problems', key: 'nav.studentProblems', icon: 'qr', cls: 'tile-problems' },
+  { page: 'reports', key: 'nav.reports', icon: 'printer', cls: 'tile-reports' }
 ]
 
 export default function HomePage(): ReactNode {

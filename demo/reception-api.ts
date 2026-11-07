@@ -16,7 +16,8 @@ import { MAX_CARD_PICTURES, type Student, type StudentCheck } from '@shared/type
 import { compareStudent, readStudentQr } from '@shared/studentQr'
 import { nameSimilarity } from '@shared/names'
 import { BUILTIN_LEVELS } from '@shared/permissions'
-import { cleanDefinition, cleanStep, cleanValue, type ValueResolvers } from '@shared/registers'
+import { cleanDefinition, cleanStep, cleanValue, labelOf, valueText, type ValueResolvers } from '@shared/registers'
+import { detailHtml, esc } from '@shared/printTemplate'
 import { templatesFor } from '@shared/registerTemplates'
 import { qrDataUrl, qrSvg, readQr } from './qr'
 import { downloadCsv, openReport } from './report'
@@ -308,6 +309,9 @@ const CODES_KEY = 'secreg-demo-student-codes'
 function learntCodes(): Record<string, number> {
   try { return JSON.parse(localStorage.getItem(CODES_KEY) ?? '{}') as Record<string, number> } catch { return {} }
 }
+
+/** the signature boxes of a register printout, as in the program */
+const SIGNS = (l: Lang): string[] => ['print.signLeader', 'print.signHead', 'print.signDean'].map((k) => translate(l, k))
 
 const NO_QR: QrStudentFields = { studentNo: '', fullName: '', birthDate: '', level: '', department: '' }
 
@@ -740,7 +744,14 @@ export const demoApi: Api = {
     async remove() {},
     async import() { return null },
     async template() { return null },
-    async pdf() { window.print(); return null },
+    async pdf(_q, l) {
+      const t = (k: string): string => translate(l, k)
+      openReport(l, t('print.studentsTitle'), '', [{
+        title: t('print.studentsTitle'), head: [t('students.studentNo'), t('students.fullName'), t('students.fullNameAlt'), t('students.level'), t('students.department')],
+        rows: DEMO_STUDENTS.map((st) => [st.studentNo, st.fullName, st.fullNameAlt, st.level, st.department])
+      }], '', { printedBy: me().name })
+      return t('common.print')
+    },
     async xlsx() { return null }
   },
 
@@ -754,7 +765,7 @@ export const demoApi: Api = {
           rows: visits.reverse().map((v) => [formatDateTime(v.timeIn, r.lang), formatDateTime(v.timeOut, r.lang), v.fullName, v.company, v.host, v.guardIn]) },
         { title: t('export.notesTitle'), head: [t('activity.time'), t('notes.category'), t('notes.text')],
           rows: notes.reverse().map((n) => [formatDateTime(n.time, r.lang), t(`notes.cat.${n.category}`), n.text]) }
-      ])
+      ], '', { printedBy: me().name, signatures: SIGNS(r.lang) })
       return t('common.print')
     },
     async excel(r) {
@@ -764,11 +775,57 @@ export const demoApi: Api = {
         visits.reverse().map((v) => [formatDateTime(v.timeIn, r.lang), formatDateTime(v.timeOut, r.lang), v.fullName, v.idNumber, v.company, v.host, v.purpose]))
       return `register_${r.from}_${r.to}.csv`
     },
-    // the demo prints the visible page instead of building a PDF
-    async registerPdf(): Promise<string | null> { window.print(); return null },
-    async entryPdf(): Promise<string | null> { window.print(); return null },
-    async auditPdf(): Promise<string | null> { window.print(); return null },
-    async visitPdf(): Promise<string | null> { window.print(); return null },
+    // the demo opens the same printouts as the program, to print or save as PDF from the browser
+    async registerPdf(q, l): Promise<string | null> {
+      const t = (k: string): string => translate(l, k)
+      const reg = regOf(q.registerId)
+      const entries = await demoApi.registers.entries(q)
+      const yn = { yes: t('common.yes'), no: t('common.no') }
+      const fields = reg.fields.filter((x) => x.active && x.step === 'open')
+      openReport(l, labelOf(reg.labels, l), q.from && q.to ? `${q.from} → ${q.to}` : t('registers.recent'), [{
+        title: labelOf(reg.labels, l),
+        head: [t('registers.number'), t('registers.time'), ...fields.map((x) => labelOf(x.labels, l)), ...(reg.closeLabels ? [t('registers.status')] : []), t('print.recordedBy')],
+        rows: [...entries].reverse().map((e) => [String(e.number), formatDateTime(e.createdAt, l), ...fields.map((x) => valueText(x, e.values[x.key], yn)),
+          ...(reg.closeLabels ? [t(e.closedAt ? 'registers.closed' : 'registers.open')] : []), e.createdBy]),
+        timeCols: [1]
+      }], '', { printedBy: me().name, signatures: SIGNS(l) })
+      return t('common.print')
+    },
+    async entryPdf(entryId, l): Promise<string | null> {
+      const t = (k: string, v?: Record<string, string | number>): string => translate(l, k, v)
+      const e = db().entries.find((x) => x.id === entryId)
+      if (!e) fail('error.notFound')
+      const entry = e as DEntry
+      const reg = regOf(entry.registerId)
+      const yn = { yes: t('common.yes'), no: t('common.no') }
+      const pairs: [string, string][] = reg.fields.filter((x) => x.step === 'open' || entry.closedAt).map((x) => [labelOf(x.labels, l), valueText(x, entry.values[x.key], yn)])
+      const foot = `<div class="detail-foot"><div>${esc(t('registers.recordedBy', { name: entry.createdBy }))}<br>${esc(formatDateTime(entry.createdAt, l))}</div></div>`
+      openReport(l, labelOf(reg.labels, l), `${t('registers.details', { n: entry.number })} · ${formatDateTime(entry.createdAt, l)}`, [], detailHtml(pairs) + foot,
+        { printedBy: me().name, signatures: SIGNS(l), landscape: false })
+      return t('common.print')
+    },
+    async auditPdf(q, l): Promise<string | null> {
+      const t = (k: string): string => translate(l, k)
+      const rows = await demoApi.audit.list(q)
+      openReport(l, t('admin.audit'), `${q.from} → ${q.to}`, [{
+        title: t('admin.audit'), head: [t('audit.time'), t('audit.user'), t('audit.action'), t('audit.detail')],
+        rows: rows.map((r) => [formatDateTime(r.time, l), r.user ?? t('audit.system'), translate(l, `audit.actions.${r.action}`), [r.entity, r.detail].filter(Boolean).join(' ')]),
+        timeCols: [0]
+      }], '', { printedBy: me().name })
+      return t('common.print')
+    },
+    async visitPdf(visitId, l): Promise<string | null> {
+      const t = (k: string): string => translate(l, k)
+      const v = await demoApi.visits.get(visitId)
+      const pairs: [string, string][] = [
+        [t('visitor.fullName'), [v.fullName, v.fullNameAlt].filter(Boolean).join(' / ')], [t('visitor.idType'), t(`idType.${v.idType}`)],
+        [t('visitor.idNumber'), v.idNumber], [t('visitor.company'), v.company], [t('visitor.host'), v.host], [t('visitor.purpose'), v.purpose],
+        [t('visitor.timeIn'), `${formatDateTime(v.timeIn, l)} · ${v.guardIn}`], [t('visitor.timeOut'), v.timeOut ? `${formatDateTime(v.timeOut, l)} · ${v.guardOut ?? ''}` : '—'],
+        [t('visitor.notes'), v.notes]
+      ]
+      openReport(l, t('print.visitTitle'), `${v.fullName} · ${formatDateTime(v.timeIn, l)}`, [], detailHtml(pairs), { printedBy: me().name, landscape: false })
+      return t('common.print')
+    },
     async registerXlsx(): Promise<string | null> { return null },
     async entryXlsx(): Promise<string | null> { return null },
     async auditXlsx(): Promise<string | null> { return null },
@@ -780,7 +837,7 @@ export const demoApi: Api = {
       openReport(l, t('export.evacuationTitle'), formatDateTime(nowIso(), l), [{
         title: t('export.visitorsTitle'), head: [t('visitor.fullName'), t('visitor.company'), t('visitor.host'), t('visitor.timeIn'), t('visitor.badgeNo')],
         rows: rows.map((v) => [v.fullName, v.company, v.host, formatDateTime(v.timeIn, l), v.badgeNo])
-      }])
+      }], '', { printedBy: me().name })
       return t('common.print')
     },
     async shiftReport(shiftId, l) {

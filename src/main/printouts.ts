@@ -3,7 +3,7 @@ import type { BrowserWindow } from 'electron'
 import type { AuditQuery, EntryCorrection, EntryQuery, Lang, RegisterDef, RegisterEntry, StudentMatch, User, VisitDetail } from '@shared/types'
 import { formatDateTime, translate } from '@shared/i18n'
 import { labelOf, valueText } from '@shared/registers'
-import { askSavePath, esc, htmlToPdf, reportHtml, section, tr, writeWorkbook, type Column, type Section } from './export'
+import { askSavePath, esc, htmlToPdf, registerSignatures, reportHtml, section, tr, writeWorkbook, type Column, type Section } from './export'
 import { entryCorrections, entryForPrint, getRegister, listEntries, listRegisters } from './registers'
 import { getVisit, listAudit } from './db'
 
@@ -69,7 +69,7 @@ export async function exportRegisterPdf(parent: BrowserWindow | null, user: User
   const t = tr(lang)
   const period = user.role === 'admin' ? periodLabel(q.from, q.to) : t('registers.recent')
   const intro = `<p>${esc(t('registers.openedOn', { date: formatDateTime(reg.openedAt, lang), name: reg.openedBy || '—' }))}</p>`
-  const html = reportHtml(lang, labelOf(reg.labels, lang), period, [registerSection(reg, entries, lang)], user.name, intro)
+  const html = reportHtml(lang, labelOf(reg.labels, lang), period, [registerSection(reg, entries, lang)], user.name, intro, true, registerSignatures(lang))
   return savePdf(parent, `register_${safeName(reg.key)}_${q.from || 'recent'}_${q.to || ''}.pdf`, html, true)
 }
 
@@ -96,9 +96,9 @@ export async function exportEntryPdf(parent: BrowserWindow | null, user: User, e
     ? `<div>${esc(labelOf(reg.closeLabels, lang))}: <b>${esc(entry.closedBy ?? '')}</b> · ${esc(formatDateTime(entry.closedAt, lang))}</div>`
     : ''
   const intro = `<table class="detail"><tbody>${rows}</tbody></table>${fixes}
-    <div class="sign"><div>${esc(t('registers.recordedBy', { name: entry.createdBy }))}<br>${esc(formatDateTime(entry.createdAt, lang))}</div>
+    <div class="detail-foot"><div>${esc(t('registers.recordedBy', { name: entry.createdBy }))}<br>${esc(formatDateTime(entry.createdAt, lang))}</div>
     ${closed ? `<div>${closed}</div>` : ''}</div>`
-  const html = reportHtml(lang, labelOf(reg.labels, lang), `${t('registers.details', { n: entry.number })} · ${formatDateTime(entry.createdAt, lang)}`, [], user.name, intro, false)
+  const html = reportHtml(lang, labelOf(reg.labels, lang), `${t('registers.details', { n: entry.number })} · ${formatDateTime(entry.createdAt, lang)}`, [], user.name, intro, false, registerSignatures(lang))
   return savePdf(parent, `${safeName(reg.key)}_${entry.number}.pdf`, html, false)
 }
 

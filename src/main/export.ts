@@ -9,6 +9,7 @@ import type {
   ShiftSummary, VehicleRow, VisitRow
 } from '@shared/types'
 import { fieldLabel, fieldValue, formatDateTime, formatDuration, isRtl, translate } from '@shared/i18n'
+import { printHtml } from '@shared/printTemplate'
 import { summaryKeyOn } from '@shared/features'
 import { getFeatures, getSettings, insideNow, listNotes, searchVisits } from './db'
 import { searchVehicles } from './vehicles'
@@ -185,41 +186,20 @@ function summaryHtml(lang: Lang, s: ShiftSummary): string {
   return `<div class="summary">${cells.filter(([k]) => summaryKeyOn(k.replace('shift.sum.', '') as keyof ShiftSummary, f)).map(([k, v]) => `<div><b>${v}</b><span>${esc(t(k))}</span></div>`).join('')}</div>`
 }
 
-export function reportHtml(lang: Lang, title: string, subtitle: string, sections: Section[], userName: string, intro = '', landscape = true): string {
-  const t = tr(lang)
+/** the signature boxes of a register printout: the team leader, the head of security, the deanship's visa */
+export const registerSignatures = (lang: Lang): string[] => ['print.signLeader', 'print.signHead', 'print.signDean'].map((k) => translate(lang, k))
+
+/** A printout on the faculty's page (src/shared/printTemplate.ts): official header and logos, title block, tables, signatures. */
+export function reportHtml(lang: Lang, title: string, subtitle: string, sections: Section[], userName: string, intro = '', landscape = true, signatures: string[] = []): string {
   const s = getSettings()
-  const tables = sections.map((sec) => {
-    const head = sec.columns.map((c) => `<th>${esc(c.label)}</th>`).join('')
-    const body = sec.rows.map((r) => `<tr>${sec.columns.map((c) => `<td${c.time ? ' class="time"' : ''}>${esc(c.value(r as never))}</td>`).join('')}</tr>`).join('')
-    return `<h2>${esc(sec.title)} <small>(${sec.rows.length})</small></h2>${sec.rows.length
-      ? `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>` : '<p class="none">—</p>'}`
-  }).join('')
-  return `<!doctype html><html lang="${lang}" dir="${isRtl(lang) ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><style>
-    @page { size: A4 ${landscape ? 'landscape' : 'portrait'}; margin: 12mm; }
-    body { font-family: "Segoe UI", Tahoma, Arial, sans-serif; font-size: 9pt; color: #111; }
-    header { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 10px; }
-    .head-main { display: flex; align-items: center; gap: 10px; }
-    .logos { display: flex; gap: 6px; } .logos img { height: 52px; width: auto; }
-    .detail th { width: 32%; background: #eee; } .detail td { font-size: 10.5pt; }
-    .sign { display: flex; gap: 24px; margin-top: 28px; } .sign div { flex: 1; border-top: 1px solid #111; padding-top: 4px; text-align: center; }
-    h1 { font-size: 16pt; margin: 0; } h2 { font-size: 12pt; margin: 16px 0 6px; } h2 small { font-weight: 400; color: #555; }
-    .meta { text-align: end; color: #444; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #999; padding: 3px 5px; text-align: start; vertical-align: top; }
-    th { background: #e8e8e8; } tr:nth-child(even) td { background: #f7f7f7; }
-    td { overflow-wrap: break-word; } td.time { white-space: nowrap; }
-    thead { display: table-header-group; } tr { break-inside: avoid; }
-    .none { color: #777; }
-    .summary { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 8px 0 4px; }
-    .summary div { border: 1px solid #bbb; border-radius: 4px; padding: 4px 6px; display: flex; flex-direction: column; }
-    .summary b { font-size: 13pt; }
-    .handover { border: 2px solid #111; border-radius: 4px; padding: 8px; white-space: pre-wrap; margin-top: 6px; }
-  </style></head><body>
-    <header><div class="head-main"><div class="logos">${logoUris().map((u) => `<img src="${u}" alt="">`).join('')}</div>
-    <div><h1>${esc(title)}</h1><div>${esc([s.siteName, s.postName].filter(Boolean).join(' · '))}</div><div>${esc(subtitle)}</div></div></div>
-    <div class="meta">${esc(t('export.generated', { date: formatDateTime(new Date().toISOString(), lang), user: userName }))}</div></header>
-    ${intro}${tables}
-  </body></html>`
+  const tables = sections.map((sec) => ({
+    title: sec.title,
+    head: sec.columns.map((c) => c.label),
+    rows: sec.rows.map((r) => sec.columns.map((c) => c.value(r as never))),
+    timeCols: sec.columns.flatMap((c, i) => (c.time ? [i] : []))
+  }))
+  const where = [s.siteName, s.postName].filter(Boolean).join(' · ')
+  return printHtml({ lang, title, subtitle: [subtitle, where].filter(Boolean).join(' · '), logos: logoUris(), printedBy: userName, intro, tables, signatures, landscape })
 }
 
 /** The fine print at the bottom of every printed page: who made the program, and the page number */
@@ -277,7 +257,7 @@ function registerSections(r: ExportRange): Section[] {
 }
 
 export async function exportPdf(parent: BrowserWindow | null, r: ExportRange, userName: string, extra: Section[] = []): Promise<string | null> {
-  const pdf = await htmlToPdf(reportHtml(r.lang, translate(r.lang, 'export.reportTitle'), periodLabel(r), [...registerSections(r), ...extra], userName))
+  const pdf = await htmlToPdf(reportHtml(r.lang, translate(r.lang, 'export.reportTitle'), periodLabel(r), [...registerSections(r), ...extra], userName, '', true, registerSignatures(r.lang)))
   const path = await askSavePath(parent, `register_${r.from}_${r.to}.pdf`, 'pdf')
   if (!path) return null
   await writeFile(path, pdf)
