@@ -15,7 +15,7 @@ import PrintButton from '../components/PrintButton'
 /** Registers the user may use: tiles first, then one register (new entry + its entries). */
 export default function RegistersPage(): ReactNode {
   const { t } = useTranslation()
-  const { registerId, openRegister } = useApp()
+  const { registerId, openRegister, go } = useApp()
   const [regs, setRegs] = useState<RegisterDef[] | null>(null)
   const lang = currentLang()
 
@@ -34,7 +34,18 @@ export default function RegistersPage(): ReactNode {
       {usable.length === 0 ? <p className="empty">{t('registers.noneOpen')}</p> : (
         <section className="register-tiles">
           {usable.map((r) => (
-            <button key={r.id} type="button" className={`tile register-tile ${r.color ? `tone-${r.color}` : ''}`} onClick={() => openRegister(r.id)}>
+            <button
+              key={r.id}
+              type="button"
+              className={`tile register-tile ${r.color ? `tone-${r.color}` : ''}`}
+              onClick={() => {
+                if (r.key === 'incidents') {
+                  go('incidents')
+                } else {
+                  openRegister(r.id)
+                }
+              }}
+            >
               <span className="tile-icon"><Icon name={registerIcon(r.icon)} size={30} /></span>
               <strong>{labelOf(r.labels, lang)}</strong>
             </button>
@@ -52,7 +63,7 @@ function useYesNo(): { yes: string; no: string } {
 
 function RegisterView({ reg, onBack }: { reg: RegisterDef; onBack(): void }): ReactNode {
   const { t } = useTranslation()
-  const { toast, user } = useApp()
+  const { toast, user, go } = useApp()
   const lang = currentLang()
   const isAdmin = user.role === 'admin'
   const canFill = isAdmin || reg.fillRoles.includes(user.role)
@@ -92,6 +103,11 @@ function RegisterView({ reg, onBack }: { reg: RegisterDef; onBack(): void }): Re
             <h1>{labelOf(reg.labels, lang)}</h1>
             <p className="hint">{t('registers.openedOn', { date: formatDateTime(reg.openedAt, lang), name: reg.openedBy || '—' })}</p>
           </div>
+          {reg.key === 'incidents' && (
+            <button type="button" className="primary" style={{ marginInlineStart: 'auto' }} onClick={() => go('incidents')}>
+              <Icon name="alert" size={16} /> {t('incidents.quickTitle')}
+            </button>
+          )}
         </div>
         {canFill && <RegisterEntryForm reg={reg} toast={toast} onSaved={load} />}
       </div>

@@ -74,7 +74,18 @@ export default function HomePage(): ReactNode {
           </button>
         ))}
         {registers.map((r) => (
-          <button key={`r${r.id}`} type="button" className={`tile tile-register ${r.color ? `tone-${r.color}` : ''}`} onClick={() => openRegister(r.id)}>
+          <button
+            key={`r${r.id}`}
+            type="button"
+            className={`tile tile-register ${r.color ? `tone-${r.color}` : ''}`}
+            onClick={() => {
+              if (r.key === 'incidents') {
+                go('incidents')
+              } else {
+                openRegister(r.id)
+              }
+            }}
+          >
             <span className="tile-icon"><Icon name={registerIcon(r.icon)} size={30} /></span>
             <strong>{labelOf(r.labels, currentLang())}</strong>
           </button>
