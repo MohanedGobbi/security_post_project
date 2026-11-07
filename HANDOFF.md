@@ -1,14 +1,14 @@
 # Handoff: برنامج إدارة الأمن بالكلية (faculty security program)
 
-Written 20 October 2026, last commit `f947bbb` on `main` (pushed to https://github.com/MohanedGobbi/security_post_project).
+Written 20 October 2026, updated 7 November 2026, last commit `bcaaddf` on `main` (pushed to https://github.com/MohanedGobbi/security_post_project).
 Read this first, then `README.md` (features, how to run).
-On the `university-linux` branch the planning and design files (`PLAN_FACULTY.md`, `DESIGN.md`, `PRODUCT.md`, `.impeccable/`) and the scanner test bench
-(`tools/scan-test/`) were removed; they stay on `main`, where the references to them below still apply.
-Also on this branch (5 Nov 2026), at the client's request: **ID card reading is gone** (MRZ, Windows OCR, Tesseract and their models): the guard
-photographs the card and types the details, so the scanner sections below describe `main` only. New: the **Student problems** page
-(`StudentProblemsPage.tsx`, `src/main/studentProblems.ts`, `src/shared/studentQr.ts`) reads the QR of a digital student card as text and
-matches it with the directory, and the `student_problems` register records it. AFAK's logo is on the screens and printouts, and every PDF
-and Excel page ends with the fine print `print.finePrint`.
+Features on `main`:
+- **ID card reading**: photographs the card (up to 3 encrypted pictures) and types details.
+- **Student problems** page (`StudentProblemsPage.tsx`, `src/main/studentProblems.ts`, `src/shared/studentQr.ts`) reads Algerian digital student card QRs, links codes to directory, records in `student_problems` register.
+- **Equipment check**: third handover step (`EquipmentCheck.tsx`), `equipment` table, `equipment_check` register, Administration → العتاد tab.
+- **Reports page** (`ReportsPage.tsx`): period report, single entry by number, handover, equipment check, print template with faculty header and signatures.
+- **Quick Incident Recording** (`IncidentsPage.tsx`): fast 1-click category selector with SVG icons, location presets, `Ctrl+Enter` save, topbar emergency action button, `Ctrl+I` modal, and direct routing from the `سجل الحوادث` register tile.
+- AFAK and University logos on screens and printouts; fine print on every PDF/Excel page; "Made by ROWD Tech" footer.
 
 ## 1. What this is
 The security-office program of the **Faculty of Law and Political Science, University of Ghardaia** (مكتب الأمن الداخلي للكلية,
