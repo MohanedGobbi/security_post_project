@@ -295,7 +295,8 @@
     "levelInUse": "Des comptes ont encore ce niveau : changez d’abord leur niveau",
     "backupPassword": "Mot de passe incorrect, ou fichier endommagé",
     "backupFile": "Ce n’est pas un fichier de sauvegarde de ce programme",
-    "backupPasswordShort": "Le mot de passe doit avoir 6 caractères au moins"
+    "backupPasswordShort": "Le mot de passe doit avoir 6 caractères au moins",
+    "equipmentExists": "Cette pièce est déjà dans la liste."
   },
   "photo": {
     "take": "Prendre une photo",
@@ -846,7 +847,8 @@
     "accountsIntro": "Agents et chefs d’équipe se connectent avec leur seul code PIN : chaque code appartient à une personne.",
     "defaultPinTitle": "Changez les codes PIN de départ.",
     "defaultPinText": "Ces comptes ont encore le code PIN de départ : {{names}}. Utilisez « Changer le code » ci-dessous.",
-    "system": "Système"
+    "system": "Système",
+    "equipment": "Matériel"
   },
   "audit": {
     "intro": "Chaque connexion, inscription, consultation, export et modification, avec son auteur.",
@@ -920,7 +922,10 @@
       "backup_create": "Fichier de sauvegarde fait",
       "backup_restore": "Sauvegarde restaurée",
       "records_erase": "Données effacées",
-      "restart": "Programme redémarré"
+      "restart": "Programme redémarré",
+      "equipment_added": "Matériel ajouté",
+      "equipment_removed": "Matériel retiré",
+      "student_code_learnt": "Code de carte numérique gardé"
     }
   },
   "card": {
@@ -1122,5 +1127,26 @@
     "byCode": "reconnu par le code de sa carte numérique",
     "newCode": "Nouveau code de carte numérique : cherchez l’étudiant par son nom et choisissez-le, le code sera gardé pour le reconnaître directement la prochaine fois.",
     "willLearn": "Le code de sa carte numérique sera gardé avec cet étudiant à l’enregistrement."
+  },
+  "equipment": {
+    "title": "Matériel du poste de sécurité",
+    "checkTitle": "Inventaire du matériel",
+    "intro": "Le matériel du poste de sécurité, que le chef d’équipe coche à chaque passation. Ajoutez ce qu’il faut, retirez ce qui n’y est plus.",
+    "checkIntro": "Cochez chaque pièce : présente ou manquante. Pour une pièce manquante, écrivez une remarque. Le matériel peut être ajouté ou retiré au besoin.",
+    "empty": "Aucun matériel dans la liste. Ajoutez le matériel du poste ci-dessous.",
+    "present": "Présent",
+    "missing": "Manquant",
+    "allPresent": "Tout est présent",
+    "notePlaceholder": "Que s’est-il passé ? (ex. chez un agent, en panne, perdu)",
+    "newName": "Nouvelle pièce (ex. radio)",
+    "quantity": "Quantité",
+    "add": "Ajouter",
+    "remove": "Retirer de la liste",
+    "removeConfirm": "Retirer « {{name}} » de la liste du matériel ? Les inventaires précédents restent tels quels.",
+    "notes": "Remarques (facultatif)",
+    "needItems": "Ajoutez d’abord le matériel du poste.",
+    "needAll": "{{n}} pièce(s) pas encore cochée(s).",
+    "needNote": "Écrivez une remarque pour chaque pièce manquante.",
+    "missingCount": "Pièces manquantes : {{n}}"
   }
 }

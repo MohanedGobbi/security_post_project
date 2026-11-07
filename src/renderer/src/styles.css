@@ -571,6 +571,19 @@ h2.spaced { margin-top: 18px; }
 .builder-preview .register-head h3 { margin: 0; }
 .warn-row td { background: var(--warn-soft); }
 
+/* ---------- equipment of the security office ---------- */
+.equipment-list { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; gap: 6px; }
+.equipment-list li { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.equipment-list li.present { background: var(--ok-soft); }
+.equipment-list li.missing { background: var(--danger-soft); }
+.equipment-name { flex: 1; font-weight: 600; min-width: 160px; }
+.equipment-mark { margin: 0; }
+.equipment-mark .seg-btn.on.bad { background: var(--danger); color: #fff; }
+.equipment-note { flex: 1 1 100%; }
+.equipment-add { display: flex; gap: 8px; margin: 0 0 14px; }
+.equipment-add input { flex: 1; }
+.equipment-add input.qty { flex: 0 0 72px; text-align: center; }
+
 /* ---------- student problems ---------- */
 .scan-field { margin: 14px 0 0; font-weight: 600; }
 .scan-field input { font-size: 1.15rem; padding: 12px 14px; border-width: 2px; border-color: var(--accent); }

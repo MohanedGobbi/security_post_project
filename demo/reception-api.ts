@@ -288,6 +288,21 @@ const DEMO_STUDENTS: Student[] = [
   { id: 2, studentNo: '20220417', idNumber: '', fullName: 'Rachid Bahaz', fullNameAlt: 'رشيد باحاز', birthDate: '2002-03-02', phone: '', level: 'L3', department: 'علوم سياسية', notes: '', active: true }
 ]
 
+/** the security office's equipment in this browser (the program keeps it in its equipment table) */
+const EQUIPMENT_KEY = 'secreg-demo-equipment'
+type DItem = { id: number; name: string; quantity: number; active: boolean }
+const SAMPLE_EQUIPMENT: [string, number][] = [['جهاز اتصال لاسلكي', 4], ['مفاتيح مكتب الأمن', 1], ['جهاز كشف المعادن اليدوي', 2], ['مصباح يدوي', 3], ['شاشة مراقبة الكاميرات', 1], ['علبة الإسعافات الأولية', 1]]
+function equipmentList(): DItem[] {
+  try {
+    const saved = localStorage.getItem(EQUIPMENT_KEY)
+    if (saved) return JSON.parse(saved) as DItem[]
+  } catch { /* private window */ }
+  return SAMPLE_EQUIPMENT.map(([name, quantity], i) => ({ id: i + 1, name, quantity, active: true }))
+}
+function saveEquipment(list: DItem[]): void {
+  try { localStorage.setItem(EQUIPMENT_KEY, JSON.stringify(list)) } catch { /* private window */ }
+}
+
 /** card codes learnt for a student in this browser (the program keeps them in its student_codes table) */
 const CODES_KEY = 'secreg-demo-student-codes'
 function learntCodes(): Record<string, number> {
@@ -650,6 +665,26 @@ export const demoApi: Api = {
       db().features = normalizeFeatures(f)
       log('features')
       done(undefined)
+    }
+  },
+
+  equipment: {
+    async list() {
+      return equipmentList().filter((i) => i.active).map(({ id, name, quantity }) => ({ id, name, quantity }))
+    },
+    async add(item) {
+      const name = item.name.trim()
+      if (!name) fail('error.nameRequired')
+      const all = equipmentList()
+      if (all.some((i) => i.active && i.name.toLowerCase() === name.toLowerCase())) fail('error.equipmentExists')
+      const id = Math.max(0, ...all.map((i) => i.id)) + 1
+      saveEquipment([...all, { id, name, quantity: Math.max(1, Math.round(item.quantity) || 1), active: true }])
+      log('equipment_added', name)
+      return id
+    },
+    async remove(id) {
+      saveEquipment(equipmentList().map((i) => (i.id === id ? { ...i, active: false } : i)))
+      log('equipment_removed', String(id))
     }
   },
 

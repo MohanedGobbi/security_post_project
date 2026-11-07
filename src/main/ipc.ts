@@ -15,6 +15,7 @@ import { verifyPin } from './crypto'
 import { barcodeTexts } from './scan'
 import * as students from './students'
 import * as studentProblems from './studentProblems'
+import * as equipment from './equipment'
 import * as backup from './backup'
 import { exportAuditPdf, exportAuditXlsx, exportEntryXlsx, exportRegisterXlsx, exportStudentsPdf, exportStudentsXlsx, exportVisitXlsx, exportEntryPdf, exportRegisterPdf, exportVisitPdf, registersSections } from './printouts'
 import { exportCheckpointLabels, exportInsideXlsx, exportEvacuation, exportExcel, exportPdf, exportShiftReport } from './export'
@@ -44,6 +45,7 @@ const PERMISSION_OF: Record<string, Permission> = {
   'visits:lookup': 'visitors', 'visits:checkIn': 'visitors', 'visits:checkOut': 'visitors', 'visits:insideNow': 'visitors', 'visits:suggestions': 'visitors',
   'visits:search': 'history', 'visits:get': 'history',
   'students:list': 'students', 'students:suggest': 'students', 'students:count': 'students',
+  'equipment:add': 'shiftHandover', 'equipment:remove': 'shiftHandover',
   'studentProblems:checkQr': 'students', 'studentProblems:search': 'students', 'studentProblems:learnCode': 'students',
   'students:save': 'studentsEdit', 'students:setActive': 'studentsEdit', 'students:import': 'studentsEdit', 'students:template': 'studentsEdit',
   'students:pdf': 'exports',
@@ -371,6 +373,9 @@ export function registerIpc(): void {
       .map((m) => (can(u, 'studentsEdit') ? m : { ...m, student: { ...m.student, idNumber: '', phone: '', birthDate: '' } })))
   handle('students:suggest', 'user', (_u, q: { name: string; idNumber: string }) => students.suggestStudents({ name: String(q?.name ?? ''), idNumber: String(q?.idNumber ?? '') }))
   handle('students:count', 'user', () => students.studentCount())
+  handle('equipment:list', 'user', () => equipment.listEquipment())
+  handle('equipment:add', 'user', (u, item: { name: string; quantity: number }) => equipment.addEquipment(item ?? { name: '', quantity: 1 }, u))
+  handle('equipment:remove', 'user', (u, id: number) => equipment.removeEquipment(Number(id), u))
   handle('studentProblems:checkQr', 'user', (_u, text: string) => studentProblems.checkQr(String(text ?? '')))
   handle('studentProblems:search', 'user', (_u, text: string) => studentProblems.searchStudents(String(text ?? '')))
   handle('studentProblems:learnCode', 'user', (u, studentId: number, code: string) => studentProblems.learnCode(studentId, code, u.id))

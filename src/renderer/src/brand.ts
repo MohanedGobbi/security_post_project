@@ -63,7 +63,7 @@ export const BRAND: Brand = {
   defaultLang: 'ar',
   features: FACULTY.features,
   homeTilesOnly: true,
-  leaderStartRegisters: ['shift', 'custody']
+  leaderStartRegisters: ['shift', 'custody', 'equipment_check']
 }
 
 /** Applies the colours, the favicon and the window title; call once before rendering. */

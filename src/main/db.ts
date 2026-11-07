@@ -90,6 +90,18 @@ CREATE TABLE IF NOT EXISTS students (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS students_no ON students(student_no_hash) WHERE student_no_hash IS NOT NULL;
 CREATE INDEX IF NOT EXISTS students_idhash ON students(id_hash);
+-- the equipment kept at the security office, checked present at every handover (the equipment_check register);
+-- an item taken off the list is kept, marked removed, so old checks still read right
+CREATE TABLE IF NOT EXISTS equipment (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  quantity INTEGER NOT NULL DEFAULT 1,
+  active INTEGER NOT NULL DEFAULT 1,
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  removed_by INTEGER REFERENCES users(id),
+  removed_at TEXT
+);
 -- codes a student's card gives that are not in the directory (the registration code in the QR of a digital card):
 -- learnt the first time the guard finds the student by name, so the next scan finds them at once. Keyed hashes only.
 CREATE TABLE IF NOT EXISTS student_codes (

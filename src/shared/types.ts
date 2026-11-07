@@ -603,6 +603,9 @@ export interface AlertItem {
   since: string | null
 }
 
+// ---------- equipment of the security office (checked present at every handover) ----------
+export interface EquipmentItem { id: number; name: string; quantity: number }
+
 // ---------- student problems (a student without their card shows the digital card on their phone) ----------
 export type StudentCheckKey = 'studentNo' | 'fullName' | 'birthDate' | 'level' | 'department'
 
@@ -807,6 +810,14 @@ export interface Api {
     set(s: Settings): Promise<void>
     getFeatures(): Promise<Features>
     setFeatures(f: Features): Promise<void>
+  }
+  equipment: {
+    /** the equipment of the security office, as it is now */
+    list(): Promise<EquipmentItem[]>
+    /** team leaders and administrators: adds an item to the list */
+    add(item: { name: string; quantity: number }): Promise<number>
+    /** team leaders and administrators: takes an item off the list (old checks keep it) */
+    remove(id: number): Promise<void>
   }
   studentProblems: {
     /** what the QR of a digital student card says, and the students of the directory it matches */

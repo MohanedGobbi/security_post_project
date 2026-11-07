@@ -11,6 +11,7 @@ import Icon from '../components/Icon'
 import { errorText } from '../util'
 import { BRAND } from '../brand'
 import RegisterEntryForm from '../components/RegisterEntryForm'
+import EquipmentCheck from '../components/EquipmentCheck'
 
 export default function ShiftStartPage({ user, onStarted, onLogout, toast }: {
   user: User
@@ -48,8 +49,10 @@ export default function ShiftStartPage({ user, onStarted, onLogout, toast }: {
     }
   }
 
-  // team leader: the shift register, then the custody check (each names the outgoing leader)
+  // team leader: the shift register, the custody check (each names the outgoing leader), then the equipment, item by item
   const current = step !== null ? steps[step] : null
+  const next = (): void => (step !== null && step + 1 < steps.length ? setStep(step + 1) : void start())
+  const back = (): void => setStep(step && step > 0 ? step - 1 : null)
   if (current) {
     return (
       <div className="center-screen">
@@ -60,10 +63,15 @@ export default function ShiftStartPage({ user, onStarted, onLogout, toast }: {
               <p className="muted">{t('shift.leaderStep', { n: (step ?? 0) + 1, total: steps.length })} · {user.name}</p>
             </div>
           </div>
-          <RegisterEntryForm key={current.id} reg={current} toast={toast} title={t('shift.leaderFill')}
-            onSaved={() => (step !== null && step + 1 < steps.length ? setStep(step + 1) : start())}>
-            <button type="button" onClick={() => setStep(step && step > 0 ? step - 1 : null)}>{t('common.back')}</button>
-          </RegisterEntryForm>
+          {current.key === 'equipment_check' ? (
+            <EquipmentCheck key={current.id} reg={current} toast={toast} onSaved={next}>
+              <button type="button" onClick={back}>{t('common.back')}</button>
+            </EquipmentCheck>
+          ) : (
+            <RegisterEntryForm key={current.id} reg={current} toast={toast} title={t('shift.leaderFill')} onSaved={next}>
+              <button type="button" onClick={back}>{t('common.back')}</button>
+            </RegisterEntryForm>
+          )}
         </div>
       </div>
     )

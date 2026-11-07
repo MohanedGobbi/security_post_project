@@ -178,6 +178,18 @@ export const REGISTER_TEMPLATES: RegisterDefInput[] = [
     ]
   },
   {
+    // the equipment of the security office, ticked present at every handover (the list is kept in the equipment table)
+    key: 'equipment_check',
+    labels: L('سجل جرد عتاد مقر الأمن', 'Equipment check', 'Inventaire du matériel'),
+    icon: 'tool', fillRoles: LEADERS, closeRoles: [], closeLabels: null, sort: 13, active: true,
+    fields: [
+      field('items', 'longtext', ['العتاد والتأشير عليه', 'Equipment, item by item', 'Matériel, pièce par pièce'], { required: true }),
+      field('missing', 'longtext', ['العتاد غير الموجود', 'Equipment missing', 'Matériel manquant']),
+      field('missing_count', 'number', ['عدد العتاد غير الموجود', 'Number of missing items', 'Nombre de pièces manquantes']),
+      field('notes', 'longtext', ['ملاحظات', 'Notes', 'Remarques'])
+    ]
+  },
+  {
     key: 'alarms',
     labels: L('سجل إنذارات الحريق والطوارئ', 'Fire and emergency alarms', 'Alarmes incendie et urgences'),
     icon: 'bell', fillRoles: ALL, closeRoles: [], closeLabels: null, sort: 11, active: false,

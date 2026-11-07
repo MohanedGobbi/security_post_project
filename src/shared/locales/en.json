@@ -295,7 +295,8 @@
     "levelInUse": "Accounts still have this level: change their level first",
     "backupPassword": "Wrong password, or the file is damaged",
     "backupFile": "This is not a backup file of this program",
-    "backupPasswordShort": "The password needs at least 6 characters"
+    "backupPasswordShort": "The password needs at least 6 characters",
+    "equipmentExists": "This item is already on the list."
   },
   "photo": {
     "take": "Take photo",
@@ -846,7 +847,8 @@
     "accountsIntro": "Guards and team leaders log in with their own PIN only: each PIN belongs to one person.",
     "defaultPinTitle": "Change the starting PINs.",
     "defaultPinText": "These accounts still have the PIN they were created with: {{names}}. Use “Change PIN” below.",
-    "system": "System"
+    "system": "System",
+    "equipment": "Equipment"
   },
   "audit": {
     "intro": "Every login, entry, view, export and change, with who did it.",
@@ -920,7 +922,10 @@
       "backup_create": "Backup file made",
       "backup_restore": "Backup restored",
       "records_erase": "Records erased",
-      "restart": "Program restarted"
+      "restart": "Program restarted",
+      "equipment_added": "Equipment added",
+      "equipment_removed": "Equipment removed",
+      "student_code_learnt": "Digital card code saved"
     }
   },
   "card": {
@@ -1122,5 +1127,26 @@
     "byCode": "recognised from their digital card's code",
     "newCode": "A new digital card code: find the student by name and pick them, and the code is saved so they are found at once next time.",
     "willLearn": "Their digital card's code will be saved with this student when you record."
+  },
+  "equipment": {
+    "title": "Security office equipment",
+    "checkTitle": "Equipment check",
+    "intro": "The equipment kept at the security office, which the team leader ticks at every handover. Add what is needed, remove what is no longer there.",
+    "checkIntro": "Tick each item: present or missing. For a missing item, write a note. Equipment can be added or removed when needed.",
+    "empty": "No equipment on the list yet. Add the security office equipment below.",
+    "present": "Present",
+    "missing": "Missing",
+    "allPresent": "All present",
+    "notePlaceholder": "What happened? (e.g. with a guard, broken, lost)",
+    "newName": "New item (e.g. two-way radio)",
+    "quantity": "Quantity",
+    "add": "Add",
+    "remove": "Remove from the list",
+    "removeConfirm": "Remove \"{{name}}\" from the equipment list? Earlier checks stay as they are.",
+    "notes": "Notes (optional)",
+    "needItems": "Add the security office equipment first.",
+    "needAll": "{{n}} item(s) not ticked yet.",
+    "needNote": "Write a note for each missing item.",
+    "missingCount": "Missing items: {{n}}"
   }
 }

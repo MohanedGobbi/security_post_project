@@ -1,6 +1,7 @@
 import { FACULTY } from '@shared/faculty'
 import * as db from './db'
 import { installTemplates, updateTemplateRegisters } from './registers'
+import { seedEquipment } from './equipment'
 
 /**
  * First start of the program: settings, feature switches, the first accounts and the faculty's registers.
@@ -17,5 +18,6 @@ export function seedFaculty(): void {
   if (admin) {
     installTemplates(FACULTY.registerTemplates, admin.id)
     updateTemplateRegisters(admin.id)
+    seedEquipment(FACULTY.equipment, admin.id)
   }
 }
