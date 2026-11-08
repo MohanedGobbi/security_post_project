@@ -607,7 +607,10 @@ export const demoApi: Api = {
     async factoryReset() {},
     async openFolder() {},
     async restart() { location.reload() },
-    async recover() { return false }
+    async recover() { return false },
+    // the panel shows as on a real PC, but a demonstration never asks a PC to update itself
+    async updates() { admin(); return { installed: '0.1.0', commit: null, built: null, enabled: true, pending: false, status: null } },
+    async checkUpdates() { admin(); fail('error.demoRefused') }
   },
 
   levels: {

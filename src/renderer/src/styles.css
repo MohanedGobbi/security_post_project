@@ -734,3 +734,11 @@ button.primary.danger { background: var(--danger); border-color: var(--danger); 
   color: var(--accent-ink);
 }
 
+
+/* Administration > System > Updates */
+.updates-card .section-head { flex-wrap: wrap; gap: 8px; }
+.updates-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 20px; margin: 4px 0 12px; }
+.updates-facts dt { color: var(--ink-2); font-size: 0.8rem; margin-bottom: 2px; }
+.updates-facts dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.updates-status { margin-bottom: 8px; }
+.updates-detail { font-size: 0.8rem; color: var(--ink-2); background: var(--surface-2); padding: 8px 10px; border-radius: 8px; margin: 0 0 12px; overflow-wrap: anywhere; text-align: start; }

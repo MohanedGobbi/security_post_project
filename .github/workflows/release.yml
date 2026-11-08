@@ -1,0 +1,74 @@
+# Publishes a release when a version tag is pushed (npm version patch && git push --follow-tags).
+# The security office PC installs only these releases (scripts/linux/updater/update.sh), never ordinary pushes to main.
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Tag matches package.json
+        run: |
+          want="v$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "$want" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match package.json version ($want)"
+            exit 1
+          fi
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Type check (all five projects)
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      - name: Updater script syntax
+        run: |
+          bash -n scripts/linux/updater/update.sh
+          bash -n scripts/linux/updater/setup-auto-update.sh
+          bash -n scripts/linux/kit/install.sh
+
+      - name: Version file
+        run: node scripts/release/write-version.mjs
+
+      - name: Build the .deb
+        run: |
+          npm run build
+          npx electron-builder --linux deb --publish never
+
+      - name: Check the package
+        run: |
+          deb="release/FacultySecurity-${GITHUB_REF_NAME#v}-amd64.deb"
+          test -f "$deb"
+          test "$(dpkg-deb -f "$deb" Version)" = "${GITHUB_REF_NAME#v}"
+          dpkg-deb --fsys-tarfile "$deb" | tar -xO ./opt/FacultySecurity/resources/version.json
+          dpkg-deb --fsys-tarfile "$deb" | tar -t | grep -q './opt/FacultySecurity/resources/updater/update.sh'
+
+      - name: Checksums
+        working-directory: release
+        run: sha256sum "FacultySecurity-${GITHUB_REF_NAME#v}-amd64.deb" > SHA256SUMS
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "release/FacultySecurity-${GITHUB_REF_NAME#v}-amd64.deb" \
+            release/SHA256SUMS \
+            --title "$GITHUB_REF_NAME" \
+            --notes "Faculty Security $GITHUB_REF_NAME (commit ${GITHUB_SHA::7}). Installed automatically on the security office PC at the next nightly check."

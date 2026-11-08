@@ -50,7 +50,9 @@ const api: Api = {
     factoryReset: call('system:factoryReset'),
     openFolder: call('system:openFolder'),
     restart: call('system:restart'),
-    recover: call('system:recover')
+    recover: call('system:recover'),
+    updates: call('system:updates'),
+    checkUpdates: call('system:checkUpdates')
   },
   levels: {
     list: call('levels:list'),

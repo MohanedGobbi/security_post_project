@@ -299,7 +299,9 @@
     "backupPassword": "Wrong password, or the file is damaged",
     "backupFile": "This is not a backup file of this program",
     "backupPasswordShort": "The password needs at least 6 characters",
-    "equipmentExists": "This item is already on the list."
+    "equipmentExists": "This item is already on the list.",
+    "demoRefused": "Not available in the demonstration",
+    "updatesOff": "Automatic updates are not set up on this PC"
   },
   "photo": {
     "take": "Take photo",
@@ -938,7 +940,8 @@
       "restart": "Program restarted",
       "equipment_added": "Equipment added",
       "equipment_removed": "Equipment removed",
-      "student_code_learnt": "Digital card code saved"
+      "student_code_learnt": "Digital card code saved",
+      "update_check": "Update check requested"
     }
   },
   "card": {
@@ -1104,7 +1107,32 @@
     "resetWarn": "Everything is deleted, including accounts and registers. The program restarts as on its first day.",
     "restartTitle": "Restart the program",
     "restartHelp": "Closes and opens the program again, reloading the data.",
-    "restart": "Restart"
+    "restart": "Restart",
+    "updates": {
+      "title": "Updates",
+      "intro": "Every night at 03:00 this PC installs a new version of the program from GitHub, if one was published. It backs up the data first, and goes back to the previous version by itself if the new one does not start. The program closes and opens again during an update.",
+      "off": "Automatic updates are not set up on this PC. The installer switches them on (bash install.sh --auto-update).",
+      "installed": "Installed version",
+      "latest": "Latest release",
+      "lastCheck": "Last check",
+      "never": "Not checked yet",
+      "checkNow": "Check for updates now",
+      "dialog": "The PC asks GitHub for a newer version now. If there is one, the program closes, installs it and opens again within a few minutes: save any open form first.",
+      "reload": "Reload page",
+      "doneUpdated": "Updated to version {{version}}",
+      "gaveUp": "No answer from the updater yet. The update will run at the next nightly check.",
+      "state": {
+        "pending": "Requested, waiting for the updater to start…",
+        "checking": "Checking GitHub for a new version…",
+        "downloading": "Downloading version {{latest}}…",
+        "installing": "Installing version {{latest}}: the program will close and open again…",
+        "up_to_date": "Up to date: version {{version}} is the latest",
+        "updated": "Updated to version {{version}}",
+        "failed": "The update failed: the previous version and its data were restored",
+        "skipped": "Version {{latest}} failed before and is skipped until a newer one is published",
+        "error": "The last check could not finish"
+      }
+    }
   },
   "problems": {
     "title": "Student problems",

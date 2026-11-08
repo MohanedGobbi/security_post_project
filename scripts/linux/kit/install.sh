@@ -9,6 +9,8 @@ ok()   { printf '\033[1;32m ok\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m !!\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31mERR\033[0m %s\n' "$*" >&2; exit 1; }
 
+DEFAULT_REPO=MohanedGobbi/security_post_project
+
 usage() {
   cat <<EOF
 Usage: bash install.sh [options]
@@ -16,17 +18,25 @@ Usage: bash install.sh [options]
   --autostart      open the program every time this user logs in (recommended on the security office PC)
   --no-autostart   do not ask about it
   --keep-awake     never blank the screen or go to sleep (GNOME, Ubuntu's desktop)
+  --auto-update OWNER/REPO
+                   install new versions every night from the releases of this GitHub repository
+                   (default when asked: $DEFAULT_REPO)
+  --no-auto-update switch the automatic updates off (and do not ask)
   --yes            answer yes to every question (autostart and keep-awake included)
   -h, --help       show this help
 EOF
 }
 
-AUTOSTART="" AWAKE="" YES=0
+AUTOSTART="" AWAKE="" YES=0 UPDATE_REPO="" UPDATES=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --autostart) AUTOSTART=1 ;;
     --no-autostart) AUTOSTART=0 ;;
     --keep-awake) AWAKE=1 ;;
+    --auto-update)
+      [[ -n "${2:-}" && "${2:-}" != -* ]] || { usage; die "--auto-update needs OWNER/REPO"; }
+      UPDATES=1 UPDATE_REPO="$2"; shift ;;
+    --no-auto-update) UPDATES=0 ;;
     --yes|-y) YES=1 ;;
     -h|--help) usage; exit 0 ;;
     *) usage; die "unknown option: $1" ;;
@@ -40,6 +50,15 @@ ask() {
   local reply
   read -r -p "$1 [y/N] " reply
   [[ "$reply" =~ ^[YyOo] ]]
+}
+
+# a question whose answer is yes when Enter is pressed (or without a terminal)
+ask_yes() {
+  [[ $YES -eq 1 ]] && return 0
+  [[ -t 0 ]] || return 0
+  local reply
+  read -r -p "$1 [Y/n] " reply
+  [[ -z "$reply" || "$reply" =~ ^[YyOo] ]]
 }
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -119,6 +138,29 @@ if [[ "$AWAKE" == 1 ]] && command -v gsettings >/dev/null 2>&1; then
   ok "screen stays on, no sleep on mains power"
 fi
 
+# --- automatic updates (needs internet only at night, not now) ---------------------------------------------------
+UPDATER=/opt/FacultySecurity/resources/updater/setup-auto-update.sh
+UPDATE_CONF=/etc/faculty-security/update.conf
+if [[ ! -f "$UPDATER" ]]; then
+  warn "this package has no updater (older version): automatic updates are not available"
+else
+  if [[ -z "$UPDATES" ]]; then
+    if sudo test -f "$UPDATE_CONF"; then
+      UPDATES=1   # already on: keep it on, with its configuration
+    elif ask_yes "Install new versions automatically every night from GitHub?"; then
+      UPDATES=1
+    else
+      UPDATES=0
+    fi
+  fi
+  if [[ "$UPDATES" == 1 ]]; then
+    sudo bash "$UPDATER" --enable "${UPDATE_REPO:-$DEFAULT_REPO}" --user "$USER" --deb "$DEB" ||
+      warn "automatic updates could not be switched on (see above); the program works without them"
+  else
+    sudo bash "$UPDATER" --disable
+  fi
+fi
+
 cat <<EOF
 
 The program is installed.
@@ -127,6 +169,7 @@ The program is installed.
   First login:    administrator PIN 246810, team leader PIN 135790
                   Change both at once: Administration > Accounts > Change PIN
   Data folder:    ~/.config/FacultySecurity  (back it up with the System tab, not by copying this folder)
+  Updates:        $([[ "$UPDATES" == 1 ]] && echo "every night at 03:00 from GitHub (Administration > System shows them)" || echo "off (bash install.sh --auto-update OWNER/REPO switches them on)")
   Manual:         the 3-User-Manual folder of this kit
 
 EOF

@@ -36,6 +36,7 @@ if [[ " ${targets[*]} " == *" rpm "* ]] && ! command -v rpmbuild >/dev/null 2>&1
 fi
 
 say "Building the program"
+node scripts/release/write-version.mjs
 npm run build
 
 say "Packaging: ${targets[*]}"

@@ -121,6 +121,87 @@ The scripts are in `scripts/linux/`; run them as the person who uses the program
 - **Other `start.sh` settings** (in `~/.config/faculty-security.env`): `SECREG_SKIP_BUILD=1` (open the last build), `SECREG_FLAGS` (more Electron
   flags, for example `--disable-gpu` or `--ozone-platform=x11`), `SECREG_DATA_DIR`.
 
+## Automatic updates
+
+The security office PC (kit `.deb`, Ubuntu) installs **published GitHub releases** of this repository by itself. It never takes ordinary
+pushes to `main`, so unfinished work never reaches it. Nobody has to be on site and no SSH is needed.
+
+**Publishing a release** (from this machine):
+```bash
+npm version patch
+git -c http.curloptResolve=github.com:443:140.82.112.3 push --follow-tags origin main
+```
+`npm version` bumps `package.json`, commits and tags `vX.Y.Z`. The tag starts `.github/workflows/release.yml`: it checks that the tag matches
+`package.json`, runs the type check, `npm test` and a syntax check of the shell scripts (if one fails, nothing is published), writes
+`resources/version.json` (version, commit, build date), builds the `.deb` and publishes it with a `SHA256SUMS` file as release assets.
+Check that the release appears under *Releases* on GitHub before you rely on it.
+
+**What happens each night.** `faculty-security-update.timer` starts the updater at 03:00 (plus up to 30 random minutes; a PC that was off
+catches up at its next start, `Persistent=true`). The updater (`/usr/local/lib/faculty-security/update.sh`, root) asks the GitHub API for the
+latest release and stops if it is not newer (`sort -V`). Otherwise it downloads the `.deb`, checks it against `SHA256SUMS`, and checks that the
+package version and its `version.json` match the tag. Then it closes the program, backs up the data folder (`~/.config/FacultySecurity`: database,
+data key, settings), installs the `.deb` with `dpkg`, opens the program again in the logged-in user's session, and waits up to 60 s for the
+program to report that it started (`running.json` in the data folder, written once the window has loaded). The program's database
+migrations run at that start. **Anything typed in an open form and not saved is lost when the program closes at night.**
+
+**Rollback.** If the install fails, or the new version does not report within 60 s, the updater reinstalls the previous `.deb`, restores
+the data folder from the backup it just made (migrations may already have run), and opens the old version again. It keeps the broken
+package as `packages/failed-X.Y.Z.deb` and skips that version until a newer release appears, so it does not retry every night. A damaged
+download (checksum mismatch) or a version mismatch is refused before anything is touched.
+
+**The button.** Administration → System → Updates shows the installed version, the latest release, the last check and what the
+updater is doing. *Check for updates now* (administrators only, PIN again) only writes `request/check-now`. The program's user owns that
+folder, and `faculty-security-update.path` starts the root updater when the file appears. The program itself never runs anything as root.
+If nothing answers within 3 minutes, the panel says the update will run at the next nightly check.
+
+**Switching it on or off.** The kit's `install.sh` asks *Install new versions automatically every night from GitHub?* (Enter = yes).
+`--auto-update OWNER/REPO` turns it on without asking, `--no-auto-update` turns it off. Running the installer again keeps the existing
+configuration. The kit also keeps a copy of the installed `.deb` as the way back for the first update.
+
+**Checking on the PC:**
+```bash
+sudo systemctl start faculty-security-update.service
+```
+```bash
+journalctl -u faculty-security-update -n 100
+```
+```bash
+cat /var/lib/faculty-security-update/status.json /var/lib/faculty-security-update/history.log
+```
+```bash
+systemctl list-timers faculty-security-update.timer
+```
+```bash
+sudo bash /opt/FacultySecurity/resources/updater/setup-auto-update.sh --disable
+```
+
+**Files.**
+
+| Path | What |
+|---|---|
+| `/etc/faculty-security/update.conf` | root only (600): `REPO=owner/name`, `TOKEN=` (private repositories), `APP_USER=`, optional `DATA_DIR=`, `API_BASE=` |
+| `/var/lib/faculty-security-update/status.json` | last report (`state`, `installed`, `latest`, `message`, `timestamp`), readable by the program |
+| `/var/lib/faculty-security-update/history.log` | one line per update, refusal or rollback |
+| `/var/lib/faculty-security-update/request/` | owned by the program's user; `check-now` is the button's request |
+| `/var/lib/faculty-security-update/packages/` | `installed.deb` (the way back), `previous.deb`, `failed-*.deb` |
+| `/var/lib/faculty-security-update/backups/` | data folder backups made before each update (the last 5) |
+| `~/.config/FacultySecurity/running.json` | written by the program at each start: the health check |
+
+Environment variables: `SECREG_UPDATE_DIR` changes the updater folder the program reads (tests). `SECREG_DEMO=1` refuses update requests
+(a demonstration copy). The web demo always refuses them.
+
+**Network.** The PC must reach `api.github.com`, `github.com` and `*.githubusercontent.com` (release downloads are redirected there) over
+HTTPS. Updates need no package registry: the `.deb` is self-contained, and `dpkg` installs it without `apt` downloads. New system
+dependencies would need an `apt` install by hand.
+
+**Private repository.** Create a fine-grained token with read-only *Contents* access to this repository only, and put it in `TOKEN=` in
+`update.conf` (or pass `--token-file` to `setup-auto-update.sh`). The token is never sent to the download host after GitHub's redirect.
+
+**Security.** Whoever can publish a release on this repository controls the security office PC: keep two-factor authentication on the
+GitHub account, and do not give anyone else write access.
+
+Tests: `npm test` (program side). `bash tests/updater/run.sh` runs the updater end to end in a Docker Ubuntu container, with a fake GitHub and fake packages.
+
 ## Web demo (Vercel)
 A browser-only demo (the same screens, sample data in Arabic, nothing sent anywhere) lives in `demo/`.
 

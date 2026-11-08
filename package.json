@@ -19,7 +19,9 @@
     "dist": "electron-vite build && electron-builder --win",
     "build:demo": "vite build --config demo/vite.config.ts",
     "dev:demo": "vite --config demo/vite.config.ts",
-    "dist:linux": "electron-vite build && electron-builder --linux deb"
+    "dist:linux": "electron-vite build && electron-builder --linux deb",
+    "test": "node --test tests/*.test.ts",
+    "version:file": "node scripts/release/write-version.mjs"
   },
   "build": {
     "appId": "com.securityregister.app",
@@ -58,6 +60,10 @@
       {
         "from": "resources",
         "to": "."
+      },
+      {
+        "from": "scripts/linux/updater",
+        "to": "updater"
       }
     ],
     "linux": {

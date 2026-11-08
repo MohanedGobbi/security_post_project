@@ -678,6 +678,29 @@ export interface SafetyCopy {
   bytes: number
 }
 
+/** what the updater (scripts/linux/updater/update.sh) is doing or did last */
+export type UpdateState = 'checking' | 'up_to_date' | 'downloading' | 'installing' | 'updated' | 'failed' | 'skipped' | 'error'
+
+export interface UpdateStatus {
+  state: UpdateState
+  installed: string | null
+  latest: string | null
+  message: string
+  /** when the updater wrote this report (ISO) */
+  timestamp: string
+}
+
+export interface UpdateInfo {
+  installed: string
+  commit: string | null
+  built: string | null
+  /** automatic updates are set up (the request folder exists) */
+  enabled: boolean
+  /** "Check now" was pressed and the updater has not picked it up yet */
+  pending: boolean
+  status: UpdateStatus | null
+}
+
 export interface BackupInfo {
   dataDir: string
   backupsDir: string
@@ -799,6 +822,10 @@ export interface Api {
     restart(): Promise<void>
     /** recovery mode only (the data key cannot be opened): restores a backup file, no PIN possible */
     recover(password: string): Promise<boolean>
+    /** installed version, whether automatic updates are set up on this PC, and the updater's last report */
+    updates(): Promise<UpdateInfo>
+    /** asks the updater (a root service) to check GitHub now; needs the administrator's PIN again */
+    checkUpdates(pin: string): Promise<void>
   }
   users: {
     list(): Promise<User[]>

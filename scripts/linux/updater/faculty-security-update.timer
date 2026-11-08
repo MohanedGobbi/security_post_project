@@ -1,0 +1,11 @@
+# Every night at 03:00 (plus up to 30 minutes), outside the day's work; a PC that was off runs it at the next start.
+[Unit]
+Description=Faculty Security: nightly update check
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+RandomizedDelaySec=30min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,14 +1,15 @@
 node_modules/
 out/
-release/
+/release/
 *.log
 demo-dist/
 demo-dist-*/
 .vercel/
 *.tsbuildinfo
 .env*
-release-linux/
+/release-linux/
 landing/dist/
 landing/public/demo/
 landing-guard/dist/
 landing-guard/public/demo/
+resources/version.json

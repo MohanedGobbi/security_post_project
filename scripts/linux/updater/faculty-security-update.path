@@ -1,0 +1,11 @@
+# "Check for updates now" in Administration > System writes this file (as the program's user, never root);
+# update.sh deletes it first thing.
+[Unit]
+Description=Faculty Security: update check requested from the program
+
+[Path]
+PathExists=/var/lib/faculty-security-update/request/check-now
+Unit=faculty-security-update.service
+
+[Install]
+WantedBy=paths.target

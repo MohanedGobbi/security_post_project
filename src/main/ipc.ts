@@ -17,6 +17,7 @@ import * as students from './students'
 import * as studentProblems from './studentProblems'
 import * as equipment from './equipment'
 import * as backup from './backup'
+import * as updates from './updates'
 import { exportAuditPdf, exportAuditXlsx, exportEntryXlsx, exportRegisterXlsx, exportStudentsPdf, exportStudentsXlsx, exportVisitXlsx, exportEntryPdf, exportRegisterPdf, exportVisitPdf, registersSections } from './printouts'
 import { exportCheckpointLabels, exportInsideXlsx, exportEvacuation, exportExcel, exportPdf, exportShiftReport } from './export'
 import * as vehicles from './vehicles'
@@ -33,6 +34,12 @@ import * as expected from './expected'
 import { getBadgeSettings, listPrinters, previewBadge, printBadge, setBadgeSettings } from './badges'
 
 let currentUser: User | null = null
+
+/** the version file of the installed package (version, commit, build date), else the version in package.json */
+export function installedVersion(): updates.VersionFile {
+  const dir = app.isPackaged ? process.resourcesPath : join(app.getAppPath(), 'resources')
+  return updates.readVersionFile(dir) ?? { version: app.getVersion(), commit: null, built: null }
+}
 
 const failedLogins = new Map<number, { count: number; until: number }>()
 const MAX_ATTEMPTS = 5
@@ -303,6 +310,12 @@ export function registerIpc(): void {
   handle('system:restart', 'admin', (u) => {
     db.audit(u.id, 'restart')
     backup.restartProgram()
+  })
+  // automatic updates: read the root updater's report, or leave it a request file (never run anything as root here)
+  handle('system:updates', 'admin', () => updates.updateInfo(installedVersion()))
+  handle('system:checkUpdates', 'admin', (u, pin: string) => {
+    updates.requestUpdateCheck({ isAdmin: u.role === 'admin', checkPin: () => checkAdminPin(u, pin), demo: process.env['SECREG_DEMO'] === '1', by: u.name })
+    db.audit(u.id, 'update_check', '', null, installedVersion().version)
   })
   // the data key cannot be opened, nobody can log in: a backup file is the way back
   handle('system:recover', 'public', async (_u, password: string) => {

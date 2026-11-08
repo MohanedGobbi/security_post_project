@@ -299,7 +299,9 @@
     "backupPassword": "Mot de passe incorrect, ou fichier endommagé",
     "backupFile": "Ce n’est pas un fichier de sauvegarde de ce programme",
     "backupPasswordShort": "Le mot de passe doit avoir 6 caractères au moins",
-    "equipmentExists": "Cette pièce est déjà dans la liste."
+    "equipmentExists": "Cette pièce est déjà dans la liste.",
+    "demoRefused": "Indisponible dans la démonstration",
+    "updatesOff": "Les mises à jour automatiques ne sont pas configurées sur ce PC"
   },
   "photo": {
     "take": "Prendre une photo",
@@ -938,7 +940,8 @@
       "restart": "Programme redémarré",
       "equipment_added": "Matériel ajouté",
       "equipment_removed": "Matériel retiré",
-      "student_code_learnt": "Code de carte numérique gardé"
+      "student_code_learnt": "Code de carte numérique gardé",
+      "update_check": "Recherche de mise à jour demandée"
     }
   },
   "card": {
@@ -1104,7 +1107,32 @@
     "resetWarn": "Tout est supprimé, comptes et registres compris. Le programme redémarre comme au premier jour.",
     "restartTitle": "Redémarrer le programme",
     "restartHelp": "Ferme et rouvre le programme en rechargeant les données.",
-    "restart": "Redémarrer"
+    "restart": "Redémarrer",
+    "updates": {
+      "title": "Mises à jour",
+      "intro": "Chaque nuit à 03:00, ce PC installe depuis GitHub une nouvelle version du programme si elle a été publiée. Il sauvegarde d’abord les données et revient seul à la version précédente si la nouvelle ne démarre pas. Le programme se ferme et se rouvre pendant une mise à jour.",
+      "off": "Les mises à jour automatiques ne sont pas configurées sur ce PC. L’installateur les active (bash install.sh --auto-update).",
+      "installed": "Version installée",
+      "latest": "Dernière version publiée",
+      "lastCheck": "Dernière vérification",
+      "never": "Pas encore vérifié",
+      "checkNow": "Rechercher des mises à jour",
+      "dialog": "Le PC demande maintenant à GitHub s’il existe une version plus récente. Si oui, le programme se ferme, l’installe et se rouvre en quelques minutes : enregistrez d’abord tout formulaire ouvert.",
+      "reload": "Recharger la page",
+      "doneUpdated": "Mis à jour vers la version {{version}}",
+      "gaveUp": "Pas encore de réponse du programme de mise à jour. La mise à jour se fera lors de la vérification de la nuit.",
+      "state": {
+        "pending": "Demandé, en attente du programme de mise à jour…",
+        "checking": "Recherche d’une nouvelle version sur GitHub…",
+        "downloading": "Téléchargement de la version {{latest}}…",
+        "installing": "Installation de la version {{latest}} : le programme va se fermer et se rouvrir…",
+        "up_to_date": "À jour : la version {{version}} est la plus récente",
+        "updated": "Mis à jour vers la version {{version}}",
+        "failed": "La mise à jour a échoué : la version précédente et ses données ont été restaurées",
+        "skipped": "La version {{latest}} a déjà échoué et est ignorée jusqu’à la publication d’une version plus récente",
+        "error": "La dernière vérification n’a pas pu aboutir"
+      }
+    }
   },
   "problems": {
     "title": "Problèmes d’étudiants",

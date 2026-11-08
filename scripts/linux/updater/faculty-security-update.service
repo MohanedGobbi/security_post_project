@@ -1,0 +1,13 @@
+# Faculty Security: installs a newer GitHub release (scripts/linux/updater/update.sh, copied to /usr/local/lib).
+# Started by faculty-security-update.timer (nightly) and faculty-security-update.path (the button in Administration).
+[Unit]
+Description=Faculty Security: install the latest release from GitHub
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/faculty-security/update.sh
+TimeoutStartSec=45min
+Nice=10
+IOSchedulingClass=idle

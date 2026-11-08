@@ -3,10 +3,11 @@ import { app, BrowserWindow, dialog, Menu, safeStorage, session, shell } from 'e
 import { initKey, replaceKey } from './crypto'
 import { autoSafetyCopy, setRecovery } from './backup'
 import { applyRetention, audit, isFreshInstall, openDb, resetDatabase } from './db'
-import { registerIpc } from './ipc'
+import { installedVersion, registerIpc } from './ipc'
+import { writeRunningMarker } from './updates'
 import { seedFaculty } from './seed'
 
-function createWindow(): void {
+function createWindow(state: 'ok' | 'recovery' = 'ok'): void {
   const win = new BrowserWindow({
     width: 1366,
     height: 860,
@@ -29,6 +30,8 @@ function createWindow(): void {
     win.maximize()
     win.show()
   })
+  // the updater's health check: this version opened its data and its window
+  win.webContents.once('did-finish-load', () => writeRunningMarker(app.getPath('userData'), installedVersion().version, state))
   // never open other sites inside the app
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('https://')) shell.openExternal(url)
@@ -80,7 +83,7 @@ if (!app.requestSingleInstanceLock()) {
         // restoring a backup file is possible
         setRecovery(true)
         registerIpc()
-        createWindow()
+        createWindow('recovery')
         return
       }
     }
@@ -91,6 +94,9 @@ if (!app.requestSingleInstanceLock()) {
     registerIpc()
     createWindow()
   })
+
+  // the updater closes the program with SIGTERM: quit properly so the database is closed cleanly
+  process.on('SIGTERM', () => app.quit())
 
   app.on('window-all-closed', () => {
     app.quit()
