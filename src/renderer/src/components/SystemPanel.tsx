@@ -6,6 +6,7 @@ import { useApp } from '../App'
 import { currentLang } from '../i18n'
 import Icon from './Icon'
 import SecureDialog from './SecureDialog'
+import RemoteAccessCard from './RemoteAccessCard'
 import { errorText } from '../util'
 
 type Action = null | 'backup' | 'restoreFile' | { copy: SafetyCopy } | 'erase' | 'reset'
@@ -31,6 +32,7 @@ export default function SystemPanel(): ReactNode {
 
   return (
     <div className="stack">
+      <RemoteAccessCard />
       <section className="card">
         <h2>{t('system.backupTitle')}</h2>
         <p className="hint">{t('system.backupIntro')}</p>

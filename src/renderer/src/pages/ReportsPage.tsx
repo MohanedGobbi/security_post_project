@@ -21,6 +21,7 @@ export default function ReportsPage(): ReactNode {
   const { toast, user } = useApp()
   const lang = currentLang()
   const isAdmin = user.role === 'admin'
+  const seesAll = isAdmin || user.role === 'dean'
   const [regs, setRegs] = useState<RegisterDef[]>([])
   const [regId, setRegId] = useState(0)
   const [period, setPeriod] = useState<Period>('today')
@@ -49,7 +50,7 @@ export default function ReportsPage(): ReactNode {
     }
   }
   /** non-administrators see the last 24 hours of a register, whatever the period */
-  const regQuery = (registerId: number) => (isAdmin ? { registerId, ...range(), text: '', openOnly: false } : { registerId, from: '', to: '', text: '', openOnly: false })
+  const regQuery = (registerId: number) => (seesAll ? { registerId, ...range(), text: '', openOnly: false } : { registerId, from: '', to: '', text: '', openOnly: false })
 
   const run = async (fn: () => Promise<string | null | void>): Promise<void> => {
     setBusy(true)
@@ -92,7 +93,7 @@ export default function ReportsPage(): ReactNode {
       <div className="section-head"><h1><Icon name="printer" /> {t('reports.title')}</h1></div>
       <p className="hint">{t('reports.intro')}</p>
 
-      {isAdmin && (
+      {seesAll && (
         <section className="card report-period">
           <strong>{t('print.period')}</strong>
           <div className="seg">
@@ -119,7 +120,7 @@ export default function ReportsPage(): ReactNode {
               <select value={regId} onChange={(e) => setRegId(Number(e.target.value))}>
                 {regs.map((r) => <option key={r.id} value={r.id}>{labelOf(r.labels, lang)}</option>)}
               </select>
-              {!isAdmin && <small className="muted">{t('registers.recent')}</small>}
+              {!seesAll && <small className="muted">{t('registers.recent')}</small>}
             </div>
             <div className="report-actions">
               <button type="button" className="primary" disabled={busy || !regId} onClick={() => run(() => window.api.exports.registerPdf(regQuery(regId), lang))}><Icon name="printer" size={18} /> PDF</button>
@@ -146,7 +147,7 @@ export default function ReportsPage(): ReactNode {
         )}
         {exports && hasReg('shift') && card('users', t('reports.lastHandover'), t('reports.lastHandoverHelp'), () => printEntry('shift'))}
         {exports && hasReg('equipment_check') && card('tool', t('reports.lastEquipment'), t('reports.lastEquipmentHelp'), () => printEntry('equipment_check'))}
-        {exports && hasReg('student_problems') && card('qr', t('reports.studentProblems'), isAdmin ? t(`reports.period.${period}`) : t('registers.recent'),
+        {exports && hasReg('student_problems') && card('qr', t('reports.studentProblems'), seesAll ? t(`reports.period.${period}`) : t('registers.recent'),
           () => window.api.exports.registerPdf(regQuery(regIdOf('student_problems')), lang), () => window.api.exports.registerXlsx(regQuery(regIdOf('student_problems')), lang))}
         {can(user, 'visitors') && card('enter', t('print.inside'), t('print.insideHelp'), async () => { await window.api.exports.evacuation(lang) }, () => window.api.exports.insideXlsx(lang))}
         {exports && can(user, 'students') && card('user', t('print.studentsTitle'), t('print.studentsHelp'),

@@ -6,7 +6,7 @@ export type Lang = 'ar' | 'en' | 'fr'
 export type Role = string
 
 /** What a level may do (src/shared/permissions.ts says what each one allows) */
-export type Permission = 'visitors' | 'history' | 'cardPictures' | 'students' | 'studentsEdit' | 'exports' | 'correctAny' | 'shiftHandover'
+export type Permission = 'visitors' | 'history' | 'cardPictures' | 'students' | 'studentsEdit' | 'exports' | 'correctAny' | 'shiftHandover' | 'attendance' | 'attendanceView'
 
 export interface Level {
   key: Role
@@ -603,6 +603,22 @@ export interface AlertItem {
   since: string | null
 }
 
+// ---------- attendance of the security team (marked by hand by the team leader) ----------
+export type AttendanceStatus = 'present' | 'late' | 'absent' | 'leave' | 'sick' | 'mission'
+export const ATTENDANCE_STATUSES: AttendanceStatus[] = ['present', 'late', 'absent', 'leave', 'sick', 'mission']
+
+/** a member of the security team; startTime ("HH:MM", or empty) is when the member should arrive, to tell a late arrival */
+export interface StaffMember { id: number; name: string; jobTitle: string; startTime: string }
+export interface StaffInput { id?: number; name: string; jobTitle: string; startTime: string }
+export interface AttendanceMark { status: AttendanceStatus; arrivedAt: string; note: string; markedBy: string; markedAt: string }
+export interface AttendanceRow { staff: StaffMember; mark: AttendanceMark | null }
+export interface AttendanceMarkInput { staffId: number; date: string; status: AttendanceStatus; arrivedAt: string; note: string }
+export interface AttendanceMonthRow { staff: StaffMember; counts: Record<AttendanceStatus, number> }
+
+// ---------- the deanship's access over the faculty network ----------
+export interface RemoteSettings { enabled: boolean; port: number; allowedIps: string[] }
+export interface RemoteStatus extends RemoteSettings { running: boolean; urls: string[]; error: string }
+
 // ---------- equipment of the security office (checked present at every handover) ----------
 export interface EquipmentItem { id: number; name: string; quantity: number }
 
@@ -810,6 +826,31 @@ export interface Api {
     set(s: Settings): Promise<void>
     getFeatures(): Promise<Features>
     setFeatures(f: Features): Promise<void>
+  }
+  attendance: {
+    /** the security team */
+    staff(): Promise<StaffMember[]>
+    /** the team leader: adds or edits a member */
+    saveStaff(input: StaffInput): Promise<number>
+    /** the team leader: takes a member off the list (past attendance is kept) */
+    removeStaff(id: number): Promise<void>
+    /** every member with their mark for a day (YYYY-MM-DD) */
+    day(date: string): Promise<AttendanceRow[]>
+    /** the team leader: marks one member for a day (changing a mark is recorded) */
+    mark(input: AttendanceMarkInput): Promise<void>
+    /** the team leader: marks every member not yet marked for the day as present; returns how many */
+    markAllPresent(date: string): Promise<number>
+    /** counts per member for a month (YYYY-MM) */
+    month(month: string): Promise<AttendanceMonthRow[]>
+    /** A4 PDF of a day's sheet (path saved, or null if cancelled) */
+    dayPdf(date: string, lang: Lang): Promise<string | null>
+    /** A4 PDF of a month's sheet */
+    monthPdf(month: string, lang: Lang): Promise<string | null>
+  }
+  remote: {
+    /** administrators: whether the deanship's network access is on, its port and the addresses allowed to connect */
+    get(): Promise<RemoteStatus>
+    set(s: RemoteSettings): Promise<RemoteStatus>
   }
   equipment: {
     /** the equipment of the security office, as it is now */

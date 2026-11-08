@@ -4,7 +4,7 @@ import { app, BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent } f
 import type {
   BadgeSettings, CheckInInput, CheckStatus, CustomFieldInput, ExpectedInput, DeliveryInput, ExportRange, IncidentInput, KeyItemInput, Lang, LendInput, NoteCategory,
   Features, Module, RangeQuery, Role, SearchQuery, Settings, User, VehicleInInput, WatchHit, WatchInput,
-  AuditQuery, LevelInput, Permission, StudentInput, EntryInputValues, EntryQuery, FieldInput, RegisterDefInput
+  AuditQuery, AttendanceMarkInput, LevelInput, Permission, RemoteSettings, StaffInput, StudentInput, EntryInputValues, EntryQuery, FieldInput, RegisterDefInput
 } from '@shared/types'
 import { ALL_ON, PROFILES } from '@shared/features'
 import { can } from '@shared/permissions'
@@ -29,14 +29,21 @@ import * as patrols from './patrols'
 import * as keys from './keys'
 import * as registers from './registers'
 import { currentAlerts } from './alerts'
+import * as attendance from './attendance'
+import { initRemote, remoteStatus, setRemote } from './remote'
+import { remoteContext, remoteStore, type RemoteContext, type Session } from './context'
 import * as expected from './expected'
 import { getBadgeSettings, listPrinters, previewBadge, printBadge, setBadgeSettings } from './badges'
 
-let currentUser: User | null = null
+const desktop: Session = { user: null }
+/** the session of the call: a browser's over the network, or the desktop window's */
+const sess = (): Session => remoteContext()?.session ?? desktop
+const isRemote = (): boolean => !!remoteContext()
 
 const failedLogins = new Map<number, { count: number; until: number }>()
 const MAX_ATTEMPTS = 5
 const LOCK_MS = 30_000
+const REMOTE_LOCK_MS = 5 * 60_000
 
 type Access = 'public' | 'user' | 'admin'
 
@@ -49,8 +56,16 @@ const PERMISSION_OF: Record<string, Permission> = {
   'studentProblems:checkQr': 'students', 'studentProblems:search': 'students', 'studentProblems:learnCode': 'students',
   'students:save': 'studentsEdit', 'students:setActive': 'studentsEdit', 'students:import': 'studentsEdit', 'students:template': 'studentsEdit',
   'students:pdf': 'exports',
+  'attendance:staff': 'attendanceView', 'attendance:day': 'attendanceView', 'attendance:month': 'attendanceView', 'attendance:dayPdf': 'attendanceView', 'attendance:monthPdf': 'attendanceView',
+  'attendance:saveStaff': 'attendance', 'attendance:removeStaff': 'attendance', 'attendance:mark': 'attendance', 'attendance:markAllPresent': 'attendance',
   'exports:pdf': 'exports', 'exports:excel': 'exports', 'exports:registerPdf': 'exports', 'exports:entryPdf': 'exports', 'exports:visitPdf': 'exports',
   'exports:registerXlsx': 'exports', 'exports:entryXlsx': 'exports', 'exports:visitXlsx': 'exports', 'exports:insideXlsx': 'visitors', 'students:xlsx': 'exports'
+}
+
+/** Other permissions that open the same call: whoever marks the attendance must also read it; the dean reads who is inside */
+const ALSO_ALLOWED: Record<string, Permission[]> = {
+  'visits:insideNow': ['history'], 'visits:stats': ['history'],
+  'attendance:staff': ['attendance'], 'attendance:day': ['attendance'], 'attendance:month': ['attendance'], 'attendance:dayPdf': ['attendance'], 'attendance:monthPdf': ['attendance']
 }
 
 /** Actions of an optional module are refused while the module is switched off (history stays readable). */
@@ -66,18 +81,30 @@ const MODULE_WRITES: Record<string, Module> = {
   'badges:print': 'badges'
 }
 
+/** every handler by channel: the desktop calls them through ipcMain, the deanship's network access through invoke() */
+const registry = new Map<string, (...args: unknown[]) => unknown>()
+
+/** Calls a handler for a network session (the allowed channels are decided by remote.ts) */
+export function invoke(channel: string, args: unknown[], ctx: RemoteContext): Promise<unknown> {
+  const fn = registry.get(channel)
+  if (!fn) return Promise.reject(new Error('error.forbidden'))
+  return remoteStore.run(ctx, async () => fn(...args))
+}
+
 function handle<A extends unknown[], R>(channel: string, access: Access, fn: (user: User, ...args: A) => R | Promise<R>): void {
-  ipcMain.handle(channel, (_e: IpcMainInvokeEvent, ...args: unknown[]) => {
+  const run = (...args: unknown[]): R | Promise<R> => {
     if (access !== 'public') {
-      if (!currentUser) throw new Error('error.forbidden')
-      if (access === 'admin' && currentUser.role !== 'admin') throw new Error('error.forbidden')
+      if (!sess().user) throw new Error('error.forbidden')
+      if (access === 'admin' && sess().user?.role !== 'admin') throw new Error('error.forbidden')
     }
     const perm = PERMISSION_OF[channel]
-    if (perm && access !== 'public' && !can(currentUser as User, perm)) throw new Error('error.forbidden')
+    if (perm && access !== 'public' && !can(sess().user as User, perm) && !(ALSO_ALLOWED[channel] ?? []).some((p) => can(sess().user as User, p))) throw new Error('error.forbidden')
     const mod = MODULE_WRITES[channel]
     if (mod && !db.getFeatures().modules[mod]) throw new Error('error.featureOff')
-    return fn(currentUser as User, ...(args as A))
-  })
+    return fn(sess().user as User, ...(args as A))
+  }
+  registry.set(channel, run as (...args: unknown[]) => unknown)
+  ipcMain.handle(channel, (_e: IpcMainInvokeEvent, ...args: unknown[]) => run(...args))
 }
 
 const validPin = (pin: string): boolean => /^\d{4,8}$/.test(pin)
@@ -96,6 +123,7 @@ function checkAdminPin(u: User, pin: string): void {
 
 /** PIN-only login has no user id: its failed attempts share one counter */
 const PIN_ONLY = 0
+const REMOTE_PIN = -1
 
 function checkLock(key: number): void {
   const lock = failedLogins.get(key)
@@ -104,7 +132,7 @@ function checkLock(key: number): void {
 
 function failLogin(key: number): never {
   const count = (failedLogins.get(key)?.count ?? 0) + 1
-  failedLogins.set(key, { count: count >= MAX_ATTEMPTS ? 0 : count, until: count >= MAX_ATTEMPTS ? Date.now() + LOCK_MS : 0 })
+  failedLogins.set(key, { count: count >= MAX_ATTEMPTS ? 0 : count, until: count >= MAX_ATTEMPTS ? Date.now() + (key === REMOTE_PIN ? REMOTE_LOCK_MS : LOCK_MS) : 0 })
   throw new Error('login.wrongPin')
 }
 
@@ -122,11 +150,12 @@ export function registerIpc(): void {
   // ---------- auth ----------
   handle('auth:status', 'public', () => backup.inRecovery()
     ? { user: null, recovery: true, siteName: '', features: ALL_ON }
-    : { user: currentUser, siteName: db.getSettings().siteName, features: db.getFeatures() })
+    : { user: sess().user, siteName: db.getSettings().siteName, features: db.getFeatures() })
 
-  handle('auth:loginUsers', 'public', () => db.listUsers(true).map((u) => ({ id: u.id, name: u.name, role: u.role })))
+  handle('auth:loginUsers', 'public', () => isRemote() ? [] : db.listUsers(true).map((u) => ({ id: u.id, name: u.name, role: u.role })))
 
   handle('auth:login', 'public', (_u, userId: number, pin: string) => {
+    if (isRemote()) throw new Error('error.forbidden')
     checkLock(userId)
     const row = db.getUserRow(userId)
     if (!row || row.active !== 1 || !verifyPin(String(pin), row.pin_hash)) {
@@ -134,33 +163,37 @@ export function registerIpc(): void {
       failLogin(userId)
     }
     failedLogins.delete(userId)
-    currentUser = db.getUser(userId)
+    sess().user = db.getUser(userId)
     db.audit(userId, 'login')
-    return currentUser
+    return sess().user
   })
 
   // the PIN alone says who is logging in (PINs are unique)
   handle('auth:loginPin', 'public', (_u, pin: string) => {
-    checkLock(PIN_ONLY)
-    const row = validPin(String(pin)) ? db.findUserByPin(String(pin)) : undefined
-    if (!row || row.active !== 1) {
-      db.audit(row?.id ?? null, 'login_failed', '', null, 'pin')
-      failLogin(PIN_ONLY)
+    const key = isRemote() ? REMOTE_PIN : PIN_ONLY
+    const where = isRemote() ? `remote ${remoteContext()?.ip ?? ''}` : 'pin'
+    checkLock(key)
+    const found = validPin(String(pin)) ? db.findUserByPin(String(pin)) : undefined
+    // over the network only the dean may sign in; the answer is the same for a wrong PIN and for another account's
+    const row = found && found.active === 1 && (!isRemote() || found.role === 'dean') ? found : undefined
+    if (!row) {
+      db.audit(found?.id ?? null, 'login_failed', '', null, where)
+      failLogin(key)
     }
-    failedLogins.delete(PIN_ONLY)
-    currentUser = db.getUser(row.id)
-    db.audit(row.id, 'login', '', null, 'pin')
-    return currentUser
+    failedLogins.delete(key)
+    sess().user = db.getUser(row.id)
+    db.audit(row.id, 'login', '', null, where)
+    return sess().user
   })
 
   handle('auth:logout', 'user', (u) => {
     db.audit(u.id, 'logout')
-    currentUser = null
+    sess().user = null
   })
 
   handle('auth:setLanguage', 'user', (u, lang: Lang) => {
     db.updateUser(u.id, { language: checkLang(lang) })
-    currentUser = db.getUser(u.id)
+    sess().user = db.getUser(u.id)
   })
 
   // ---------- visits ----------
@@ -419,6 +452,29 @@ export function registerIpc(): void {
     return path
   })
 
+  // ---------- attendance of the security team ----------
+  handle('attendance:staff', 'user', () => attendance.listStaff())
+  handle('attendance:saveStaff', 'user', (u, input: StaffInput) => attendance.saveStaff(input, u))
+  handle('attendance:removeStaff', 'user', (u, id: number) => attendance.removeStaff(Number(id), u))
+  handle('attendance:day', 'user', (_u, date: string) => attendance.dayRows(String(date)))
+  handle('attendance:mark', 'user', (u, input: AttendanceMarkInput) => attendance.markAttendance(input, u))
+  handle('attendance:markAllPresent', 'user', (u, date: string) => attendance.markAllPresent(String(date), u))
+  handle('attendance:month', 'user', (_u, month: string) => attendance.monthRows(String(month)))
+  handle('attendance:dayPdf', 'user', async (u, date: string, lang: Lang) => {
+    const path = await attendance.dayPdf(BrowserWindow.getFocusedWindow(), String(date), checkLang(lang), u)
+    if (path) db.audit(u.id, 'export_pdf', 'attendance', null, String(date))
+    return path
+  })
+  handle('attendance:monthPdf', 'user', async (u, month: string, lang: Lang) => {
+    const path = await attendance.monthPdf(BrowserWindow.getFocusedWindow(), String(month), checkLang(lang), u)
+    if (path) db.audit(u.id, 'export_pdf', 'attendance', null, String(month))
+    return path
+  })
+
+  // ---------- the deanship's access over the faculty network ----------
+  handle('remote:get', 'admin', () => remoteStatus())
+  handle('remote:set', 'admin', (u, input: RemoteSettings) => setRemote(input, u))
+
   // ---------- exports ----------
   const win = (): BrowserWindow | null => BrowserWindow.getFocusedWindow()
   handle('exports:pdf', 'user', async (u, r: ExportRange) => {
@@ -647,4 +703,7 @@ export function registerIpc(): void {
     db.audit(u.id, 'badge_print', 'visit', visitId)
   })
   handle('badges:preview', 'admin', (u, visitId: number, s: BadgeSettings) => previewBadge(visitId, u.language, s))
+
+  // the deanship's network access, if the administrator left it on
+  if (!backup.inRecovery()) initRemote(invoke)
 }

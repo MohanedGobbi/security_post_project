@@ -5,7 +5,7 @@ import type { Labels, Permission, User } from './types'
  * A level is a named set of these permissions; an administrator makes as many levels as the faculty needs.
  * The administrator level always has everything, and alone may manage accounts, levels, registers, settings and the audit trail.
  */
-export const PERMISSIONS: Permission[] = ['visitors', 'history', 'cardPictures', 'students', 'studentsEdit', 'exports', 'correctAny', 'shiftHandover']
+export const PERMISSIONS: Permission[] = ['visitors', 'history', 'cardPictures', 'students', 'studentsEdit', 'exports', 'correctAny', 'shiftHandover', 'attendance', 'attendanceView']
 
 /** The levels every installation starts with. Their names and permissions can be edited; they cannot be deleted. */
 export const BUILTIN_LEVELS: { key: string; labels: Labels; permissions: Permission[]; sort: number }[] = [
@@ -15,7 +15,12 @@ export const BUILTIN_LEVELS: { key: string; labels: Labels; permissions: Permiss
   },
   {
     key: 'leader', sort: 2, labels: { ar: 'رئيس فرقة الأمن', fr: 'Chef d’équipe', en: 'Team leader' },
-    permissions: ['visitors', 'history', 'cardPictures', 'students', 'studentsEdit', 'exports', 'correctAny', 'shiftHandover']
+    permissions: ['visitors', 'history', 'cardPictures', 'students', 'studentsEdit', 'exports', 'correctAny', 'shiftHandover', 'attendance', 'attendanceView']
+  },
+  {
+    // the dean reads and prints over the faculty network (and gives the visa on incidents); never registers visitors
+    key: 'dean', sort: 4, labels: { ar: 'عميد الكلية', fr: 'Doyen', en: 'Dean' },
+    permissions: ['history', 'exports', 'attendanceView']
   },
   { key: 'admin', sort: 3, labels: { ar: 'مسؤول', fr: 'Administrateur', en: 'Administrator' }, permissions: PERMISSIONS }
 ]

@@ -15,7 +15,7 @@ import PrintButton from '../components/PrintButton'
 /** Registers the user may use: tiles first, then one register (new entry + its entries). */
 export default function RegistersPage(): ReactNode {
   const { t } = useTranslation()
-  const { registerId, openRegister, go } = useApp()
+  const { registerId, openRegister, go, user } = useApp()
   const [regs, setRegs] = useState<RegisterDef[] | null>(null)
   const lang = currentLang()
 
@@ -50,6 +50,19 @@ export default function RegistersPage(): ReactNode {
               <strong>{labelOf(r.labels, lang)}</strong>
             </button>
           ))}
+          {/* the visitors register: every visit, with its card, as in the paper book (the log has the period, search and print) */}
+          {can(user, 'history') && (
+            <button type="button" className="tile register-tile" onClick={() => go('log')}>
+              <span className="tile-icon"><Icon name="enter" size={30} /></span>
+              <strong>{t('registers.visitorsTile')}</strong>
+            </button>
+          )}
+          {(can(user, 'attendance') || can(user, 'attendanceView')) && (
+            <button type="button" className="tile register-tile" onClick={() => go('attendance')}>
+              <span className="tile-icon"><Icon name="clock" size={30} /></span>
+              <strong>{t('attendance.title')}</strong>
+            </button>
+          )}
         </section>
       )}
     </div>

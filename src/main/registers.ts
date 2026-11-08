@@ -61,6 +61,7 @@ export function getRegister(id: number): RegisterDef | null {
 export function listRegisters(user: User): RegisterDef[] {
   const all = (conn().prepare(`${SELECT_REGISTER} ORDER BY r.sort, r.id`).all() as unknown as RegisterDb[]).map(toDef)
   if (user.role === 'admin') return all
+  if (user.role === 'dean') return all.filter((r) => r.active)
   return all.filter((r) => r.active && (r.fillRoles.includes(user.role) || r.closeRoles.includes(user.role)))
 }
 
@@ -217,11 +218,12 @@ export function entryCorrections(entryId: number): EntryCorrection[] {
 export function listEntries(q: EntryQuery, user: User): RegisterEntry[] {
   const reg = getRegister(q.registerId)
   if (!reg) throw new Error('error.notFound')
-  if (user.role !== 'admin' && !reg.fillRoles.includes(user.role) && !reg.closeRoles.includes(user.role)) throw new Error('error.forbidden')
+  if (user.role !== 'admin' && user.role !== 'dean' && !reg.fillRoles.includes(user.role) && !reg.closeRoles.includes(user.role)) throw new Error('error.forbidden')
   const where = ['e.register_id = ?']
   const params: (string | number)[] = [q.registerId]
   if (q.openOnly) where.push('e.closed_at IS NULL')
-  if (user.role === 'admin') {
+  // the dean reads the whole history, like an administrator (the visa on incidents is the only thing they close)
+  if (user.role === 'admin' || user.role === 'dean') {
     if (q.from && q.to) {
       where.push('(e.created_at BETWEEN ? AND ? OR (e.closed_at IS NULL AND ? = 1))')
       params.push(dayStart(q.from), dayEnd(q.to), q.openOnly ? 1 : 0)
@@ -245,7 +247,7 @@ export function entryForPrint(entryId: number, user: User): { reg: RegisterDef; 
   const entry = entryRow(entryId)
   const reg = getRegister(entry.registerId)
   if (!reg) throw new Error('error.notFound')
-  if (user.role !== 'admin') {
+  if (user.role !== 'admin' && user.role !== 'dean') {
     if (!reg.fillRoles.includes(user.role) && !reg.closeRoles.includes(user.role)) throw new Error('error.forbidden')
     const recent = new Date(entry.createdAt).getTime() > Date.now() - 24 * 3600000
     if (!recent && !(reg.closeLabels && !entry.closedAt)) throw new Error('error.forbidden')

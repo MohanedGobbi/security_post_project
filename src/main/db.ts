@@ -92,6 +92,26 @@ CREATE UNIQUE INDEX IF NOT EXISTS students_no ON students(student_no_hash) WHERE
 CREATE INDEX IF NOT EXISTS students_idhash ON students(id_hash);
 -- the equipment kept at the security office, checked present at every handover (the equipment_check register);
 -- an item taken off the list is kept, marked removed, so old checks still read right
+-- the security team, and their attendance: one mark per member per day, marked by hand by the team leader (changes go to the audit trail)
+CREATE TABLE IF NOT EXISTS staff (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  job_title TEXT NOT NULL DEFAULT '',
+  start_time TEXT NOT NULL DEFAULT '',
+  active INTEGER NOT NULL DEFAULT 1,
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS attendance (
+  staff_id INTEGER NOT NULL REFERENCES staff(id),
+  day TEXT NOT NULL,
+  status TEXT NOT NULL,
+  arrived_at TEXT NOT NULL DEFAULT '',
+  note TEXT NOT NULL DEFAULT '',
+  marked_by INTEGER REFERENCES users(id),
+  marked_at TEXT NOT NULL,
+  PRIMARY KEY (staff_id, day)
+);
 CREATE TABLE IF NOT EXISTS equipment (
   id INTEGER PRIMARY KEY,
   name TEXT NOT NULL,
@@ -387,6 +407,11 @@ function migrate(): void {
   const have = new Set((db.prepare('SELECT key FROM levels').all() as { key: string }[]).map((l) => l.key))
   for (const l of BUILTIN_LEVELS) {
     if (!have.has(l.key)) db.prepare('INSERT INTO levels (key, labels_json, permissions, sort, builtin) VALUES (?, ?, ?, ?, 1)').run(l.key, JSON.stringify(l.labels), l.permissions.join(','), l.sort)
+  }
+  // databases from before the attendance register: the team leader level gets it
+  const leader = db.prepare("SELECT permissions FROM levels WHERE key = 'leader'").get() as { permissions: string } | undefined
+  if (leader && !leader.permissions.includes('attendance')) {
+    db.prepare("UPDATE levels SET permissions = ? WHERE key = 'leader'").run(`${leader.permissions},attendance,attendanceView`.replace(/^,/, ''))
   }
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_pin_lookup ON users (pin_lookup) WHERE pin_lookup IS NOT NULL')
 }

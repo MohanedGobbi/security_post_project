@@ -46,7 +46,8 @@
     "admin": "Administration",
     "students": "Students",
     "studentProblems": "Student problems",
-    "reports": "Reports"
+    "reports": "Reports",
+    "attendance": "Attendance"
   },
   "lang": {
     "ar": "العربية",
@@ -299,7 +300,12 @@
     "backupPassword": "Wrong password, or the file is damaged",
     "backupFile": "This is not a backup file of this program",
     "backupPasswordShort": "The password needs at least 6 characters",
-    "equipmentExists": "This item is already on the list."
+    "equipmentExists": "This item is already on the list.",
+    "staffExists": "This member is already in the list",
+    "invalidDate": "Invalid date (a day that has not come cannot be marked)",
+    "remotePort": "The port must be between 1024 and 65535",
+    "remoteIp": "An IP address is not valid",
+    "remoteNeedsIp": "Add the dean’s PC address before switching it on"
   },
   "photo": {
     "take": "Take photo",
@@ -792,7 +798,8 @@
     "openedOn": "Opened on {{date}} by {{name}}",
     "empty": "(empty)",
     "time": "Date",
-    "status": "Status"
+    "status": "Status",
+    "visitorsTile": "Visitors register"
   },
   "builder": {
     "new": "New register",
@@ -938,7 +945,13 @@
       "restart": "Program restarted",
       "equipment_added": "Equipment added",
       "equipment_removed": "Equipment removed",
-      "student_code_learnt": "Digital card code saved"
+      "student_code_learnt": "Digital card code saved",
+      "attendance_marked": "Attendance marked",
+      "attendance_changed": "Attendance changed",
+      "staff_added": "Team member added",
+      "staff_updated": "Team member edited",
+      "staff_removed": "Team member removed",
+      "remote_settings": "Network access settings changed"
     }
   },
   "card": {
@@ -1036,7 +1049,9 @@
       "studentsEdit": "Maintain the student directory",
       "exports": "Print and export",
       "correctAny": "Correct anyone’s entries",
-      "shiftHandover": "Fill the shift handover registers"
+      "shiftHandover": "Fill the shift handover registers",
+      "attendance": "Mark the team’s attendance",
+      "attendanceView": "See the team’s attendance"
     },
     "permHelp": {
       "visitors": "visitor entry and exit, and the list of people inside",
@@ -1046,7 +1061,9 @@
       "studentsEdit": "add, change, import and deactivate students; see their phone and national number",
       "exports": "PDF and Excel of registers, visit records and the student list",
       "correctAny": "correct a register entry someone else recorded (without it, only your own)",
-      "shiftHandover": "fills the shift and custody registers before starting a shift"
+      "shiftHandover": "fills the shift and custody registers before starting a shift",
+      "attendance": "marks each team member present, late, absent… every day, and adds or removes members",
+      "attendanceView": "read and print the daily and monthly attendance"
     }
   },
   "secure": {
@@ -1189,5 +1206,58 @@
     "printEntry": "Print this entry",
     "noEntry": "No entry with this number (or it is outside what you may see).",
     "nothingYet": "Nothing recorded in this register yet."
+  },
+  "attendance": {
+    "title": "Security team attendance",
+    "help": "The team leader marks each member every day. A mark can be changed, and every change is in the audit trail.",
+    "helpRead": "The team’s attendance as the team leader marked it.",
+    "day": "Day",
+    "today": "Today",
+    "month": "Month",
+    "name": "Name",
+    "jobTitle": "Job title",
+    "startTime": "Start time",
+    "startTimeHelp": "With a start time, a member whose arrival is after it is marked late automatically.",
+    "status": "Status",
+    "arrived": "Arrival",
+    "note": "Note",
+    "markedBy": "Marked by",
+    "notMarked": "Not marked yet",
+    "markAllPresent": "Mark everyone present",
+    "markedN": "{{n}} members marked present",
+    "noStaff": "No team members yet. Add the team below.",
+    "addMember": "Add a member to the team",
+    "add": "Add",
+    "remove": "Remove from the list",
+    "removeConfirm": "Remove “{{name}}” from the list? Their past attendance is kept.",
+    "monthTitle": "Monthly attendance totals",
+    "dayTitle": "Daily attendance sheet of the security team",
+    "s": {
+      "present": "Present",
+      "late": "Late",
+      "absent": "Absent",
+      "leave": "On leave",
+      "sick": "Sick",
+      "mission": "On mission"
+    }
+  },
+  "remote": {
+    "title": "The dean’s access over the faculty network",
+    "intro": "When on, the dean opens the program in the browser of their own PC (nothing to install) at this PC’s address and signs in with their PIN. They read the registers, visits and attendance, print, and give the visa on incidents. They cannot record visitors or change settings.",
+    "off": "Network access is off.",
+    "running": "Running. The addresses the dean opens: {{urls}}",
+    "failed": "Could not start: {{error}}",
+    "enable": "Turn on the dean’s network access",
+    "port": "Port",
+    "allowed": "IP addresses allowed to connect (one per line)",
+    "help": "It needs an account at the level “Dean” (Administration → Accounts). The connection is encrypted (HTTPS), wrong PINs lock for 5 minutes, a session ends after 30 minutes without activity, and every sign-in is logged. At the first visit the browser warns about the certificate: accept it once.",
+    "saved": "Saved"
+  },
+  "dean": {
+    "welcome": "Welcome, {{name}}",
+    "insideNow": "Visitors inside now",
+    "teamPresent": "Team present today",
+    "visaWaiting": "Incidents waiting for your visa",
+    "visaHelp": "{{n}} incident(s) wait for the deanship visa: open the incidents register and click “Deanship visa”."
   }
 }

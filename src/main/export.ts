@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { randomUUID } from 'node:crypto'
 import { app, BrowserWindow, dialog, shell } from 'electron'
+import { remoteContext } from './context'
 import ExcelJS from 'exceljs'
 import { prepareZXingModule, writeBarcode } from 'zxing-wasm/writer'
 import type {
@@ -223,6 +225,13 @@ export async function htmlToPdf(html: string, landscape = true): Promise<Buffer>
 }
 
 export async function askSavePath(parent: BrowserWindow | null, defaultName: string, ext: 'pdf' | 'xlsx'): Promise<string | null> {
+  // a call over the faculty network: no dialog; the file goes to a temp file that the server sends to the browser
+  const remote = remoteContext()
+  if (remote) {
+    const path = join(app.getPath('temp'), `secreg-${randomUUID()}.${ext}`)
+    remote.files.push({ name: defaultName, path })
+    return path
+  }
   // fixed reports folder (or automated tests): save there without asking
   const fixedDir = process.env['SECREG_EXPORT_DIR']
   if (fixedDir) return join(fixedDir, defaultName)
