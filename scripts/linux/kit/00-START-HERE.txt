@@ -1,7 +1,7 @@
 FACULTY SECURITY MANAGEMENT - LINUX INSTALL KIT
 برنامج إدارة الأمن بالكلية - حزمة التثبيت على لينكس
 Faculty of Law and Political Science, University of Ghardaia
-Version 0.1.0 - November 2026 - Made by ROWD Tech, in partnership with AFAK
+Version 0.2.0 - November 2026 - Made by ROWD Tech, in partnership with AFAK
 
 =====================================================================
 ENGLISH
@@ -20,6 +20,7 @@ Folders
   4-Presentations    deanship presentation and staff training (AR, EN)
   5-Templates        student list templates for the import (Excel)
   6-Source           source code of this version (to rebuild the package)
+  8-Students         the faculty's student list (1558), to import once (see its README)
 
 Install in 3 commands (on the security office PC, in 1-Installer):
   bash check-pc.sh        checks the PC, changes nothing
@@ -31,6 +32,13 @@ Or, from the single file FacultySecurity-Install.sh (the package is inside it):
 
 The dean opens the program from his own PC over the faculty network: see the end of the install output,
 and Administration > System > "The dean's access over the faculty network".
+
+Already installed (version 0.1.0 at the faculty)? Same commands: the new version
+installs over the old one and KEEPS ALL THE DATA (it lives in ~/.config/FacultySecurity,
+not in the program folder). Before that: Administration > System > Backup to a USB
+drive, and close the program. The installer then asks "Install new versions
+automatically every night from GitHub?": answer yes (Enter). From then on new versions
+install by themselves at night; Administration > System > Updates shows them.
 
 First login
   administrator PIN 246810, team leader PIN 135790
@@ -54,11 +62,18 @@ Read 2-Installation/Installation-Guide-EN.pdf before going on site.
   4-Presentations    عرض للعمادة وعرض تكوين الفريق
   5-Templates        نموذج قائمة الطلبة للاستيراد (Excel)
   6-Source           الشيفرة المصدرية لهذا الإصدار
+  8-Students         قائمة طلبة الكلية (1558) للاستيراد مرة واحدة
 
 التثبيت (في مجلد 1-Installer، من نافذة الطرفية Terminal):
   bash check-pc.sh
   bash install.sh
   ثم افتح «برنامج إدارة الأمن بالكلية» من قائمة التطبيقات
+
+البرنامج مثبّت من قبل (الإصدار 0.1.0)؟ نفس الأوامر: يُثبَّت الإصدار الجديد فوق القديم
+وتبقى كل البيانات (هي في ‎~/.config/FacultySecurity وليست في مجلد البرنامج).
+قبل ذلك: الإدارة > النظام > نسخة احتياطية على مفتاح USB، ثم أغلق البرنامج.
+عند سؤال «تثبيت الإصدارات الجديدة تلقائيًا كل ليلة من GitHub؟» اضغط Enter (نعم).
+بعدها تُثبَّت الإصدارات الجديدة وحدها ليلًا، وتظهر في الإدارة > النظام > التحديثات.
 
 أول دخول
   المسؤول: 246810 - رئيس الفرقة: 135790
