@@ -26,6 +26,12 @@ Install in 3 commands (on the security office PC, in 1-Installer):
   bash install.sh         installs the program (asks for the password)
   then open "برنامج إدارة الأمن بالكلية" from the applications menu
 
+Or, from the single file FacultySecurity-Install.sh (the package is inside it):
+  bash FacultySecurity-Install.sh --dean-ip <the dean PC address>      (add --yes to skip the questions)
+
+The dean opens the program from his own PC over the faculty network: see the end of the install output,
+and Administration > System > "The dean's access over the faculty network".
+
 First login
   administrator PIN 246810, team leader PIN 135790
   Change both at once: Administration > Accounts > Change PIN

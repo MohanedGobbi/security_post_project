@@ -46,7 +46,8 @@
     "admin": "Administration",
     "students": "Étudiants",
     "studentProblems": "Problèmes d’étudiants",
-    "reports": "Rapports"
+    "reports": "Rapports",
+    "attendance": "Présence"
   },
   "lang": {
     "ar": "العربية",
@@ -300,6 +301,11 @@
     "backupFile": "Ce n’est pas un fichier de sauvegarde de ce programme",
     "backupPasswordShort": "Le mot de passe doit avoir 6 caractères au moins",
     "equipmentExists": "Cette pièce est déjà dans la liste.",
+    "staffExists": "Cet agent est déjà dans la liste",
+    "invalidDate": "Date invalide (un jour à venir ne peut pas être pointé)",
+    "remotePort": "Le port doit être entre 1024 et 65535",
+    "remoteIp": "Une adresse IP n’est pas valide",
+    "remoteNeedsIp": "Ajoutez l’adresse du PC du doyen avant d’activer",
     "demoRefused": "Indisponible dans la démonstration",
     "updatesOff": "Les mises à jour automatiques ne sont pas configurées sur ce PC"
   },
@@ -794,7 +800,8 @@
     "openedOn": "Ouvert le {{date}} par {{name}}",
     "empty": "(vide)",
     "time": "Date",
-    "status": "Statut"
+    "status": "Statut",
+    "visitorsTile": "Registre des visiteurs"
   },
   "builder": {
     "new": "Nouveau registre",
@@ -941,6 +948,12 @@
       "equipment_added": "Matériel ajouté",
       "equipment_removed": "Matériel retiré",
       "student_code_learnt": "Code de carte numérique gardé",
+      "attendance_marked": "Présence pointée",
+      "attendance_changed": "Présence modifiée",
+      "staff_added": "Agent ajouté",
+      "staff_updated": "Agent modifié",
+      "staff_removed": "Agent retiré",
+      "remote_settings": "Réglages de l’accès réseau modifiés",
       "update_check": "Recherche de mise à jour demandée"
     }
   },
@@ -1039,7 +1052,9 @@
       "studentsEdit": "Gérer l’annuaire des étudiants",
       "exports": "Imprimer et exporter",
       "correctAny": "Corriger les saisies des autres",
-      "shiftHandover": "Remplir les registres de passation"
+      "shiftHandover": "Remplir les registres de passation",
+      "attendance": "Pointer la présence de l’équipe",
+      "attendanceView": "Voir la présence de l’équipe"
     },
     "permHelp": {
       "visitors": "entrée et sortie des visiteurs, liste des personnes présentes",
@@ -1049,7 +1064,9 @@
       "studentsEdit": "ajouter, modifier, importer et désactiver des étudiants ; voir leur téléphone et n° national",
       "exports": "PDF et Excel des registres, fiches de visite et liste des étudiants",
       "correctAny": "corriger une saisie faite par un autre (sinon seulement les siennes)",
-      "shiftHandover": "remplit les registres de permanence et de matériel avant de prendre le poste"
+      "shiftHandover": "remplit les registres de permanence et de matériel avant de prendre le poste",
+      "attendance": "pointe chaque agent (présent, en retard, absent…) chaque jour, et ajoute ou retire des agents",
+      "attendanceView": "lire et imprimer la présence du jour et du mois"
     }
   },
   "secure": {
@@ -1217,5 +1234,58 @@
     "printEntry": "Imprimer cette entrée",
     "noEntry": "Aucune entrée avec ce numéro (ou hors de ce que vous pouvez voir).",
     "nothingYet": "Rien d’enregistré dans ce registre."
+  },
+  "attendance": {
+    "title": "Présence de l’équipe de sécurité",
+    "help": "Le chef d’équipe pointe chaque agent chaque jour. Un pointage peut être modifié, et chaque modification est dans le journal.",
+    "helpRead": "La présence de l’équipe, telle que pointée par le chef d’équipe.",
+    "day": "Jour",
+    "today": "Aujourd’hui",
+    "month": "Mois",
+    "name": "Nom",
+    "jobTitle": "Fonction",
+    "startTime": "Heure de prise de service",
+    "startTimeHelp": "Avec une heure de prise de service, un agent arrivé après est marqué en retard automatiquement.",
+    "status": "Statut",
+    "arrived": "Arrivée",
+    "note": "Remarque",
+    "markedBy": "Pointé par",
+    "notMarked": "Pas encore pointé",
+    "markAllPresent": "Tous présents",
+    "markedN": "{{n}} agents pointés présents",
+    "noStaff": "Aucun agent pour l’instant. Ajoutez l’équipe ci-dessous.",
+    "addMember": "Ajouter un agent à l’équipe",
+    "add": "Ajouter",
+    "remove": "Retirer de la liste",
+    "removeConfirm": "Retirer « {{name}} » de la liste ? Sa présence passée est conservée.",
+    "monthTitle": "Bilan mensuel de présence",
+    "dayTitle": "Feuille de présence quotidienne de l’équipe de sécurité",
+    "s": {
+      "present": "Présent",
+      "late": "En retard",
+      "absent": "Absent",
+      "leave": "En congé",
+      "sick": "Malade",
+      "mission": "En mission"
+    }
+  },
+  "remote": {
+    "title": "Accès du doyen par le réseau de la faculté",
+    "intro": "Quand il est activé, le doyen ouvre le programme dans le navigateur de son PC (rien à installer) à l’adresse de ce PC, avec son code. Il lit les registres, les visites et la présence, imprime et vise les incidents. Il ne peut ni enregistrer de visiteurs ni changer les réglages.",
+    "off": "L’accès réseau est désactivé.",
+    "running": "Actif. Adresses à ouvrir par le doyen : {{urls}}",
+    "failed": "Démarrage impossible : {{error}}",
+    "enable": "Activer l’accès du doyen par le réseau",
+    "port": "Port",
+    "allowed": "Adresses IP autorisées (une par ligne)",
+    "help": "Il faut un compte au niveau « Doyen » (Administration → Comptes). La connexion est chiffrée (HTTPS), les codes erronés bloquent 5 minutes, la session se ferme après 30 minutes d’inactivité et chaque connexion est journalisée. À la première visite, le navigateur signale le certificat : acceptez-le une fois.",
+    "saved": "Enregistré"
+  },
+  "dean": {
+    "welcome": "Bienvenue, {{name}}",
+    "insideNow": "Visiteurs présents",
+    "teamPresent": "Équipe présente aujourd’hui",
+    "visaWaiting": "Incidents en attente de votre visa",
+    "visaHelp": "{{n}} incident(s) attendent le visa : ouvrez le registre des incidents et cliquez « Visa du décanat »."
   }
 }

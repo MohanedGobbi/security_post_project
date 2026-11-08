@@ -56,7 +56,7 @@ export function registerSection(reg: RegisterDef, entries: RegisterEntry[], lang
 
 /** Sections for every register this user may browse, for the whole-period PDF / Excel export (administrators). */
 export function registersSections(user: User, from: string, to: string, lang: Lang): Section[] {
-  if (user.role !== 'admin') return []
+  if (user.role !== 'admin' && user.role !== 'dean') return []
   return listRegisters(user)
     .filter((r) => r.active)
     .map((r) => registerSection(r, listEntries({ registerId: r.id, from, to, text: '', openOnly: false }, user), lang))

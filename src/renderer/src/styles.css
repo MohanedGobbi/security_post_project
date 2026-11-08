@@ -735,6 +735,27 @@ button.primary.danger { background: var(--danger); border-color: var(--danger); 
 }
 
 
+/* attendance of the security team */
+.att-table td { vertical-align: middle; }
+.att-statuses { display: flex; flex-wrap: wrap; gap: 4px; }
+.att-statuses .seg-btn { padding: 4px 10px; font-size: .85rem; }
+.seg-btn.att-present.on { background: var(--ok); border-color: var(--ok); }
+.seg-btn.att-late.on { background: var(--warn); border-color: var(--warn); }
+.seg-btn.att-absent.on { background: var(--danger); border-color: var(--danger); }
+.att-badge { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: .85rem; font-weight: 600; background: var(--surface-2); }
+.att-badge.att-present { background: var(--ok-soft); color: var(--ok); }
+.att-badge.att-late { background: var(--warn-soft); color: var(--warn); }
+.att-badge.att-absent { background: var(--danger-soft); color: var(--danger); }
+.att-add label { display: flex; flex-direction: column; gap: 4px; }
+.att-table input[type='text'] { width: 100%; min-width: 9rem; }
+
+/* the dean's home: three figures */
+.dean-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 12px; }
+.dean-stats > div { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
+.dean-stats b { font-size: 2rem; line-height: 1.1; }
+.dean-stats span { color: var(--ink-2); font-size: .95rem; }
+.dean-stats .warn { background: var(--warn-soft); border-color: var(--warn); }
+
 /* Administration > System > Updates */
 .updates-card .section-head { flex-wrap: wrap; gap: 8px; }
 .updates-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 20px; margin: 4px 0 12px; }

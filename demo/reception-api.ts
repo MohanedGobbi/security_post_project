@@ -12,7 +12,7 @@ import {
   db, dayBounds, fail, nextId, nowIso, photos, refresh, save, today, wait,
   type DEntry, type DExpected, type DLoan, type DRound, type DShift, type DUser, type DVisit
 } from './store'
-import { MAX_CARD_PICTURES, type Student, type StudentCheck } from '@shared/types'
+import { ATTENDANCE_STATUSES, MAX_CARD_PICTURES, type AttendanceStatus, type StaffMember, type Student, type StudentCheck } from '@shared/types'
 import { compareStudent, readStudentQr } from '@shared/studentQr'
 import { nameSimilarity } from '@shared/names'
 import { BUILTIN_LEVELS } from '@shared/permissions'
@@ -303,6 +303,25 @@ function equipmentList(): DItem[] {
 function saveEquipment(list: DItem[]): void {
   try { localStorage.setItem(EQUIPMENT_KEY, JSON.stringify(list)) } catch { /* private window */ }
 }
+
+/** the security team and their attendance in this browser (the program keeps them in its staff and attendance tables) */
+const ATT_KEY = 'secreg-demo-attendance'
+type DStaff = { id: number; name: string; jobTitle: string; startTime: string; active: boolean }
+type DMark = { status: AttendanceStatus; arrivedAt: string; note: string; markedBy: string; markedAt: string }
+type DAtt = { staff: DStaff[]; marks: Record<string, DMark> }
+const SAMPLE_STAFF: [string, string, string][] = [['يوسف بن علي', 'رئيس فرقة الأمن', '07:00'], ['عمر بوزيد', 'عون أمن', '07:00'], ['محمد قادري', 'عون أمن', '07:00'], ['رضا بلخير', 'عون أمن', '19:00'], ['سعيد مرزوق', 'عون أمن', '19:00']]
+function attendanceData(): DAtt {
+  try {
+    const saved = localStorage.getItem(ATT_KEY)
+    if (saved) return JSON.parse(saved) as DAtt
+  } catch { /* private window */ }
+  return { staff: SAMPLE_STAFF.map(([name, jobTitle, startTime], i) => ({ id: i + 1, name, jobTitle, startTime, active: true })), marks: {} }
+}
+function saveAttendance(d: DAtt): void {
+  try { localStorage.setItem(ATT_KEY, JSON.stringify(d)) } catch { /* private window */ }
+}
+const attToday = (): string => new Date().toISOString().slice(0, 10)
+const staffOf = (d: DAtt): StaffMember[] => d.staff.filter((x) => x.active).map(({ id, name, jobTitle, startTime }) => ({ id, name, jobTitle, startTime }))
 
 /** card codes learnt for a student in this browser (the program keeps them in its student_codes table) */
 const CODES_KEY = 'secreg-demo-student-codes'
@@ -673,6 +692,89 @@ export const demoApi: Api = {
       log('features')
       done(undefined)
     }
+  },
+
+  attendance: {
+    async staff() { return staffOf(attendanceData()) },
+    async saveStaff(input) {
+      const name = input.name.trim()
+      if (!name) fail('error.nameRequired')
+      const d = attendanceData()
+      if (input.id) {
+        saveAttendance({ ...d, staff: d.staff.map((x) => (x.id === input.id ? { ...x, name, jobTitle: input.jobTitle.trim(), startTime: input.startTime } : x)) })
+        return input.id
+      }
+      if (d.staff.some((x) => x.active && x.name.toLowerCase() === name.toLowerCase())) fail('error.staffExists')
+      const id = Math.max(0, ...d.staff.map((x) => x.id)) + 1
+      saveAttendance({ ...d, staff: [...d.staff, { id, name, jobTitle: input.jobTitle.trim(), startTime: input.startTime, active: true }] })
+      log('staff_added', 'staff', id, name)
+      return id
+    },
+    async removeStaff(id) {
+      const d = attendanceData()
+      saveAttendance({ ...d, staff: d.staff.map((x) => (x.id === id ? { ...x, active: false } : x)) })
+      log('staff_removed', 'staff', id)
+    },
+    async day(date) {
+      const d = attendanceData()
+      return staffOf(d).map((staff) => ({ staff, mark: d.marks[`${date}|${staff.id}`] ?? null }))
+    },
+    async mark(input) {
+      if (input.date > attToday()) fail('error.invalidDate')
+      const d = attendanceData()
+      const staff = d.staff.find((x) => x.id === input.staffId && x.active)
+      if (!staff) fail('error.notFound')
+      const withTime = input.status === 'present' || input.status === 'late'
+      const arrivedAt = withTime ? input.arrivedAt : ''
+      const status: AttendanceStatus = input.status === 'present' && arrivedAt && staff!.startTime && arrivedAt > staff!.startTime ? 'late' : input.status
+      d.marks[`${input.date}|${input.staffId}`] = { status, arrivedAt, note: input.note.trim(), markedBy: me().name, markedAt: nowIso() }
+      saveAttendance(d)
+      log('attendance_marked', 'staff', input.staffId, `${input.date} · ${status}`)
+    },
+    async markAllPresent(date) {
+      if (date > attToday()) fail('error.invalidDate')
+      const d = attendanceData()
+      let n = 0
+      for (const x of staffOf(d)) {
+        if (d.marks[`${date}|${x.id}`]) continue
+        d.marks[`${date}|${x.id}`] = { status: 'present', arrivedAt: '', note: '', markedBy: me().name, markedAt: nowIso() }
+        n++
+      }
+      saveAttendance(d)
+      return n
+    },
+    async month(month) {
+      const d = attendanceData()
+      return staffOf(d).map((staff) => {
+        const counts = Object.fromEntries(ATTENDANCE_STATUSES.map((st) => [st, 0])) as Record<AttendanceStatus, number>
+        for (const [k, m] of Object.entries(d.marks)) if (k.startsWith(month) && k.endsWith(`|${staff.id}`)) counts[m.status]++
+        return { staff, counts }
+      })
+    },
+    async dayPdf(date, l) {
+      const t = (k: string): string => translate(l, k)
+      const rows = await demoApi.attendance.day(date)
+      openReport(l, t('attendance.dayTitle'), date, [{
+        title: t('attendance.title'), head: [t('attendance.name'), t('attendance.jobTitle'), t('attendance.status'), t('attendance.arrived'), t('attendance.note'), t('attendance.markedBy')],
+        rows: rows.map((r) => [r.staff.name, r.staff.jobTitle, r.mark ? t(`attendance.s.${r.mark.status}`) : t('attendance.notMarked'), r.mark?.arrivedAt ?? '', r.mark?.note ?? '', r.mark?.markedBy ?? ''])
+      }], '', { printedBy: me().name, landscape: false })
+      return t('common.print')
+    },
+    async monthPdf(month, l) {
+      const t = (k: string): string => translate(l, k)
+      const rows = await demoApi.attendance.month(month)
+      openReport(l, t('attendance.monthTitle'), month, [{
+        title: t('attendance.monthTitle'), head: [t('attendance.name'), ...ATTENDANCE_STATUSES.map((st) => t(`attendance.s.${st}`))],
+        rows: rows.map((r) => [r.staff.name, ...ATTENDANCE_STATUSES.map((st) => String(r.counts[st]))])
+      }], '', { printedBy: me().name, landscape: false })
+      return t('common.print')
+    }
+  },
+
+  // the deanship's network access belongs to the program on the security PC; a browser demo has none
+  remote: {
+    async get() { return { enabled: false, port: 8443, allowedIps: [], running: false, urls: [], error: '' } },
+    async set() { return fail('error.forbidden') }
   },
 
   equipment: {

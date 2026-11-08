@@ -42,7 +42,7 @@ export const REGISTER_TEMPLATES: RegisterDefInput[] = [
     // سجل الحوادث بالكلية ومحيطها: presented to the deanship for its visa at the end of each shift
     key: 'incidents',
     labels: L('سجل الحوادث', 'Incidents register', 'Registre des incidents'),
-    icon: 'alert', fillRoles: ALL, closeRoles: ['admin'],
+    icon: 'alert', fillRoles: ALL, closeRoles: ['admin', 'dean'],
     closeLabels: L('تأشير عمادة الكلية', 'Deanship visa', 'Visa du décanat'), sort: 3, active: true,
     fields: [
       field('occurred', 'datetime', ['تاريخ ووقت الحادث', 'Date and time of the incident', 'Date et heure de l’incident'], { required: true }),

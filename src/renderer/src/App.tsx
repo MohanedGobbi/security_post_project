@@ -27,6 +27,8 @@ import SettingsPage from './pages/SettingsPage'
 import StudentsPage from './pages/StudentsPage'
 import StudentProblemsPage from './pages/StudentProblemsPage'
 import ReportsPage from './pages/ReportsPage'
+import AttendancePage from './pages/AttendancePage'
+import DeanHomePage from './pages/DeanHomePage'
 import rowdLogo from './assets/brands/rowd-tech.png'
 import RecoveryPage from './pages/RecoveryPage'
 import PrintMenu from './components/PrintMenu'
@@ -34,7 +36,7 @@ import EndShiftDialog from './components/EndShiftDialog'
 import Icon, { type IconName } from './components/Icon'
 import BrandMark from './components/BrandMark'
 
-export type Page = 'home' | 'in' | 'out' | 'expected' | 'vehicles' | 'deliveries' | 'incidents' | 'patrols' | 'keys' | 'notes' | 'registers' | 'students' | 'problems' | 'reports' | 'admin' | 'log' | 'watchlist' | 'settings'
+export type Page = 'home' | 'in' | 'out' | 'expected' | 'vehicles' | 'deliveries' | 'incidents' | 'patrols' | 'keys' | 'notes' | 'registers' | 'students' | 'problems' | 'reports' | 'attendance' | 'admin' | 'log' | 'watchlist' | 'settings'
 
 interface Toast { id: number; text: string; kind: 'ok' | 'error' }
 
@@ -76,6 +78,9 @@ const PAGE_PERMISSION: Partial<Record<Page, Permission>> = { in: 'visitors', out
 
 /** A page the account may open: its module is on, its level allows it, and the Administration page is for administrators */
 export const pageAllowed = (page: Page, f: Features, user: User | null): boolean => {
+  // the dean (over the faculty network) reads: the home, the registers, the visit log, the incidents, the reports and the attendance
+  if (user?.role === 'dean') return ['home', 'registers', 'incidents', 'reports', 'attendance', 'log'].includes(page)
+  if (page === 'attendance') return !!user && (can(user, 'attendanceView') || can(user, 'attendance'))
   if (page === 'incidents') return true
   if (!pageOn(page, f)) return false
   if (page === 'admin') return user?.role === 'admin'
@@ -97,6 +102,7 @@ const NAV: { page: Page; key: string; icon: IconName; shortcut?: string }[] = [
   { page: 'registers', key: 'nav.registers', icon: 'book' },
   { page: 'students', key: 'nav.students', icon: 'user' },
   { page: 'problems', key: 'nav.studentProblems', icon: 'qr' },
+  { page: 'attendance', key: 'nav.attendance', icon: 'clock' },
   { page: 'reports', key: 'nav.reports', icon: 'printer' },
   { page: 'admin', key: 'nav.admin', icon: 'users' },
   { page: 'log', key: 'nav.log', icon: 'list', shortcut: 'F8' },
@@ -183,7 +189,8 @@ export default function App(): ReactNode {
       setPage('admin')
       return setState('ready')
     }
-    if (!f.modules.shifts) return setState('ready')
+    // the dean has no shift
+    if (u.role === 'dean' || !f.modules.shifts) return setState('ready')
     const s = await window.api.shifts.state()
     setState(s.mine ? 'ready' : 'shift')
   }, [])
@@ -241,6 +248,7 @@ export default function App(): ReactNode {
   useEffect(() => {
     if (state !== 'ready') return
     const onKey = (e: KeyboardEvent): void => {
+      if (user?.role === 'dean') return
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
         e.preventDefault()
         setPrinting(true)
@@ -251,7 +259,7 @@ export default function App(): ReactNode {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [state])
+  }, [state, user])
 
   const toastLayer = (
     <div className="toasts" aria-live="polite">
@@ -284,15 +292,17 @@ export default function App(): ReactNode {
             </div>
           </div>
           <div className="topbar-end">
-            <button type="button" className="quick-incident-top-btn" onClick={() => setQuickIncident(true)} title="Ctrl+I">
-              <Icon name="alert" size={18} /> <span>{t('incidents.quick')}</span>
-            </button>
+            {user.role !== 'dean' && (
+              <button type="button" className="quick-incident-top-btn" onClick={() => setQuickIncident(true)} title="Ctrl+I">
+                <Icon name="alert" size={18} /> <span>{t('incidents.quick')}</span>
+              </button>
+            )}
             {alerts.length > 0 && (
               <button type="button" className="alert-bell" onClick={() => setPage('home')} aria-label={t('alert.title')}>
                 <Icon name="alert" size={18} /> {alerts.length}
               </button>
             )}
-            <button type="button" className="print-btn" onClick={() => setPrinting(true)} title="Ctrl+P"><Icon name="printer" size={18} /> {t('print.button')}</button>
+            {user.role !== 'dean' && <button type="button" className="print-btn" onClick={() => setPrinting(true)} title="Ctrl+P"><Icon name="printer" size={18} /> {t('print.button')}</button>}
             <LangSwitch onChange={(l) => window.api.auth.setLanguage(l)} />
             <Clock />
             <div className="who">
@@ -300,7 +310,7 @@ export default function App(): ReactNode {
               <button type="button" className="link" onClick={logout}>{t('nav.logout')}</button>
             </div>
             {/* administrators of a PIN-only build skip the guard shift, so they have none to end */}
-            {features.modules.shifts && user.role !== 'admin' && (
+            {features.modules.shifts && user.role !== 'admin' && user.role !== 'dean' && (
               <button type="button" className="end-shift" onClick={() => setEnding(true)}><Icon name="clock" size={18} /> {t('nav.endShift')}</button>
             )}
           </div>
@@ -315,7 +325,8 @@ export default function App(): ReactNode {
             ))}
           </nav>
           <main className="content">
-            {page === 'home' && <HomePage />}
+            {page === 'home' && (user.role === 'dean' ? <DeanHomePage /> : <HomePage />)}
+            {page === 'attendance' && <AttendancePage />}
             {page === 'in' && <VisitorInPage />}
             {page === 'out' && <CheckOutPage />}
             {page === 'expected' && <ExpectedPage />}

@@ -23,13 +23,26 @@ Usage: bash install.sh [options]
                    (default when asked: $DEFAULT_REPO)
   --no-auto-update switch the automatic updates off (and do not ask)
   --yes            answer yes to every question (autostart and keep-awake included)
+
+The dean's access over the faculty network (switched on later, in the program: Administration > System):
+  --dean-ip IP     the address of the dean's PC: opens it in this PC's firewall (can be repeated)
+  --port N         the port of that access (default 8443)
+  --fixed-ip A/N   give this PC a fixed address on the faculty network, for example 192.168.1.50/24
+  --gateway IP     the network's gateway (the router), needed with --fixed-ip
+  --dns IP         a DNS server for --fixed-ip (default: the gateway)
   -h, --help       show this help
 EOF
 }
 
-AUTOSTART="" AWAKE="" YES=0 UPDATE_REPO="" UPDATES=""
+AUTOSTART="" AWAKE="" YES=0 UPDATE_REPO="" UPDATES="" PORT=8443 FIXED="" GATEWAY="" DNS=""
+DEAN_IPS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --dean-ip) [[ $# -ge 2 ]] || die "--dean-ip needs an address"; DEAN_IPS+=("$2"); shift ;;
+    --port) [[ $# -ge 2 ]] || die "--port needs a number"; PORT="$2"; shift ;;
+    --fixed-ip) [[ $# -ge 2 ]] || die "--fixed-ip needs an address like 192.168.1.50/24"; FIXED="$2"; shift ;;
+    --gateway) [[ $# -ge 2 ]] || die "--gateway needs an address"; GATEWAY="$2"; shift ;;
+    --dns) [[ $# -ge 2 ]] || die "--dns needs an address"; DNS="$2"; shift ;;
     --autostart) AUTOSTART=1 ;;
     --no-autostart) AUTOSTART=0 ;;
     --keep-awake) AWAKE=1 ;;
@@ -90,6 +103,46 @@ if ! sudo apt-get install -y "$DEB"; then
   die "installation failed"
 fi
 ok "installed in /opt/FacultySecurity"
+
+# --- the dean's access over the faculty network -------------------------------------
+# The program serves the dean over HTTPS and makes its own certificate with openssl.
+if ! command -v openssl >/dev/null 2>&1; then
+  say "Installing openssl (for the dean's secure connection)"
+  sudo apt-get install -y openssl && ok "openssl installed" || warn "openssl could not be installed: the dean's network access will not start until it is"
+else
+  ok "openssl present"
+fi
+[[ "$PORT" =~ ^[0-9]+$ && "$PORT" -ge 1024 && "$PORT" -le 65535 ]] || die "--port must be a number between 1024 and 65535"
+for ip in "${DEAN_IPS[@]}"; do
+  [[ "$ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || die "not an IPv4 address: $ip"
+done
+if [[ ${#DEAN_IPS[@]} -gt 0 ]]; then
+  if command -v ufw >/dev/null 2>&1 && sudo ufw status 2>/dev/null | grep -q "Status: active"; then
+    for ip in "${DEAN_IPS[@]}"; do
+      sudo ufw allow from "$ip" to any port "$PORT" proto tcp >/dev/null && ok "firewall: $ip may reach port $PORT"
+    done
+  else
+    ok "no active firewall (ufw): nothing to open. The program itself only answers the addresses you list in Administration > System."
+  fi
+fi
+
+# --- a fixed address for this PC (so the dean's bookmark always works) -------------
+if [[ -n "$FIXED" ]]; then
+  [[ "$FIXED" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}/[0-9]{1,2}$ ]] || die "--fixed-ip must look like 192.168.1.50/24"
+  [[ "$GATEWAY" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || die "--fixed-ip also needs --gateway (the router's address)"
+  command -v nmcli >/dev/null 2>&1 || die "nmcli (NetworkManager) is needed for --fixed-ip: set the address in the network settings instead"
+  CON="$(nmcli -t -f NAME,TYPE,DEVICE connection show --active | awk -F: '$2 ~ /ethernet/ {print $1; exit}')"
+  [[ -n "$CON" ]] || CON="$(nmcli -t -f NAME,TYPE,DEVICE connection show --active | awk -F: '$2 ~ /wireless/ {print $1; exit}')"
+  [[ -n "$CON" ]] || die "no active network connection found"
+  say "Fixed address $FIXED, gateway $GATEWAY on the connection '$CON'"
+  if ask "Apply it now? The network restarts for a moment."; then
+    sudo nmcli connection modify "$CON" ipv4.method manual ipv4.addresses "$FIXED" ipv4.gateway "$GATEWAY" ipv4.dns "${DNS:-$GATEWAY}"
+    sudo nmcli connection up "$CON" >/dev/null && ok "the PC now uses ${FIXED%/*}"
+    echo "    To go back to automatic addresses:  nmcli connection modify \"$CON\" ipv4.method auto && nmcli connection up \"$CON\""
+  else
+    warn "fixed address not applied"
+  fi
+fi
 
 # --- the keyring that protects the data key ------------------------------------
 if [[ "${XDG_CURRENT_DESKTOP:-}" == *KDE* ]]; then
@@ -171,5 +224,11 @@ The program is installed.
   Data folder:    ~/.config/FacultySecurity  (back it up with the System tab, not by copying this folder)
   Updates:        $([[ "$UPDATES" == 1 ]] && echo "every night at 03:00 from GitHub (Administration > System shows them)" || echo "off (bash install.sh --auto-update OWNER/REPO switches them on)")
   Manual:         the 3-User-Manual folder of this kit
+
+The dean's access over the faculty network (off until you switch it on):
+  1. Administration > Accounts > Add user: the dean's name, level "Dean", a PIN of 6 digits or more.
+  2. Administration > System > "The dean's access over the faculty network": tick it, enter the dean's PC address, Save.
+  3. The dean opens the address shown there in a browser (for example https://$(hostname -I 2>/dev/null | awk '{print $1}'):$PORT)
+     and accepts the certificate warning once. This PC's address(es): $(hostname -I 2>/dev/null || echo unknown)
 
 EOF
